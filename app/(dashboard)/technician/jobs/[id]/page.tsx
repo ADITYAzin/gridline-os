@@ -10,7 +10,7 @@ import { WorkReportForm } from './work-report-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, MapPin, Phone, AlertCircle } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, AlertCircle, Printer } from 'lucide-react'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -81,6 +81,14 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
           </div>
           <h1 className="text-base font-bold truncate">{job.service_type}</h1>
         </div>
+        {job.status === 'completed' && (
+          <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs text-primary border-primary/30">
+            <Link href={`/technician/jobs/${job.id}/bap`} target="_blank">
+              <Printer className="h-3.5 w-3.5" />
+              BAP (PDF)
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* GPS Check-in / Check-out Action */}

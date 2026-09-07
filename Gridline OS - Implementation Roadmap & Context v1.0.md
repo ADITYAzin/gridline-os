@@ -17,6 +17,7 @@
 | Fase 5 — Job lifecycle inti | ✅ SELESAI (CRUD customer, job numbering GL-XXXX, scheduling, dispatch) |
 | Fase 6 — Completion & evidence (foto/ttd/report) | ✅ SELESAI (Check-in GPS, SOP checklist, storage bukti, e-signature, 5-gate completion) |
 | Fase 7 — Dashboard/reporting, production hardening | ✅ SELESAI (Recharts executive dashboard, profile & monitoring, 100% build & lint clean) |
+| Fase 8 — E2E Verification & Demo Seeding | ✅ SELESAI (10 jobs, 5-gate trigger live tested, storage evidence, sample accounts) |
 
 **Aturan emas:** tidak sekaligus besar — migrasi bertahap, direview per langkah;
 uji isolasi 2 tenant WAJIB sebelum bangun UI besar.

@@ -128,3 +128,22 @@
     @apply font-sans;
   }
 }
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 1.2cm;
+  }
+}

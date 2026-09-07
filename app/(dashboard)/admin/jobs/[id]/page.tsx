@@ -18,6 +18,7 @@ import {
   MapPin,
   PenTool,
   Phone,
+  Printer,
   ShieldAlert,
 } from 'lucide-react'
 
@@ -118,11 +119,17 @@ export default async function JobDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {!isLocked && (
-          <div className="flex items-center gap-2">
-            <CancellationDialog jobId={job.id} />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {job.status === 'completed' && (
+            <Button asChild variant="outline" size="sm" className="gap-1.5 shadow-sm text-primary border-primary/30 hover:bg-primary/5">
+              <Link href={`/admin/jobs/${job.id}/bap`} target="_blank">
+                <Printer className="h-4 w-4" />
+                Cetak / Unduh BAP
+              </Link>
+            </Button>
+          )}
+          {!isLocked && <CancellationDialog jobId={job.id} />}
+        </div>
       </div>
 
       {/* Cancellation Notice if Cancelled */}
