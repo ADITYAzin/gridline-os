@@ -20,7 +20,10 @@ import {
   Phone,
   Printer,
   ShieldAlert,
+  UserCheck,
 } from 'lucide-react'
+import { WhatsAppActionDialog } from '@/components/whatsapp/whatsapp-action-dialog'
+import { SlaBadge } from '@/components/jobs/sla-badge'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -77,7 +80,15 @@ export default async function JobDetailPage({ params }: PageProps) {
   ])
 
   const customer = job.customers as unknown as { id: string; name: string; phone: string | null; email: string | null; address: string | null } | null
+  const assignedTech = job.profiles as unknown as { id: string; name: string; phone: string | null; email: string | null } | null
   const isLocked = job.status === 'completed' || job.status === 'cancelled'
+
+  const scheduleDateStr = schedule?.start_at
+    ? new Date(schedule.start_at).toLocaleDateString('id-ID', { dateStyle: 'long' })
+    : undefined
+  const scheduleTimeStr = schedule?.start_at && schedule?.end_at
+    ? `${new Date(schedule.start_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} - ${new Date(schedule.end_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`
+    : undefined
 
   const beforePhotos = (photos || []).filter((p) => p.type === 'before')
   const afterPhotos = (photos || []).filter((p) => p.type === 'after')
@@ -112,6 +123,11 @@ export default async function JobDetailPage({ params }: PageProps) {
               <Badge variant="outline" className="capitalize text-xs font-semibold">
                 Prioritas: {job.priority}
               </Badge>
+              <SlaBadge
+                status={job.status}
+                scheduledEnd={schedule?.end_at}
+                completedAt={job.completed_at}
+              />
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               Dibuat pada {new Date(job.created_at).toLocaleDateString('id-ID', { dateStyle: 'long' })}
@@ -269,24 +285,50 @@ export default async function JobDetailPage({ params }: PageProps) {
 
         {/* Right Sidebar: Customer & Scheduling */}
         <div className="space-y-6">
-          {/* Customer Info Card */}
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-primary" />
-                Informasi Customer
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  Informasi Customer
+                </CardTitle>
+                {customer?.id && (
+                  <Link
+                    href={`/admin/customers/${customer.id}`}
+                    className="text-[11px] text-primary hover:underline font-medium"
+                  >
+                    Riwayat Servis →
+                  </Link>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-3 text-xs">
               <div>
                 <span className="text-[11px] text-muted-foreground block font-medium">Nama Pelanggan</span>
-                <span className="font-semibold text-sm">{Array.isArray(customer) ? customer[0]?.name : customer?.name}</span>
+                {customer?.id ? (
+                  <Link
+                    href={`/admin/customers/${customer.id}`}
+                    className="font-semibold text-sm text-foreground hover:text-primary hover:underline"
+                  >
+                    {customer.name}
+                  </Link>
+                ) : (
+                  <span className="font-semibold text-sm">{customer?.name || '-'}</span>
+                )}
               </div>
 
-              {((Array.isArray(customer) ? customer[0]?.phone : customer?.phone)) && (
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Phone className="h-3 w-3 text-primary" />
-                  <span>{Array.isArray(customer) ? customer[0]?.phone : customer?.phone}</span>
+              {customer?.phone && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Phone className="h-3 w-3 text-primary" />
+                    <span>{customer.phone}</span>
+                  </div>
+                  <a
+                    href={`tel:${customer.phone}`}
+                    className="text-[10px] text-primary hover:underline font-medium"
+                  >
+                    Panggil
+                  </a>
                 </div>
               )}
 
@@ -297,8 +339,83 @@ export default async function JobDetailPage({ params }: PageProps) {
                   <span>{job.address}</span>
                 </div>
               </div>
+
+              {customer?.phone && (
+                <div className="pt-2 border-t">
+                  <WhatsAppActionDialog
+                    recipientType="customer"
+                    recipientName={customer.name}
+                    recipientPhone={customer.phone}
+                    templateData={{
+                      customerName: customer.name,
+                      technicianName: assignedTech?.name,
+                      jobNumber: job.job_number,
+                      serviceType: job.service_type,
+                      address: job.address,
+                      scheduleDate: scheduleDateStr,
+                      scheduleTime: scheduleTimeStr,
+                      issue: job.issue,
+                    }}
+                    defaultScenario={
+                      job.status === 'completed'
+                        ? 'customer_completed'
+                        : job.status === 'on_progress'
+                        ? 'customer_on_the_way'
+                        : 'customer_scheduled'
+                    }
+                    triggerButtonText="WhatsApp Pelanggan"
+                    className="w-full justify-center"
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          {/* Assigned Technician Card (if assigned) */}
+          {assignedTech && (
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 text-primary" />
+                  Teknisi Bertugas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-xs">
+                <div>
+                  <span className="text-[11px] text-muted-foreground block font-medium">Nama Teknisi</span>
+                  <span className="font-semibold text-sm">{assignedTech.name}</span>
+                </div>
+                {assignedTech.phone && (
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Phone className="h-3 w-3 text-primary" />
+                    <span>{assignedTech.phone}</span>
+                  </div>
+                )}
+                {assignedTech.phone && (
+                  <div className="pt-2 border-t">
+                    <WhatsAppActionDialog
+                      recipientType="technician"
+                      recipientName={assignedTech.name}
+                      recipientPhone={assignedTech.phone}
+                      templateData={{
+                        customerName: customer?.name,
+                        technicianName: assignedTech.name,
+                        jobNumber: job.job_number,
+                        serviceType: job.service_type,
+                        address: job.address,
+                        scheduleDate: scheduleDateStr,
+                        scheduleTime: scheduleTimeStr,
+                        issue: job.issue,
+                      }}
+                      defaultScenario="technician_dispatch"
+                      triggerButtonText="Kirim Disposisi ke WhatsApp"
+                      className="w-full justify-center"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Scheduling Card */}
           <AssignmentCard

@@ -1,6 +1,5 @@
 import Link from 'next/link'
-import Image from 'next/image'
-import { ArrowLeft, CheckCircle2, MapPin, Phone, Mail, Clock, Calendar, CheckSquare } from 'lucide-react'
+import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BapPrintButton } from './bap-print-button'
 

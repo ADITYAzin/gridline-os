@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CalendarDays, Clock, MapPin, Plus, ArrowRight } from 'lucide-react'
+import { SlaBadge } from '@/components/jobs/sla-badge'
 
 export default async function DispatchBoardPage() {
   const profile = await requireRole('admin')
@@ -25,7 +26,7 @@ export default async function DispatchBoardPage() {
         technician_id,
         start_at,
         end_at,
-        jobs(id, job_number, service_type, address, priority, status, customers(name))
+        jobs(id, job_number, service_type, address, priority, status, completed_at, customers(name))
       `)
       .eq('org_id', profile.orgId)
       .order('start_at', { ascending: true }),
@@ -93,7 +94,7 @@ export default async function DispatchBoardPage() {
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {techSchedules.map((s) => {
-                        type JobItem = { id: string; job_number: string; service_type: string; address: string; priority: string; status: string; customers: { name: string } | { name: string }[] | null }
+                        type JobItem = { id: string; job_number: string; service_type: string; address: string; priority: string; status: string; completed_at: string | null; customers: { name: string } | { name: string }[] | null }
                         const job = s.jobs as unknown as JobItem | null
                         if (!job) return null
                         const customer = job.customers
@@ -115,11 +116,18 @@ export default async function DispatchBoardPage() {
                             key={s.id}
                             className="rounded-lg border bg-card p-3.5 space-y-2 hover:border-primary/50 transition-colors"
                           >
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between gap-1 flex-wrap">
                               <span className="font-mono font-bold text-xs text-primary">{job.job_number}</span>
-                              <Badge variant="secondary" className="capitalize text-[10px]">
-                                {job.status.replace('_', ' ')}
-                              </Badge>
+                              <div className="flex items-center gap-1">
+                                <Badge variant="secondary" className="capitalize text-[10px]">
+                                  {job.status.replace('_', ' ')}
+                                </Badge>
+                                <SlaBadge
+                                  status={job.status}
+                                  scheduledEnd={s.end_at}
+                                  completedAt={job.completed_at}
+                                />
+                              </div>
                             </div>
 
                             <div>

@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, MapPin, Phone, AlertCircle, Printer } from 'lucide-react'
+import { WhatsAppActionDialog } from '@/components/whatsapp/whatsapp-action-dialog'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -104,17 +105,36 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-1 space-y-3 text-xs">
-          <div>
-            <span className="font-semibold text-foreground text-sm block">
-              {Array.isArray(customer) ? customer[0]?.name : customer?.name}
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span className="font-semibold text-foreground text-sm block">
+                {Array.isArray(customer) ? customer[0]?.name : customer?.name}
+              </span>
+              {(Array.isArray(customer) ? customer[0]?.phone : customer?.phone) && (
+                <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
+                  <Phone className="h-3 w-3 text-primary" />
+                  <a href={`tel:${Array.isArray(customer) ? customer[0]?.phone : customer?.phone}`} className="hover:underline">
+                    {Array.isArray(customer) ? customer[0]?.phone : customer?.phone}
+                  </a>
+                </div>
+              )}
+            </div>
             {(Array.isArray(customer) ? customer[0]?.phone : customer?.phone) && (
-              <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
-                <Phone className="h-3 w-3 text-primary" />
-                <a href={`tel:${Array.isArray(customer) ? customer[0]?.phone : customer?.phone}`} className="hover:underline">
-                  {Array.isArray(customer) ? customer[0]?.phone : customer?.phone}
-                </a>
-              </div>
+              <WhatsAppActionDialog
+                recipientType="customer"
+                recipientName={Array.isArray(customer) ? customer[0]?.name : customer?.name}
+                recipientPhone={Array.isArray(customer) ? customer[0]?.phone : customer?.phone}
+                templateData={{
+                  customerName: Array.isArray(customer) ? customer[0]?.name : customer?.name,
+                  technicianName: profile.name,
+                  jobNumber: job.job_number,
+                  serviceType: job.service_type,
+                  address: job.address,
+                }}
+                defaultScenario="customer_on_the_way"
+                triggerButtonText="WhatsApp Klien"
+                size="sm"
+              />
             )}
           </div>
 

@@ -5,7 +5,9 @@ import { Card, CardDescription, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, Briefcase, User, MapPin, Eye } from 'lucide-react'
+import { ExportJobsButton } from '@/components/jobs/export-jobs-button'
+import { SlaBadge } from '@/components/jobs/sla-badge'
+import { Plus, Briefcase, User, MapPin, Eye, Printer } from 'lucide-react'
 
 interface PageProps {
   searchParams: Promise<{ status?: string }>
@@ -27,8 +29,10 @@ export default async function JobsListPage({ searchParams }: PageProps) {
       status,
       address,
       created_at,
-      customers(name),
-      profiles!jobs_technician_id_fkey(name)
+      completed_at,
+      customers(id, name, phone),
+      profiles!jobs_technician_id_fkey(name),
+      schedules(start_at, end_at)
     `)
     .eq('org_id', profile.orgId)
     .order('created_at', { ascending: false })
@@ -51,6 +55,32 @@ export default async function JobsListPage({ searchParams }: PageProps) {
 
   const currentTab = activeStatus || 'all'
 
+  // Prepare export data
+  const exportData = jobList.map((j) => {
+    type CustType = { id: string; name: string; phone?: string | null }
+    const cust = (Array.isArray(j.customers) ? j.customers[0] : j.customers) as CustType | null
+    type TechType = { name: string }
+    const tech = (Array.isArray(j.profiles) ? j.profiles[0] : j.profiles) as TechType | null
+    type SchedType = { start_at: string; end_at: string }
+    const sched = (Array.isArray(j.schedules) ? j.schedules[0] : j.schedules) as SchedType | null
+
+    return {
+      jobNumber: j.job_number,
+      createdAt: j.created_at,
+      status: j.status,
+      priority: j.priority,
+      serviceType: j.service_type,
+      issue: j.issue,
+      customerName: cust?.name || '-',
+      customerPhone: cust?.phone || '-',
+      address: j.address,
+      technicianName: tech?.name || 'Belum Ditugaskan',
+      completedAt: j.completed_at,
+      scheduledStart: sched?.start_at || null,
+      scheduledEnd: sched?.end_at || null,
+    }
+  })
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -60,12 +90,15 @@ export default async function JobsListPage({ searchParams }: PageProps) {
             Pantau dan kelola seluruh siklus penugasan teknisi dari awal hingga penyelesaian.
           </p>
         </div>
-        <Button asChild className="gap-2 font-semibold">
-          <Link href="/admin/jobs/new">
-            <Plus className="h-4 w-4" />
-            + Buat Job Baru
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportJobsButton jobs={exportData} />
+          <Button asChild className="gap-2 font-semibold">
+            <Link href="/admin/jobs/new">
+              <Plus className="h-4 w-4" />
+              + Buat Job Baru
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Filter Tabs */}
@@ -98,11 +131,13 @@ export default async function JobsListPage({ searchParams }: PageProps) {
           <CardDescription className="text-sm max-w-sm mx-auto mt-1 mb-4">
             {currentTab === 'all'
               ? 'Belum ada pekerjaan servis yang dibuat. Buat job pertama Anda sekarang.'
-              : `Belum ada pekerjaan dengan status ${currentTab}.`}
+              : `Tidak ada pekerjaan dengan status "${currentTab}".`}
           </CardDescription>
-          <Button asChild>
-            <Link href="/admin/jobs/new">Buat Job Baru</Link>
-          </Button>
+          {currentTab === 'all' && (
+            <Button asChild>
+              <Link href="/admin/jobs/new">Buat Job Pertama</Link>
+            </Button>
+          )}
         </Card>
       ) : (
         <Card className="shadow-sm">
@@ -114,15 +149,18 @@ export default async function JobsListPage({ searchParams }: PageProps) {
                 <TableHead>Layanan & Kendala</TableHead>
                 <TableHead>Teknisi</TableHead>
                 <TableHead>Prioritas</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Status & SLA</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {jobList.map((j) => {
-                type RelItem = { name: string } | { name: string }[] | null
-                const customer = j.customers as unknown as RelItem
-                const technician = j.profiles as unknown as RelItem
+                type CustType = { id: string; name: string; phone?: string | null }
+                const customer = (Array.isArray(j.customers) ? j.customers[0] : j.customers) as CustType | null
+                type TechType = { name: string }
+                const technician = (Array.isArray(j.profiles) ? j.profiles[0] : j.profiles) as TechType | null
+                type SchedType = { start_at: string; end_at: string }
+                const sched = (Array.isArray(j.schedules) ? j.schedules[0] : j.schedules) as SchedType | null
 
                 const priorityBadge: 'destructive' | 'default' | 'secondary' =
                   j.priority === 'high'
@@ -145,12 +183,23 @@ export default async function JobsListPage({ searchParams }: PageProps) {
                 return (
                   <TableRow key={j.id}>
                     <TableCell className="font-mono font-bold text-xs text-primary">
-                      {j.job_number}
+                      <Link href={`/admin/jobs/${j.id}`} className="hover:underline">
+                        {j.job_number}
+                      </Link>
                     </TableCell>
                     <TableCell>
-                      <div className="font-semibold text-sm">
-                        {Array.isArray(customer) ? customer[0]?.name : customer?.name || 'Customer'}
-                      </div>
+                      {customer?.id ? (
+                        <Link
+                          href={`/admin/customers/${customer.id}`}
+                          className="font-semibold text-sm hover:underline hover:text-primary"
+                        >
+                          {customer.name}
+                        </Link>
+                      ) : (
+                        <div className="font-semibold text-sm">
+                          {customer?.name || 'Customer'}
+                        </div>
+                      )}
                       <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate max-w-xs">
                         <MapPin className="h-3 w-3 shrink-0" />
                         <span className="truncate">{j.address}</span>
@@ -161,12 +210,7 @@ export default async function JobsListPage({ searchParams }: PageProps) {
                       <div className="text-xs text-muted-foreground line-clamp-1 max-w-xs">{j.issue}</div>
                     </TableCell>
                     <TableCell>
-                      {Array.isArray(technician) ? (
-                        <div className="flex items-center gap-1.5 text-xs font-medium">
-                          <User className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{technician[0]?.name}</span>
-                        </div>
-                      ) : technician?.name ? (
+                      {technician?.name ? (
                         <div className="flex items-center gap-1.5 text-xs font-medium">
                           <User className="h-3.5 w-3.5 text-muted-foreground" />
                           <span>{technician.name}</span>
@@ -181,17 +225,33 @@ export default async function JobsListPage({ searchParams }: PageProps) {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusBadge}`}>
-                        {j.status.replace('_', ' ')}
-                      </span>
+                      <div className="flex flex-col gap-1 items-start">
+                        <Badge variant="outline" className={`capitalize text-[10px] font-semibold ${statusBadge}`}>
+                          {j.status.replace('_', ' ')}
+                        </Badge>
+                        <SlaBadge
+                          status={j.status}
+                          scheduledEnd={sched?.end_at}
+                          completedAt={j.completed_at}
+                        />
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button asChild variant="ghost" size="sm" className="h-8 gap-1">
-                        <Link href={`/admin/jobs/${j.id}`}>
-                          <Eye className="h-3.5 w-3.5" />
-                          Detail
-                        </Link>
-                      </Button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        {j.status === 'completed' && (
+                          <Button asChild variant="outline" size="sm" className="h-8 px-2 text-xs gap-1">
+                            <Link href={`/admin/jobs/${j.id}/bap`} target="_blank">
+                              <Printer className="h-3.5 w-3.5" />
+                              BAP
+                            </Link>
+                          </Button>
+                        )}
+                        <Button asChild variant="outline" size="sm" className="h-8 w-8 p-0">
+                          <Link href={`/admin/jobs/${j.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )

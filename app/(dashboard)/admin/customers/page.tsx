@@ -1,9 +1,12 @@
+import Link from 'next/link'
 import { requireRole } from '@/lib/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { CreateCustomerDialog } from './create-customer-dialog'
+import { WhatsAppActionDialog } from '@/components/whatsapp/whatsapp-action-dialog'
 import { Card, CardDescription, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Building2, Phone, Mail, MapPin } from 'lucide-react'
+import { Building2, Phone, Mail, MapPin, Eye, Plus } from 'lucide-react'
 
 export default async function CustomersPage() {
   const profile = await requireRole('admin')
@@ -49,12 +52,20 @@ export default async function CustomersPage() {
                 <TableHead>Kontak</TableHead>
                 <TableHead>Alamat Servis</TableHead>
                 <TableHead className="w-[120px]">Terdaftar</TableHead>
+                <TableHead className="text-right w-[160px]">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {list.map((c) => (
                 <TableRow key={c.id}>
-                  <TableCell className="font-semibold">{c.name}</TableCell>
+                  <TableCell className="font-semibold">
+                    <Link
+                      href={`/admin/customers/${c.id}`}
+                      className="text-foreground hover:text-primary hover:underline flex items-center gap-1.5"
+                    >
+                      {c.name}
+                    </Link>
+                  </TableCell>
                   <TableCell>
                     <div className="text-xs space-y-1">
                       {c.phone && (
@@ -82,6 +93,35 @@ export default async function CustomersPage() {
                       month: 'short',
                       year: 'numeric',
                     })}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      {c.phone && (
+                        <WhatsAppActionDialog
+                          recipientType="customer"
+                          recipientName={c.name}
+                          recipientPhone={c.phone}
+                          templateData={{
+                            customerName: c.name,
+                            address: c.address,
+                          }}
+                          triggerButtonText=""
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 p-0"
+                        />
+                      )}
+                      <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Link href={`/admin/customers/${c.id}`} title="Lihat Detail & Riwayat Servis">
+                          <Eye className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0" title="Buat Job Baru">
+                        <Link href={`/admin/jobs/new?customerId=${c.id}`}>
+                          <Plus className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

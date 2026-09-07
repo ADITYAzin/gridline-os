@@ -1,12 +1,17 @@
-﻿import Link from 'next/link'
+import Link from 'next/link'
 import { requireRole } from '@/lib/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { CreateJobForm } from './create-job-form'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 
-export default async function NewJobPage() {
+interface PageProps {
+  searchParams: Promise<{ customerId?: string }>
+}
+
+export default async function NewJobPage({ searchParams }: PageProps) {
   const profile = await requireRole('admin')
+  const { customerId } = await searchParams
   const supabase = await createSupabaseServerClient()
 
   // Fetch customers and technicians in parallel
@@ -34,6 +39,7 @@ export default async function NewJobPage() {
       <CreateJobForm
         customers={customers || []}
         technicians={techs || []}
+        defaultCustomerId={customerId}
       />
     </div>
   )

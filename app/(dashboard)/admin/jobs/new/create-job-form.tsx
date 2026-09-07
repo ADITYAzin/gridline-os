@@ -31,13 +31,15 @@ interface TechOption {
 interface CreateJobFormProps {
   customers: CustomerOption[]
   technicians: TechOption[]
+  defaultCustomerId?: string
 }
 
 const initialState: JobActionState = {}
 
-export function CreateJobForm({ customers, technicians }: CreateJobFormProps) {
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
-  const [address, setAddress] = useState<string>('')
+export function CreateJobForm({ customers, technicians, defaultCustomerId }: CreateJobFormProps) {
+  const initialCustomer = defaultCustomerId ? customers.find((c) => c.id === defaultCustomerId) : undefined
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(defaultCustomerId || '')
+  const [address, setAddress] = useState<string>(initialCustomer?.address || '')
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium')
   const [technicianId, setTechnicianId] = useState<string>('')
 
