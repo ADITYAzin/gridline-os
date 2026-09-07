@@ -18,6 +18,8 @@
 | Fase 6 — Completion & evidence (foto/ttd/report) | ✅ SELESAI (Check-in GPS, SOP checklist, storage bukti, e-signature, 5-gate completion) |
 | Fase 7 — Dashboard/reporting, production hardening | ✅ SELESAI (Recharts executive dashboard, profile & monitoring, 100% build & lint clean) |
 | Fase 8 — E2E Verification & Demo Seeding | ✅ SELESAI (10 jobs, 5-gate trigger live tested, storage evidence, sample accounts) |
+| Fase 9 — Fitur Operasional v1.1 (BAP, WhatsApp, History, Export, SLA, Form Draft) | ✅ SELESAI (PDF BAP, wa.me actions, customer detail, CSV UTF-8, SLA badge, state auto-save) |
+| Fase 10 — Next Implementations (Realtime, PWA, Tech Performance, Email, Asset Tracking) | ⏳ SIAP DIKERJAKAN (Backlog Prioritas) |
 
 **Aturan emas:** tidak sekaligus besar — migrasi bertahap, direview per langkah;
 uji isolasi 2 tenant WAJIB sebelum bangun UI besar.
@@ -147,6 +149,37 @@ completion, penolakan/request-info bila perlu. Storage signed URL server-side.
 ### Fase 7 — Hardening & ops
 Dashboard/reporting (recharts), audit trail/cancellation log, observability,
 konfigurasi email produksi.
+
+### Fase 8 — E2E Verification & Demo Seeding (SELESAI)
+10 jobs simulasi seluruh siklus, verifikasi 5-gate completion trigger, storage foto
+evidence, dan testing akun multi-tenant.
+
+### Fase 9 — Fitur Operasional Lapangan v1.1 (SELESAI)
+1. **BAP PDF Generator**: Dokumen resmi Berita Acara Pekerjaan dengan layout cetak A4,
+   e-signature, foto before/after, checklist SOP, dan info unit.
+2. **WhatsApp Quick Dispatch & Customer Updates**: Modal komunikasi `wa.me` dengan
+   template pesan resmi (Jadwal, OTW/Menuju Lokasi, Selesai Servis, Disposisi Teknisi).
+3. **Riwayat Servis Pelanggan (Customer Service History)**: Halaman detail `/admin/customers/[id]`
+   dengan statistik pekerjaan, ringkasan kontak, dan riwayat servis komprehensif.
+4. **Ekspor Laporan Excel/CSV**: Ekspor rekapitulasi data pekerjaan ber-encoding UTF-8 BOM.
+5. **SLA Monitoring**: Indikator visual pintar (Overdue berkedip, Mendekati Batas, On-Time).
+6. **Robust UUID Regex & Form State Auto-Save**: Dukungan UUID PostgreSQL dan auto-save draft
+   `sessionStorage` agar progres input form tidak pernah hilang saat terjadi error/reload.
+
+### Fase 10 — Next Implementations (Backlog Prioritas Siap Dikerjakan)
+1. **Supabase Realtime di Dispatch Board & Job Monitoring (Prioritas 1)**
+   - WebSocket subscription (`supabase.channel`) pada tabel `jobs` dan `job_attendance`.
+   - Update live status pekerjaan seketika (saat teknisi check-in atau selesai) tanpa refresh.
+2. **PWA (Progressive Web App) untuk Teknisi Lapangan (Prioritas 2)**
+   - Konfigurasi `manifest.json`, app icon, splash screen, dan mode *standalone* mobile.
+   - Pengalaman installable native-like di smartphone teknisi Android & iOS.
+3. **Modul Performa & Komisi Teknisi (Prioritas 3)**
+   - Statistik produktivitas tim lapangan: rekap job bulanan, SLA on-time rate, durasi pengerjaan.
+   - Perhitungan estimasi bonus/komisi per pekerjaan servis.
+4. **Integrasi Transactional Email Provider (Resend / SendGrid) (Prioritas 4)**
+   - Otomasi pengiriman email undangan anggota tim (`/admin/technicians`) dan reset password.
+5. **Pelacakan Unit & Aset Pelanggan (Customer Asset / Equipment Tracking) (Prioritas 5)**
+   - Manajemen perangkat/mesin spesifik per customer (nomor seri, model, riwayat servis per unit).
 
 ---
 
