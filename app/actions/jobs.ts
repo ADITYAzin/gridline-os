@@ -6,14 +6,22 @@ import { z } from 'zod'
 import { requireRole } from '@/lib/auth'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 
+// Postgres accepts any 32-hex-digit UUID separated by hyphens (8-4-4-4-12 format),
+// including RFC 4122 v4 UUIDs and predictable demo seed UUIDs (e.g. 00000000-0000-0000-0000-000000000103).
+const POSTGRES_UUID_REGEX =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+
+const postgresUuid = (message: string) =>
+  z.string().regex(POSTGRES_UUID_REGEX, { message })
+
 const createJobSchema = z.object({
-  customerId: z.string().uuid('Customer wajib dipilih'),
+  customerId: postgresUuid('Customer wajib dipilih'),
   serviceType: z.string().min(2, 'Jenis layanan minimal 2 karakter'),
   issue: z.string().min(5, 'Deskripsi kendala minimal 5 karakter'),
   instructions: z.string().optional(),
   address: z.string().min(5, 'Alamat servis minimal 5 karakter'),
   priority: z.enum(['low', 'medium', 'high']),
-  technicianId: z.string().uuid().optional().or(z.literal('')),
+  technicianId: postgresUuid('Teknisi yang dipilih tidak valid').optional().or(z.literal('')),
   scheduleDate: z.string().optional().or(z.literal('')),
   startTime: z.string().optional().or(z.literal('')),
   endTime: z.string().optional().or(z.literal('')),
@@ -71,13 +79,13 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
   const profile = await requireRole('admin')
 
   const rawData = {
-    customerId: formData.get('customerId') as string,
+    customerId: (formData.get('customerId') as string)?.trim(),
     serviceType: formData.get('serviceType') as string,
     issue: formData.get('issue') as string,
     instructions: (formData.get('instructions') as string) || undefined,
     address: formData.get('address') as string,
     priority: formData.get('priority') as 'low' | 'medium' | 'high',
-    technicianId: (formData.get('technicianId') as string) || undefined,
+    technicianId: (formData.get('technicianId') as string)?.trim() || undefined,
     scheduleDate: (formData.get('scheduleDate') as string) || undefined,
     startTime: (formData.get('startTime') as string) || undefined,
     endTime: (formData.get('endTime') as string) || undefined,
