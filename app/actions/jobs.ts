@@ -31,6 +31,7 @@ export type JobActionState = {
   error?: string
   success?: boolean
   jobId?: string
+  fields?: Record<string, string>
 }
 
 const DEFAULT_SOP_TEMPLATES: Record<string, string[]> = {
@@ -91,9 +92,25 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
     endTime: (formData.get('endTime') as string) || undefined,
   }
 
+  const fieldValues: Record<string, string> = {
+    customerId: (formData.get('customerId') as string) || '',
+    serviceType: (formData.get('serviceType') as string) || '',
+    issue: (formData.get('issue') as string) || '',
+    instructions: (formData.get('instructions') as string) || '',
+    address: (formData.get('address') as string) || '',
+    priority: (formData.get('priority') as string) || 'medium',
+    technicianId: (formData.get('technicianId') as string) || '',
+    scheduleDate: (formData.get('scheduleDate') as string) || '',
+    startTime: (formData.get('startTime') as string) || '',
+    endTime: (formData.get('endTime') as string) || '',
+  }
+
   const parsed = createJobSchema.safeParse(rawData)
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message || 'Input data job tidak valid' }
+    return {
+      error: parsed.error.issues[0]?.message || 'Input data job tidak valid',
+      fields: fieldValues,
+    }
   }
 
   const admin = getSupabaseAdmin()
@@ -104,7 +121,10 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
   })
 
   if (seqError || !generatedNumber) {
-    return { error: 'Gagal menghasilkan nomor job unik: ' + (seqError?.message || '') }
+    return {
+      error: 'Gagal menghasilkan nomor job unik: ' + (seqError?.message || ''),
+      fields: fieldValues,
+    }
   }
 
   const hasAssignment = Boolean(parsed.data.technicianId && parsed.data.scheduleDate && parsed.data.startTime && parsed.data.endTime)
@@ -130,7 +150,10 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
     .single()
 
   if (jobError || !job) {
-    return { error: 'Gagal membuat job: ' + jobError.message }
+    return {
+      error: 'Gagal membuat job: ' + jobError.message,
+      fields: fieldValues,
+    }
   }
 
   // 3. Pre-populate SOP Checklist Items
@@ -162,9 +185,15 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
       if (schedError.message.includes('schedules_no_overlap') || schedError.code === '23P01') {
         // Rollback job
         await admin.from('jobs').delete().eq('id', job.id)
-        return { error: 'Bentrok Jadwal: Teknisi sudah memiliki pekerjaan lain pada rentang waktu ini.' }
+        return {
+          error: 'Bentrok Jadwal: Teknisi sudah memiliki pekerjaan lain pada rentang waktu ini.',
+          fields: fieldValues,
+        }
       }
-      return { error: 'Gagal menjadwalkan: ' + schedError.message }
+      return {
+        error: 'Gagal menjadwalkan: ' + schedError.message,
+        fields: fieldValues,
+      }
     }
   }
 

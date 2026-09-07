@@ -21,16 +21,28 @@ const initialState: CustomerActionState = {}
 
 export function CreateCustomerDialog() {
   const [open, setOpen] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+  })
+
   const [state, formAction, isPending] = useActionState(
-    async (prevState: CustomerActionState, formData: FormData) => {
-      const res = await createCustomerAction(prevState, formData)
+    async (prevState: CustomerActionState, fd: FormData) => {
+      const res = await createCustomerAction(prevState, fd)
       if (res.success) {
+        setFormData({ name: '', phone: '', email: '', address: '' })
         setOpen(false)
       }
       return res
     },
     initialState
   )
+
+  const updateField = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -56,17 +68,40 @@ export function CreateCustomerDialog() {
 
           <div className="space-y-1.5">
             <Label htmlFor="name">Nama Customer / Bisnis *</Label>
-            <Input id="name" name="name" required placeholder="PT Graha Pratama / Ibu Siti" disabled={isPending} />
+            <Input
+              id="name"
+              name="name"
+              required
+              value={formData.name}
+              onChange={(e) => updateField('name', e.target.value)}
+              placeholder="PT Graha Pratama / Ibu Siti"
+              disabled={isPending}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="phone">Nomor Telepon / WA</Label>
-              <Input id="phone" name="phone" placeholder="08123456789" disabled={isPending} />
+              <Input
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={(e) => updateField('phone', e.target.value)}
+                placeholder="08123456789"
+                disabled={isPending}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" placeholder="kontak@perusahaan.com" disabled={isPending} />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => updateField('email', e.target.value)}
+                placeholder="kontak@perusahaan.com"
+                disabled={isPending}
+              />
             </div>
           </div>
 
@@ -77,6 +112,8 @@ export function CreateCustomerDialog() {
               name="address"
               required
               rows={3}
+              value={formData.address}
+              onChange={(e) => updateField('address', e.target.value)}
               placeholder="Jl. Sudirman No. 45, Gedung A Lt. 3, Jakarta Selatan"
               disabled={isPending}
             />

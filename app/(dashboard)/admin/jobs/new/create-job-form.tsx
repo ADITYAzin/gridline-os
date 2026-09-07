@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Plus, AlertCircle, Calendar, Clock, UserCheck } from 'lucide-react'
+import { Loader2, Plus, AlertCircle, Calendar, Clock, UserCheck, RotateCcw, CheckCircle2 } from 'lucide-react'
 
 interface CustomerOption {
   id: string
@@ -34,23 +34,139 @@ interface CreateJobFormProps {
   defaultCustomerId?: string
 }
 
+interface FormFields {
+  customerId: string
+  serviceType: string
+  priority: 'low' | 'medium' | 'high'
+  issue: string
+  instructions: string
+  address: string
+  technicianId: string
+  scheduleDate: string
+  startTime: string
+  endTime: string
+}
+
+const DRAFT_STORAGE_KEY = 'gridline_new_job_draft_v1'
 const initialState: JobActionState = {}
 
 export function CreateJobForm({ customers, technicians, defaultCustomerId }: CreateJobFormProps) {
   const initialCustomer = defaultCustomerId ? customers.find((c) => c.id === defaultCustomerId) : undefined
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(defaultCustomerId || '')
-  const [address, setAddress] = useState<string>(initialCustomer?.address || '')
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium')
-  const [technicianId, setTechnicianId] = useState<string>('')
 
-  const [state, formAction, isPending] = useActionState(createJobAction, initialState)
+  const getBlankValues = (): FormFields => ({
+    customerId: defaultCustomerId || '',
+    serviceType: '',
+    priority: 'medium',
+    issue: '',
+    instructions: '',
+    address: initialCustomer?.address || '',
+    technicianId: '',
+    scheduleDate: '',
+    startTime: '09:00',
+    endTime: '11:00',
+  })
+
+  const [formValues, setFormValues] = useState<FormFields>(() => {
+    let savedData: Partial<FormFields> = {}
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem(DRAFT_STORAGE_KEY)
+        if (saved) {
+          savedData = JSON.parse(saved)
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    return {
+      customerId: defaultCustomerId || savedData.customerId || '',
+      serviceType: savedData.serviceType || '',
+      priority: (savedData.priority as 'low' | 'medium' | 'high') || 'medium',
+      issue: savedData.issue || '',
+      instructions: savedData.instructions || '',
+      address: (defaultCustomerId ? initialCustomer?.address : savedData.address) || initialCustomer?.address || '',
+      technicianId: savedData.technicianId || '',
+      scheduleDate: savedData.scheduleDate || '',
+      startTime: savedData.startTime || '09:00',
+      endTime: savedData.endTime || '11:00',
+    }
+  })
+
+  const [state, formAction, isPending] = useActionState(
+    async (prevState: JobActionState, formData: FormData) => {
+      const res = await createJobAction(prevState, formData)
+      if (res.error && res.fields) {
+        setFormValues((prev) => {
+          const updated: FormFields = {
+            ...prev,
+            customerId: res.fields?.customerId || prev.customerId,
+            serviceType: res.fields?.serviceType ?? prev.serviceType,
+            priority: (res.fields?.priority as 'low' | 'medium' | 'high') || prev.priority,
+            issue: res.fields?.issue ?? prev.issue,
+            instructions: res.fields?.instructions ?? prev.instructions,
+            address: res.fields?.address ?? prev.address,
+            technicianId: res.fields?.technicianId ?? prev.technicianId,
+            scheduleDate: res.fields?.scheduleDate ?? prev.scheduleDate,
+            startTime: res.fields?.startTime ?? prev.startTime,
+            endTime: res.fields?.endTime ?? prev.endTime,
+          }
+          try {
+            sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(updated))
+          } catch {
+            // ignore
+          }
+          return updated
+        })
+      } else if (res.success) {
+        try {
+          sessionStorage.removeItem(DRAFT_STORAGE_KEY)
+        } catch {
+          // ignore
+        }
+      }
+      return res
+    },
+    initialState
+  )
+
+  // Helper to update specific field and auto-save draft
+  const updateField = <K extends keyof FormFields>(key: K, value: FormFields[K]) => {
+    setFormValues((prev) => {
+      const updated = { ...prev, [key]: value }
+      try {
+        sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(updated))
+      } catch {
+        // Ignore storage errors
+      }
+      return updated
+    })
+  }
 
   const handleCustomerChange = (customerId: string) => {
-    setSelectedCustomerId(customerId)
     const found = customers.find((c) => c.id === customerId)
-    if (found) {
-      setAddress(found.address)
+    setFormValues((prev) => {
+      const updated: FormFields = {
+        ...prev,
+        customerId,
+        address: found ? found.address : prev.address,
+      }
+      try {
+        sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(updated))
+      } catch {
+        // Ignore storage errors
+      }
+      return updated
+    })
+  }
+
+  const handleResetForm = () => {
+    try {
+      sessionStorage.removeItem(DRAFT_STORAGE_KEY)
+    } catch {
+      // Ignore storage errors
     }
+    setFormValues(getBlankValues())
   }
 
   return (
@@ -59,17 +175,29 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
         {/* Left 2 Cols: Main Work Order Details */}
         <div className="md:col-span-2 space-y-6">
           <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg">Detail Pekerjaan (Work Order)</CardTitle>
-              <CardDescription>
-                Informasi utama kendala dan kebutuhan servis pelanggan.
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div>
+                <CardTitle className="text-lg">Detail Pekerjaan (Work Order)</CardTitle>
+                <CardDescription>
+                  Informasi utama kendala dan kebutuhan servis pelanggan.
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-md">
+                <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                <span>Draft tersimpan otomatis</span>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {state.error && (
                 <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3.5 flex items-start gap-2.5 text-sm font-medium text-destructive">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>{state.error}</span>
+                  <div className="space-y-1">
+                    <p className="font-semibold">Periksa Kembali Input Form:</p>
+                    <p className="text-xs font-normal leading-relaxed">{state.error}</p>
+                    <p className="text-[11px] text-muted-foreground pt-1">
+                      Data yang telah Anda isi tetap tersimpan di bawah dan tidak hilang.
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -80,8 +208,8 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
                     + Customer Baru
                   </Link>
                 </div>
-                <input type="hidden" name="customerId" value={selectedCustomerId} />
-                <Select value={selectedCustomerId} onValueChange={handleCustomerChange}>
+                <input type="hidden" name="customerId" value={formValues.customerId} />
+                <Select value={formValues.customerId} onValueChange={handleCustomerChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="-- Pilih Pelanggan --" />
                   </SelectTrigger>
@@ -102,6 +230,8 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
                     id="serviceType"
                     name="serviceType"
                     required
+                    value={formValues.serviceType}
+                    onChange={(e) => updateField('serviceType', e.target.value)}
                     placeholder="Contoh: Servis AC, Pasang CCTV, Perbaikan Panel"
                     disabled={isPending}
                   />
@@ -109,8 +239,11 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
 
                 <div className="space-y-1.5">
                   <Label htmlFor="priority">Prioritas *</Label>
-                  <input type="hidden" name="priority" value={priority} />
-                  <Select value={priority} onValueChange={(v) => setPriority(v as 'low' | 'medium' | 'high')}>
+                  <input type="hidden" name="priority" value={formValues.priority} />
+                  <Select
+                    value={formValues.priority}
+                    onValueChange={(v) => updateField('priority', v as 'low' | 'medium' | 'high')}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Prioritas" />
                     </SelectTrigger>
@@ -130,6 +263,8 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
                   name="issue"
                   required
                   rows={3}
+                  value={formValues.issue}
+                  onChange={(e) => updateField('issue', e.target.value)}
                   placeholder="AC tidak dingin dan mengeluarkan air menetes di ruang server..."
                   disabled={isPending}
                 />
@@ -141,6 +276,8 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
                   id="instructions"
                   name="instructions"
                   rows={2}
+                  value={formValues.instructions}
+                  onChange={(e) => updateField('instructions', e.target.value)}
                   placeholder="Temui security di lobi utama untuk minta kunci tangga..."
                   disabled={isPending}
                 />
@@ -153,8 +290,8 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
                   name="address"
                   required
                   rows={2}
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  value={formValues.address}
+                  onChange={(e) => updateField('address', e.target.value)}
                   placeholder="Alamat detail lokasi..."
                   disabled={isPending}
                 />
@@ -178,8 +315,11 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
             <CardContent className="space-y-4 text-sm">
               <div className="space-y-1.5">
                 <Label htmlFor="technicianId">Teknisi Bertugas</Label>
-                <input type="hidden" name="technicianId" value={technicianId} />
-                <Select value={technicianId} onValueChange={setTechnicianId}>
+                <input type="hidden" name="technicianId" value={formValues.technicianId} />
+                <Select
+                  value={formValues.technicianId}
+                  onValueChange={(val) => updateField('technicianId', val)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="-- Belum Ditugaskan --" />
                   </SelectTrigger>
@@ -193,7 +333,7 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
                 </Select>
               </div>
 
-              {technicianId && (
+              {formValues.technicianId && (
                 <>
                   <div className="space-y-1.5">
                     <Label htmlFor="scheduleDate" className="flex items-center gap-1.5">
@@ -203,7 +343,9 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
                       id="scheduleDate"
                       name="scheduleDate"
                       type="date"
-                      required={Boolean(technicianId)}
+                      value={formValues.scheduleDate}
+                      onChange={(e) => updateField('scheduleDate', e.target.value)}
+                      required={Boolean(formValues.technicianId)}
                       disabled={isPending}
                     />
                   </div>
@@ -217,8 +359,9 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
                         id="startTime"
                         name="startTime"
                         type="time"
-                        defaultValue="09:00"
-                        required={Boolean(technicianId)}
+                        value={formValues.startTime}
+                        onChange={(e) => updateField('startTime', e.target.value)}
+                        required={Boolean(formValues.technicianId)}
                         disabled={isPending}
                       />
                     </div>
@@ -230,8 +373,9 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
                         id="endTime"
                         name="endTime"
                         type="time"
-                        defaultValue="11:00"
-                        required={Boolean(technicianId)}
+                        value={formValues.endTime}
+                        onChange={(e) => updateField('endTime', e.target.value)}
+                        required={Boolean(formValues.technicianId)}
                         disabled={isPending}
                       />
                     </div>
@@ -253,9 +397,23 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
                   </>
                 )}
               </Button>
-              <Button asChild variant="ghost" size="sm" className="w-full">
-                <Link href="/admin/jobs">Batal</Link>
-              </Button>
+
+              <div className="flex items-center gap-2 w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetForm}
+                  disabled={isPending}
+                  className="flex-1 text-xs gap-1.5 text-muted-foreground"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Kosongkan Form
+                </Button>
+                <Button asChild variant="ghost" size="sm" className="flex-1 text-xs">
+                  <Link href="/admin/jobs">Batal</Link>
+                </Button>
+              </div>
             </CardFooter>
           </Card>
         </div>
