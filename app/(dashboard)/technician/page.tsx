@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { RealtimeJobsListener } from '@/components/realtime/realtime-jobs-listener'
+import { InstallPrompt } from '@/components/pwa/install-prompt'
 import { MapPin, CheckCircle2, ArrowRight } from 'lucide-react'
 
 export default async function TechnicianHomePage() {
@@ -30,6 +31,9 @@ export default async function TechnicianHomePage() {
         </div>
         <RealtimeJobsListener technicianId={profile.id} compact={true} />
       </div>
+
+      {/* PWA Mobile Add to Home Screen Banner */}
+      <InstallPrompt />
 
       {assignedJobs.length === 0 ? (
         <Card className="text-center p-8 space-y-3 border-dashed">

@@ -21,7 +21,9 @@
 | Fase 9 — Fitur Operasional v1.1 (BAP, WhatsApp, History, Export, SLA, Form Draft) | ✅ SELESAI (PDF BAP, wa.me actions, customer detail, CSV UTF-8, SLA badge, state auto-save) |
 | Fase 10.1 — Supabase Realtime (Dispatch & Monitoring) | ✅ SELESAI (Publikasi Postgres, live indicator, auto-sync, toast alert, filter) |
 | Fase 10.2 — Transactional Email Provider (Resend Integration) | ✅ SELESAI (Resend SDK, template HTML responsif, auto invite, resend token, forgot/reset password, dev sandbox) |
-| Fase 10.3+ — Backlog Prioritas Lanjutan (PWA, Tech Performance, Asset Tracking) | ⏳ SIAP DIKERJAKAN |
+| Fase 10.3 — PWA Mobile Teknisi Lapangan | ✅ SELESAI (Web App Manifest, standalone mode, dynamic icons, install banner prompt, offline detection, service worker) |
+| Fase 10.4+ — Backlog Prioritas Lanjutan (Tech Performance, Asset Tracking) | ⏳ SIAP DIKERJAKAN |
+
 
 
 
@@ -202,15 +204,27 @@ evidence, dan testing akun multi-tenant.
 - **Konfigurasi Environment**:
   - Disediakan variabel `RESEND_API_KEY`, `EMAIL_FROM="Gridline OS <noreply@sublims.id>"`, dan `NEXT_PUBLIC_APP_URL` pada [`.env.example`](file:///C:/Users/adity/Downloads/gridlineos/.env.example).
 
-#### 10.3 Backlog Prioritas Siap Dikerjakan Berikutnya
-1. **PWA (Progressive Web App) untuk Teknisi Lapangan (Prioritas 2)**
-   - Konfigurasi `manifest.json`, app icon, splash screen, dan mode *standalone* mobile.
-   - Pengalaman installable native-like di smartphone teknisi Android & iOS.
-2. **Modul Performa & Komisi Teknisi (Prioritas 3)**
+#### 10.3 PWA (Progressive Web App) untuk Teknisi Lapangan (✅ SELESAI)
+- **Web App Manifest & Metadata**:
+  - Konfigurasi [`app/manifest.ts`](file:///C:/Users/adity/Downloads/gridlineos/app/manifest.ts) rute statis `/manifest.webmanifest`.
+  - Mode tampilan `display: "standalone"`, `orientation: "portrait-primary"`, tema `#0f172a`.
+  - Shortcuts akses cepat ke *Tugas Lapangan* dan *Profil Saya*.
+- **Icon Suite Dinamis & Statis**:
+  - Dynamic App Icon route [`app/icon.tsx`](file:///C:/Users/adity/Downloads/gridlineos/app/icon.tsx) (192x192 via `@vercel/og` ImageResponse).
+  - Dynamic Apple Touch Icon route [`app/apple-icon.tsx`](file:///C:/Users/adity/Downloads/gridlineos/app/apple-icon.tsx) (180x180 via `@vercel/og`).
+  - Berkas icon statis `public/icons/` (`icon.svg`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`).
+- **Komponen Instalasi & Pengalaman Lapangan**:
+  - Banner installer pintar [`InstallPrompt`](file:///C:/Users/adity/Downloads/gridlineos/components/pwa/install-prompt.tsx) dengan deteksi browser Android (`beforeinstallprompt`) dan instruksi Safari iOS.
+  - Bar pemantau koneksi internet [`OfflineIndicator`](file:///C:/Users/adity/Downloads/gridlineos/components/pwa/offline-indicator.tsx) berbasis `useSyncExternalStore` (React 19).
+  - Service worker [`public/sw.js`](file:///C:/Users/adity/Downloads/gridlineos/public/sw.js) dan pendaftaran [`sw-register.tsx`](file:///C:/Users/adity/Downloads/gridlineos/components/pwa/sw-register.tsx).
+
+#### 10.4 Backlog Prioritas Siap Dikerjakan Berikutnya
+1. **Modul Performa & Komisi Teknisi (Prioritas 3)**
    - Statistik produktivitas tim lapangan: rekap job bulanan, SLA on-time rate, durasi pengerjaan.
    - Perhitungan estimasi bonus/komisi per pekerjaan servis.
-3. **Pelacakan Unit & Aset Pelanggan (Customer Asset / Equipment Tracking) (Prioritas 5)**
+2. **Pelacakan Unit & Aset Pelanggan (Customer Asset / Equipment Tracking) (Prioritas 5)**
    - Manajemen perangkat/mesin spesifik per customer (nomor seri, model, riwayat servis per unit).
+
 
 
 
