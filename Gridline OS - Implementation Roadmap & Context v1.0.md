@@ -22,7 +22,9 @@
 | Fase 10.1 — Supabase Realtime (Dispatch & Monitoring) | ✅ SELESAI (Publikasi Postgres, live indicator, auto-sync, toast alert, filter) |
 | Fase 10.2 — Transactional Email Provider (Resend Integration) | ✅ SELESAI (Resend SDK, template HTML responsif, auto invite, resend token, forgot/reset password, dev sandbox) |
 | Fase 10.3 — PWA Mobile Teknisi Lapangan | ✅ SELESAI (Web App Manifest, standalone mode, dynamic icons, install banner prompt, offline detection, service worker) |
-| Fase 10.4+ — Backlog Prioritas Lanjutan (Tech Performance, Asset Tracking) | ⏳ SIAP DIKERJAKAN |
+| Fase 10.4 — Modul Performa & Komisi Teknisi | ✅ SELESAI (Leaderboard, KPI on-time rate, durasi lapangan, skema komisi & bonus SLA, modal rincian per tiket, kartu teknisi) |
+| Fase 10.5+ — Backlog Prioritas Lanjutan (Asset Tracking) | ⏳ SIAP DIKERJAKAN |
+
 
 
 
@@ -218,12 +220,30 @@ evidence, dan testing akun multi-tenant.
   - Bar pemantau koneksi internet [`OfflineIndicator`](file:///C:/Users/adity/Downloads/gridlineos/components/pwa/offline-indicator.tsx) berbasis `useSyncExternalStore` (React 19).
   - Service worker [`public/sw.js`](file:///C:/Users/adity/Downloads/gridlineos/public/sw.js) dan pendaftaran [`sw-register.tsx`](file:///C:/Users/adity/Downloads/gridlineos/components/pwa/sw-register.tsx).
 
-#### 10.4 Backlog Prioritas Siap Dikerjakan Berikutnya
-1. **Modul Performa & Komisi Teknisi (Prioritas 3)**
-   - Statistik produktivitas tim lapangan: rekap job bulanan, SLA on-time rate, durasi pengerjaan.
-   - Perhitungan estimasi bonus/komisi per pekerjaan servis.
-2. **Pelacakan Unit & Aset Pelanggan (Customer Asset / Equipment Tracking) (Prioritas 5)**
+#### 10.4 Modul Performa & Komisi Teknisi (✅ SELESAI)
+- **Mesin Kalkulasi & Utility Insentif**:
+  - Modul [`lib/commission.ts`](file:///C:/Users/adity/Downloads/gridlineos/lib/commission.ts):
+    - Skema komisi dasar per service type (Maintenance, Perbaikan, Instalasi, Survey).
+    - Ekstra bonus SLA On-Time bagi pekerjaan yang selesai sebelum/pada batas waktu jadwal.
+    - Kalkulasi durasi kerja nyata (selisih check-in GPS ke 5-gate completion).
+    - Agregator statistik seluruh teknisi (`calculateAllTechniciansMetrics`).
+- **Antarmuka Tab Admin Console (`/admin/technicians`)**:
+  - **Tab 1: Tim & Akses**: Manajemen daftar anggota tim dan pemantauan token undangan tertunda dengan tombol kirim ulang.
+  - **Tab 2: Performa & SLA ([`technician-performance-tab.tsx`](file:///C:/Users/adity/Downloads/gridlineos/components/team/technician-performance-tab.tsx))**:
+    - Kartu KPI: Total Job Selesai, Rata-rata SLA On-Time, Teknisi Teraktif, Total Teknisi.
+    - Leaderboard peringkat tim lapangan (medali 🥇 🥈 🥉).
+    - Tabel performa detail dengan progress bar ketepatan SLA dan rata-rata durasi kerja.
+  - **Tab 3: Rekap Komisi ([`technician-commission-tab.tsx`](file:///C:/Users/adity/Downloads/gridlineos/components/team/technician-commission-tab.tsx))**:
+    - Akumulasi total komisi berhak cair tim dalam format Rupiah.
+    - Rincian komisi dasar vs bonus SLA per teknisi.
+    - Modal dialog breakdown per tiket ([`technician-commission-dialog.tsx`](file:///C:/Users/adity/Downloads/gridlineos/components/team/technician-commission-dialog.tsx)) menampilkan riwayat job tuntas dan insentif yang diperoleh.
+- **Kartu Pencapaian Mandiri di HP Teknisi**:
+  - Beranda teknisi ([`app/(dashboard)/technician/page.tsx`](file:///C:/Users/adity/Downloads/gridlineos/app/%28dashboard%29/technician/page.tsx)) menampilkan ringkasan pencapaian personal (jumlah job tuntas & akumulasi estimasi insentif terverifikasi).
+
+#### 10.5 Backlog Prioritas Siap Dikerjakan Berikutnya
+1. **Pelacakan Unit & Aset Pelanggan (Customer Asset / Equipment Tracking) (Prioritas 5)**
    - Manajemen perangkat/mesin spesifik per customer (nomor seri, model, riwayat servis per unit).
+
 
 
 

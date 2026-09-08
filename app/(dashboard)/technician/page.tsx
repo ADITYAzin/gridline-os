@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { RealtimeJobsListener } from '@/components/realtime/realtime-jobs-listener'
 import { InstallPrompt } from '@/components/pwa/install-prompt'
-import { MapPin, CheckCircle2, ArrowRight } from 'lucide-react'
+import { calculateJobCommission, formatRupiah } from '@/lib/commission'
+import { MapPin, CheckCircle2, ArrowRight, Coins } from 'lucide-react'
 
 export default async function TechnicianHomePage() {
   const profile = await requireRole('technician')
@@ -14,11 +15,25 @@ export default async function TechnicianHomePage() {
   // Fetch jobs assigned to this technician
   const { data: jobs } = await supabase
     .from('jobs')
-    .select('id, job_number, service_type, issue, address, priority, status, created_at')
+    .select('id, job_number, service_type, issue, address, priority, status, created_at, completed_at')
     .eq('technician_id', profile.id)
     .order('created_at', { ascending: false })
 
   const assignedJobs = jobs || []
+  const completedJobs = assignedJobs.filter((j) => j.status === 'completed')
+
+  let totalTechCommission = 0
+  completedJobs.forEach((j) => {
+    const item = calculateJobCommission({
+      id: j.id,
+      job_number: j.job_number,
+      service_type: j.service_type,
+      status: j.status,
+      created_at: j.created_at,
+      completed_at: j.completed_at,
+    })
+    totalTechCommission += item.totalCommission
+  })
 
   return (
     <div className="space-y-4">
@@ -34,6 +49,27 @@ export default async function TechnicianHomePage() {
 
       {/* PWA Mobile Add to Home Screen Banner */}
       <InstallPrompt />
+
+      {/* Personal Achievement & Commission Summary */}
+      {completedJobs.length > 0 && (
+        <Card className="border-primary/20 bg-primary/5 shadow-xs">
+          <CardContent className="p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Coins className="h-4 w-4" />
+              </div>
+              <div>
+                <span className="text-xs font-bold block">{completedJobs.length} Pekerjaan Selesai</span>
+                <span className="text-[11px] text-muted-foreground">Akumulasi Insentif Servis</span>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-xs font-extrabold text-primary block">{formatRupiah(totalTechCommission)}</span>
+              <span className="text-[10px] text-emerald-600 font-semibold">Telah Terverifikasi</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {assignedJobs.length === 0 ? (
         <Card className="text-center p-8 space-y-3 border-dashed">
