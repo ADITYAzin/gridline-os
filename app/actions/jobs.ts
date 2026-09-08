@@ -16,6 +16,7 @@ const postgresUuid = (message: string) =>
 
 const createJobSchema = z.object({
   customerId: postgresUuid('Customer wajib dipilih'),
+  assetId: postgresUuid('Aset/mesin tidak valid').optional().or(z.literal('')),
   serviceType: z.string().min(2, 'Jenis layanan minimal 2 karakter'),
   issue: z.string().min(5, 'Deskripsi kendala minimal 5 karakter'),
   instructions: z.string().optional(),
@@ -81,6 +82,7 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
 
   const rawData = {
     customerId: (formData.get('customerId') as string)?.trim(),
+    assetId: (formData.get('assetId') as string)?.trim() || undefined,
     serviceType: formData.get('serviceType') as string,
     issue: formData.get('issue') as string,
     instructions: (formData.get('instructions') as string) || undefined,
@@ -94,6 +96,7 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
 
   const fieldValues: Record<string, string> = {
     customerId: (formData.get('customerId') as string) || '',
+    assetId: (formData.get('assetId') as string) || '',
     serviceType: (formData.get('serviceType') as string) || '',
     issue: (formData.get('issue') as string) || '',
     instructions: (formData.get('instructions') as string) || '',
@@ -137,6 +140,7 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
       org_id: profile.orgId,
       job_number: generatedNumber,
       customer_id: parsed.data.customerId,
+      asset_id: parsed.data.assetId || null,
       created_by: profile.id,
       service_type: parsed.data.serviceType.trim(),
       issue: parsed.data.issue.trim(),

@@ -20,7 +20,9 @@ import {
   Phone,
   Printer,
   ShieldAlert,
+  ShieldCheck,
   UserCheck,
+  Wrench,
 } from 'lucide-react'
 import { WhatsAppActionDialog } from '@/components/whatsapp/whatsapp-action-dialog'
 import { SlaBadge } from '@/components/jobs/sla-badge'
@@ -52,6 +54,7 @@ export default async function JobDetailPage({ params }: PageProps) {
       cancelled_at,
       cancellation_reason,
       customers(id, name, phone, email, address),
+      customer_assets(id, asset_name, brand, model_number, serial_number, location_tag, warranty_expires_at, status),
       profiles!jobs_technician_id_fkey(id, name, phone, email)
     `)
     .eq('id', id)
@@ -81,6 +84,17 @@ export default async function JobDetailPage({ params }: PageProps) {
 
   const customer = job.customers as unknown as { id: string; name: string; phone: string | null; email: string | null; address: string | null } | null
   const assignedTech = job.profiles as unknown as { id: string; name: string; phone: string | null; email: string | null } | null
+  type AssetType = {
+    id: string
+    asset_name: string
+    brand: string
+    model_number: string | null
+    serial_number: string | null
+    location_tag: string | null
+    warranty_expires_at: string | null
+    status: string
+  } | null
+  const asset = (Array.isArray(job.customer_assets) ? job.customer_assets[0] : job.customer_assets) as AssetType
   const isLocked = job.status === 'completed' || job.status === 'cancelled'
 
   const scheduleDateStr = schedule?.start_at
@@ -183,6 +197,53 @@ export default async function JobDetailPage({ params }: PageProps) {
                 </span>
                 <span className="font-semibold text-base">{job.service_type}</span>
               </div>
+
+              {asset && (
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <Wrench className="h-3.5 w-3.5 text-primary" />
+                      Unit Mesin / Aset Pelanggan
+                    </span>
+                    <Badge variant="outline" className="text-[10px] capitalize">
+                      {asset.status.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">Peralatan</span>
+                      <span className="font-semibold text-foreground">{asset.asset_name}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">Merk & Model</span>
+                      <span className="font-medium text-foreground">
+                        {asset.brand} {asset.model_number ? `(${asset.model_number})` : ''}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">Serial Number</span>
+                      <span className="font-mono text-foreground">{asset.serial_number || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">Lokasi Unit</span>
+                      <span className="text-foreground">{asset.location_tag || '-'}</span>
+                    </div>
+                  </div>
+                  {asset.warranty_expires_at && (
+                    <div className="pt-1.5 border-t flex items-center gap-1.5 text-[11px]">
+                      {new Date(asset.warranty_expires_at) >= new Date() ? (
+                        <span className="text-emerald-600 flex items-center gap-1 font-medium">
+                          <ShieldCheck className="h-3.5 w-3.5" /> Garansi Aktif s/d {new Date(asset.warranty_expires_at).toLocaleDateString('id-ID')}
+                        </span>
+                      ) : (
+                        <span className="text-rose-600 flex items-center gap-1">
+                          <ShieldAlert className="h-3.5 w-3.5" /> Garansi Habis ({new Date(asset.warranty_expires_at).toLocaleDateString('id-ID')})
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">

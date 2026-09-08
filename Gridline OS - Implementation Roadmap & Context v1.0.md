@@ -240,9 +240,28 @@ evidence, dan testing akun multi-tenant.
 - **Kartu Pencapaian Mandiri di HP Teknisi**:
   - Beranda teknisi ([`app/(dashboard)/technician/page.tsx`](file:///C:/Users/adity/Downloads/gridlineos/app/%28dashboard%29/technician/page.tsx)) menampilkan ringkasan pencapaian personal (jumlah job tuntas & akumulasi estimasi insentif terverifikasi).
 
-#### 10.5 Backlog Prioritas Siap Dikerjakan Berikutnya
-1. **Pelacakan Unit & Aset Pelanggan (Customer Asset / Equipment Tracking) (Prioritas 5)**
-   - Manajemen perangkat/mesin spesifik per customer (nomor seri, model, riwayat servis per unit).
+#### 10.5 Pelacakan Unit & Aset Pelanggan (Customer Asset / Equipment Tracking) (✅ SELESAI)
+- **Fondasi Skema Database & Realtime Supabase**:
+  - Tabel `public.customer_assets` dengan kolom: `id`, `org_id`, `customer_id`, `asset_name`, `brand`, `model_number`, `serial_number`, `location_tag`, `installation_date`, `warranty_expires_at`, `status` (`operational`, `needs_service`, `broken`, `decommissioned`), `notes`, `created_at`, `updated_at`.
+  - Foreign key relasi `public.jobs.asset_id` (nullable) mengacu ke `customer_assets(id)` dengan `ON DELETE SET NULL`.
+  - Indeks performa: `idx_customer_assets_org_id`, `idx_customer_assets_customer_id`, `idx_customer_assets_status`, `idx_jobs_asset_id`.
+  - Row Level Security (RLS) multi-tenant policies: `assets_admin_all`, `assets_staff_select`, `assets_technician_select`.
+  - Realtime publication `supabase_realtime` + `REPLICA IDENTITY FULL`.
+  - Migrasi lokal terdokumentasi di [`supabase/migrations/20260908202000_customer_assets.sql`](file:///C:/Users/adity/Downloads/gridlineos/supabase/migrations/20260908202000_customer_assets.sql) dan live diaplikasikan via Supabase API.
+- **Server Actions & Validasi Zod**:
+  - Berkas [`app/actions/assets.ts`](file:///C:/Users/adity/Downloads/gridlineos/app/actions/assets.ts) (`createCustomerAssetAction`, `updateCustomerAssetAction`, `getCustomerAssets`) dengan otorisasi ketat berbasis `requireUser`/`requireRole`.
+  - Berkas [`app/actions/jobs.ts`](file:///C:/Users/adity/Downloads/gridlineos/app/actions/jobs.ts) diperbarui untuk menerima dan memproses `assetId` opsional pada `createJobAction`.
+- **Antarmuka Tab Aset Pelanggan**:
+  - Halaman profil klien ([`app/(dashboard)/admin/customers/[id]/page.tsx`](file:///C:/Users/adity/Downloads/gridlineos/app/%28dashboard%29/admin/customers/%5Bid%5D/page.tsx)) dilengkapi kartu KPI unit terdaftar dan tabulasi ganda:
+    - **Tab 1: Unit Mesin / Aset ([`customer-assets-tab.tsx`](file:///C:/Users/adity/Downloads/gridlineos/components/customers/customer-assets-tab.tsx))**: Menampilkan tabel mesin terpasang, nomor model, serial number, status garansi aktif/expired, status operasional, serta tombol shortcut *Servis* dan *Edit*.
+    - **Tab 2: Riwayat Servis**: Log penugasan dan perbaikan khusus untuk pelanggan tersebut.
+  - Dialog registrasi & pembaruan unit peralatan ([`asset-dialog.tsx`](file:///C:/Users/adity/Downloads/gridlineos/components/customers/asset-dialog.tsx)).
+- **Integrasi Tiket Servis & Work Order**:
+  - Form buat job baru ([`create-job-form.tsx`](file:///C:/Users/adity/Downloads/gridlineos/app/%28dashboard%29/admin/jobs/new/create-job-form.tsx)) otomatis memfilter unit mesin berdasarkan customer yang dipilih dan menampilkan ringkasan spesifikasi unit (Merk, Model, S/N, Lokasi).
+  - Admin Job Detail ([`app/(dashboard)/admin/jobs/[id]/page.tsx`](file:///C:/Users/adity/Downloads/gridlineos/app/%28dashboard%29/admin/jobs/%5Bid%5D/page.tsx)) menampilkan kartu detail unit mesin & indikator masa garansi.
+  - Mobile Job View Teknisi ([`app/(dashboard)/technician/jobs/[id]/page.tsx`](file:///C:/Users/adity/Downloads/gridlineos/app/%28dashboard%29/technician/jobs/%5Bid%5D/page.tsx)) menampilkan banner target mesin lengkap dengan model, nomor seri, lokasi ruangan, dan catatan khusus teknisi.
+- **Berita Acara Penyelesaian Pekerjaan (BAP PDF)**:
+  - Generator BAP ([`bap-document.tsx`](file:///C:/Users/adity/Downloads/gridlineos/components/bap/bap-document.tsx), [`admin/jobs/[id]/bap`](file:///C:/Users/adity/Downloads/gridlineos/app/%28dashboard%29/admin/jobs/%5Bid%5D/bap/page.tsx), [`technician/jobs/[id]/bap`](file:///C:/Users/adity/Downloads/gridlineos/app/%28dashboard%29/technician/jobs/%5Bid%5D/bap/page.tsx)) menyertakan spesifikasi mesin, brand, model, dan nomor seri unit yang diservis dalam lembar dokumen formal.
 
 
 

@@ -26,6 +26,14 @@ export interface BapDocumentProps {
     email: string | null
     address: string | null
   } | null
+  asset?: {
+    id: string
+    asset_name: string
+    brand: string
+    model_number: string | null
+    serial_number: string | null
+    location_tag: string | null
+  } | null
   technician: {
     name: string
     phone: string | null
@@ -72,6 +80,7 @@ export function BapDocument({
   organization,
   job,
   customer,
+  asset,
   technician,
   attendance,
   checklist,
@@ -171,6 +180,27 @@ export function BapDocument({
             <div className="grid grid-cols-3 gap-1">
               <span className="text-slate-500">Jenis Layanan</span>
               <span className="col-span-2 font-semibold text-slate-900">{job.service_type}</span>
+
+              {asset && (
+                <>
+                  <span className="text-slate-500">Unit Mesin / Aset</span>
+                  <span className="col-span-2 font-semibold text-slate-900">
+                    [{asset.brand}] {asset.asset_name}
+                  </span>
+
+                  <span className="text-slate-500">Model & S/N</span>
+                  <span className="col-span-2 text-slate-800 font-mono text-[11px]">
+                    {asset.model_number || '-'} / SN: {asset.serial_number || '-'}
+                  </span>
+
+                  {asset.location_tag && (
+                    <>
+                      <span className="text-slate-500">Lokasi Unit</span>
+                      <span className="col-span-2 text-slate-800">{asset.location_tag}</span>
+                    </>
+                  )}
+                </>
+              )}
 
               <span className="text-slate-500">Prioritas</span>
               <span className="col-span-2 capitalize font-semibold text-slate-900">{job.priority}</span>

@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -55,6 +55,72 @@ export type Database = {
           },
           {
             foreignKeyName: "checklist_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_assets: {
+        Row: {
+          asset_name: string
+          brand: string
+          created_at: string
+          customer_id: string
+          id: string
+          installation_date: string | null
+          location_tag: string | null
+          model_number: string | null
+          notes: string | null
+          org_id: string
+          serial_number: string | null
+          status: string
+          updated_at: string
+          warranty_expires_at: string | null
+        }
+        Insert: {
+          asset_name: string
+          brand: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          installation_date?: string | null
+          location_tag?: string | null
+          model_number?: string | null
+          notes?: string | null
+          org_id: string
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
+          warranty_expires_at?: string | null
+        }
+        Update: {
+          asset_name?: string
+          brand?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          installation_date?: string | null
+          location_tag?: string | null
+          model_number?: string | null
+          notes?: string | null
+          org_id?: string
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
+          warranty_expires_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_assets_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_assets_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -291,6 +357,7 @@ export type Database = {
       jobs: {
         Row: {
           address: string
+          asset_id: string | null
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
@@ -313,6 +380,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          asset_id?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -335,6 +403,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          asset_id?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -356,6 +425,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "jobs_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "customer_assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "jobs_cancelled_by_fkey"
             columns: ["cancelled_by"]
@@ -806,4 +882,3 @@ export const Constants = {
     },
   },
 } as const
-

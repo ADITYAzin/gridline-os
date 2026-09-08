@@ -31,6 +31,7 @@ export default async function AdminJobBapPage({ params }: PageProps) {
       created_at,
       completed_at,
       customers(id, name, phone, email, address),
+      customer_assets(id, asset_name, brand, model_number, serial_number, location_tag),
       profiles!jobs_technician_id_fkey(id, name, phone, email)
     `)
     .eq('id', id)
@@ -109,11 +110,23 @@ export default async function AdminJobBapPage({ params }: PageProps) {
     email: string | null
   } | null
 
+  type AssetType = {
+    id: string
+    asset_name: string
+    brand: string
+    model_number: string | null
+    serial_number: string | null
+    location_tag: string | null
+  } | null
+
+  const asset = (Array.isArray(job.customer_assets) ? job.customer_assets[0] : job.customer_assets) as AssetType
+
   return (
     <BapDocument
       organization={{ id: profile.orgId, name: org?.name || 'Gridline OS Partner' }}
       job={job}
       customer={customer}
+      asset={asset}
       technician={technician}
       attendance={attendance}
       checklist={checklist || []}

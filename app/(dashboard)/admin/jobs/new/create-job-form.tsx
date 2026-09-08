@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Plus, AlertCircle, Calendar, Clock, UserCheck, RotateCcw, CheckCircle2 } from 'lucide-react'
+import { Loader2, Plus, AlertCircle, Calendar, Clock, UserCheck, RotateCcw, CheckCircle2, Wrench } from 'lucide-react'
 
 interface CustomerOption {
   id: string
@@ -28,14 +28,27 @@ interface TechOption {
   name: string
 }
 
+export interface AssetOption {
+  id: string
+  customerId: string
+  assetName: string
+  brand: string
+  modelNumber: string | null
+  serialNumber: string | null
+  locationTag: string | null
+}
+
 interface CreateJobFormProps {
   customers: CustomerOption[]
   technicians: TechOption[]
+  assets?: AssetOption[]
   defaultCustomerId?: string
+  defaultAssetId?: string
 }
 
 interface FormFields {
   customerId: string
+  assetId: string
   serviceType: string
   priority: 'low' | 'medium' | 'high'
   issue: string
@@ -50,11 +63,18 @@ interface FormFields {
 const DRAFT_STORAGE_KEY = 'gridline_new_job_draft_v1'
 const initialState: JobActionState = {}
 
-export function CreateJobForm({ customers, technicians, defaultCustomerId }: CreateJobFormProps) {
+export function CreateJobForm({
+  customers,
+  technicians,
+  assets = [],
+  defaultCustomerId,
+  defaultAssetId,
+}: CreateJobFormProps) {
   const initialCustomer = defaultCustomerId ? customers.find((c) => c.id === defaultCustomerId) : undefined
 
   const getBlankValues = (): FormFields => ({
     customerId: defaultCustomerId || '',
+    assetId: defaultAssetId || '',
     serviceType: '',
     priority: 'medium',
     issue: '',
@@ -81,6 +101,7 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
 
     return {
       customerId: defaultCustomerId || savedData.customerId || '',
+      assetId: defaultAssetId || savedData.assetId || '',
       serviceType: savedData.serviceType || '',
       priority: (savedData.priority as 'low' | 'medium' | 'high') || 'medium',
       issue: savedData.issue || '',
@@ -101,6 +122,7 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
           const updated: FormFields = {
             ...prev,
             customerId: res.fields?.customerId || prev.customerId,
+            assetId: res.fields?.assetId ?? prev.assetId,
             serviceType: res.fields?.serviceType ?? prev.serviceType,
             priority: (res.fields?.priority as 'low' | 'medium' | 'high') || prev.priority,
             issue: res.fields?.issue ?? prev.issue,
@@ -145,10 +167,14 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
 
   const handleCustomerChange = (customerId: string) => {
     const found = customers.find((c) => c.id === customerId)
+    const isAssetStillValid = assets.some(
+      (a) => a.id === formValues.assetId && a.customerId === customerId
+    )
     setFormValues((prev) => {
       const updated: FormFields = {
         ...prev,
         customerId,
+        assetId: isAssetStillValid ? prev.assetId : '',
         address: found ? found.address : prev.address,
       }
       try {
@@ -168,6 +194,9 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
     }
     setFormValues(getBlankValues())
   }
+
+  const availableAssets = assets.filter((a) => a.customerId === formValues.customerId)
+  const selectedAsset = assets.find((a) => a.id === formValues.assetId)
 
   return (
     <form action={formAction}>
@@ -221,6 +250,72 @@ export function CreateJobForm({ customers, technicians, defaultCustomerId }: Cre
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Pilihan Unit Mesin / Aset Pelanggan */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="assetId" className="flex items-center gap-1.5">
+                    <Wrench className="h-3.5 w-3.5 text-primary" />
+                    Unit Mesin / Aset Pelanggan (Equipment Asset)
+                  </Label>
+                  {formValues.customerId && (
+                    <Link
+                      href={`/admin/customers/${formValues.customerId}`}
+                      target="_blank"
+                      className="text-xs text-primary hover:underline font-medium"
+                    >
+                      + Tambah Unit Baru
+                    </Link>
+                  )}
+                </div>
+                <input type="hidden" name="assetId" value={formValues.assetId} />
+                <Select
+                  value={formValues.assetId || 'none'}
+                  onValueChange={(val) => updateField('assetId', val === 'none' ? '' : val)}
+                  disabled={!formValues.customerId}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        !formValues.customerId
+                          ? 'Pilih pelanggan terlebih dahulu'
+                          : availableAssets.length === 0
+                          ? 'Belum ada unit terdaftar (Pekerjaan umum)'
+                          : '-- Pilih Unit Mesin / Aset --'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">-- Tanpa Unit Khusus / Servis Umum --</SelectItem>
+                    {availableAssets.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        [{a.brand}] {a.assetName} {a.modelNumber ? `(${a.modelNumber})` : ''} {a.locationTag ? `- ${a.locationTag}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {selectedAsset && (
+                  <div className="rounded-md border bg-muted/30 p-2.5 text-xs text-muted-foreground grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground uppercase font-semibold">Merk:</span>
+                      <div className="text-foreground font-medium">{selectedAsset.brand}</div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground uppercase font-semibold">Model:</span>
+                      <div className="text-foreground font-medium font-mono">{selectedAsset.modelNumber || '-'}</div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground uppercase font-semibold">Serial No:</span>
+                      <div className="text-foreground font-medium font-mono">{selectedAsset.serialNumber || '-'}</div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground uppercase font-semibold">Lokasi:</span>
+                      <div className="text-foreground font-medium">{selectedAsset.locationTag || '-'}</div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -10,7 +10,7 @@ import { WorkReportForm } from './work-report-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, MapPin, Phone, AlertCircle, Printer } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, AlertCircle, Printer, Wrench } from 'lucide-react'
 import { WhatsAppActionDialog } from '@/components/whatsapp/whatsapp-action-dialog'
 
 interface PageProps {
@@ -35,7 +35,8 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
       priority,
       status,
       technician_id,
-      customers(name, phone)
+      customers(name, phone),
+      customer_assets(id, asset_name, brand, model_number, serial_number, location_tag, notes)
     `)
     .eq('id', id)
     .eq('org_id', profile.orgId)
@@ -62,6 +63,16 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
   ])
 
   const customer = job.customers as unknown as { name: string; phone: string | null } | null
+  type AssetType = {
+    id: string
+    asset_name: string
+    brand: string
+    model_number: string | null
+    serial_number: string | null
+    location_tag: string | null
+    notes: string | null
+  } | null
+  const asset = (Array.isArray(job.customer_assets) ? job.customer_assets[0] : job.customer_assets) as AssetType
   const isLocked = job.status === 'completed' || job.status === 'cancelled'
 
   return (
@@ -142,6 +153,32 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
             <MapPin className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
             <span>{job.address}</span>
           </div>
+
+          {asset && (
+            <div className="rounded-md border bg-primary/5 border-primary/20 p-2.5 space-y-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                  <Wrench className="h-3.5 w-3.5 text-primary" />
+                  Target Mesin / Unit: {asset.asset_name}
+                </span>
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                  {asset.brand}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 text-[11px] text-muted-foreground">
+                <div>Model: <span className="font-mono text-foreground">{asset.model_number || '-'}</span></div>
+                <div>S/N: <span className="font-mono text-foreground">{asset.serial_number || '-'}</span></div>
+                {asset.location_tag && (
+                  <div className="col-span-2">Lokasi: <span className="text-foreground">{asset.location_tag}</span></div>
+                )}
+              </div>
+              {asset.notes && (
+                <p className="text-[10px] text-muted-foreground italic border-t pt-1 mt-1">
+                  Catatan unit: {asset.notes}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="rounded-md bg-muted/50 p-2.5 space-y-1">
             <span className="font-semibold text-foreground block">Keluhan Pelanggan:</span>
