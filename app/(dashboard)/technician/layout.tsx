@@ -1,7 +1,7 @@
-﻿import Link from 'next/link'
 import { requireRole } from '@/lib/auth'
 import { SignOutButton } from '@/components/navigation/sign-out-button'
-import { Briefcase, User, Wrench } from 'lucide-react'
+import { TechnicianBottomNav } from '@/components/technician/bottom-nav'
+import { Wrench } from 'lucide-react'
 
 export default async function TechnicianLayout({
   children,
@@ -11,45 +11,32 @@ export default async function TechnicianLayout({
   const profile = await requireRole('technician')
 
   return (
-    <div className="flex flex-col min-h-screen bg-muted/20 pb-16 md:pb-0">
+    <div className="flex flex-col min-h-screen bg-[#F8FAFC] pb-20">
       {/* Top Header */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-card/80 backdrop-blur px-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold shadow">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#E2E8F0] bg-white/90 backdrop-blur px-4">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#007ACC] text-white font-bold shadow-xs">
             <Wrench className="h-4 w-4" />
           </div>
           <div>
-            <span className="font-bold text-sm">Gridline OS</span>
-            <span className="text-[10px] text-muted-foreground block -mt-1 font-medium">Field Technician</span>
+            <span className="font-bold text-sm text-[#0F172A] tracking-tight">Gridline OS</span>
+            <span className="text-[10px] text-[#007ACC] block -mt-1 font-semibold uppercase tracking-wider">
+              Field Technician
+            </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium hidden sm:inline">{profile.name}</span>
+          <span className="text-xs font-medium text-[#475569] hidden sm:inline">{profile.name}</span>
           <SignOutButton />
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Content (Optimized Mobile Container) */}
       <main className="flex-1 p-4 max-w-lg w-full mx-auto">{children}</main>
 
-      {/* Bottom Nav Bar (Mobile-First) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 flex h-14 items-center justify-around border-t bg-card/95 backdrop-blur px-6 shadow-lg">
-        <Link
-          href="/technician"
-          className="flex flex-col items-center gap-1 text-xs font-semibold text-primary"
-        >
-          <Briefcase className="h-5 w-5" />
-          <span>My Jobs</span>
-        </Link>
-        <Link
-          href="/technician/profile"
-          className="flex flex-col items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
-        >
-          <User className="h-5 w-5" />
-          <span>Profil</span>
-        </Link>
-      </nav>
+      {/* Bottom Nav Bar (Mobile-First 3-Tab Thumb Zone) */}
+      <TechnicianBottomNav />
     </div>
   )
 }

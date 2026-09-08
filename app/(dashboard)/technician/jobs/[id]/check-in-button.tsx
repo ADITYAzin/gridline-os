@@ -73,7 +73,7 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
         <Button
           onClick={() => handleAction('in')}
           disabled={isPending}
-          className="w-full h-11 gap-2 font-bold shadow-md bg-blue-600 hover:bg-blue-700 text-white"
+          className="w-full h-12 gap-2 font-bold shadow-xs bg-[#007ACC] hover:bg-[#0062A3] text-white rounded-[8px]"
         >
           {isPending ? (
             <>
@@ -81,17 +81,17 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
             </>
           ) : (
             <>
-              <Navigation className="h-4 w-4" /> Check-in di Lokasi Servis
+              <Navigation className="h-4 w-4" /> Check-in di Lokasi Servis (GPS)
             </>
           )}
         </Button>
       ) : (
-        <div className="flex items-center justify-between gap-3 p-3 bg-muted/60 rounded-lg border">
+        <div className="flex items-center justify-between gap-3 p-3 bg-[#F0F9FF] rounded-[8px] border border-[#BAE6FD]">
           <div className="flex items-center gap-2 text-xs">
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-            <span>
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <span className="text-[#0369A1]">
               Check-in:{' '}
-              <strong className="font-mono">
+              <strong className="font-mono text-[#0F172A]">
                 {new Date(attendance!.check_in_at!).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
               </strong>
             </span>
@@ -101,10 +101,10 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
             variant="outline"
             size="sm"
             disabled={isPending}
-            className="h-8 text-xs font-semibold gap-1"
+            className="h-8 text-xs font-semibold gap-1.5 border-[#007ACC]/30 text-[#007ACC] hover:bg-white rounded-[6px]"
           >
             {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MapPin className="h-3.5 w-3.5" />}
-            Check-out
+            Check-out Selesai
           </Button>
         </div>
       )}

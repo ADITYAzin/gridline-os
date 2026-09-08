@@ -10,8 +10,10 @@ import { WorkReportForm } from './work-report-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, MapPin, Phone, AlertCircle, Printer, Wrench } from 'lucide-react'
-import { WhatsAppActionDialog } from '@/components/whatsapp/whatsapp-action-dialog'
+import { ArrowLeft, MapPin, AlertCircle, Printer, Wrench, ShieldAlert, Sparkles } from 'lucide-react'
+import { TechnicianStatusBadge } from '@/components/technician/status-badge'
+import { FiveGateProgress } from '@/components/technician/five-gate-progress'
+import { QuickActionTray } from '@/components/technician/quick-action-tray'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -63,6 +65,9 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
   ])
 
   const customer = job.customers as unknown as { name: string; phone: string | null } | null
+  const custName = Array.isArray(customer) ? customer[0]?.name : customer?.name
+  const custPhone = Array.isArray(customer) ? customer[0]?.phone : customer?.phone
+
   type AssetType = {
     id: string
     asset_name: string
@@ -75,26 +80,33 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
   const asset = (Array.isArray(job.customer_assets) ? job.customer_assets[0] : job.customer_assets) as AssetType
   const isLocked = job.status === 'completed' || job.status === 'cancelled'
 
+  // Calculate 5-Gate Completion State
+  const hasCheckIn = Boolean(attendance?.check_in_at)
+  const hasChecklistCompleted = (checklist || []).length > 0 && (checklist || []).every((c) => c.is_completed)
+  const hasPhotosCompleted =
+    (photos || []).some((p) => p.type === 'before') &&
+    (photos || []).some((p) => p.type === 'after')
+  const hasSignature = Boolean(signature?.signed_at)
+  const hasReport = Boolean(report?.submitted_at)
+
   return (
-    <div className="space-y-4 pb-12">
+    <div className="space-y-4 pb-14">
       {/* Top Header */}
       <div className="flex items-center gap-3">
-        <Button asChild variant="outline" size="sm" className="h-8 w-8 p-0">
+        <Button asChild variant="outline" size="sm" className="h-8 w-8 p-0 rounded-[8px]">
           <Link href="/technician">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-mono font-bold text-sm text-primary">{job.job_number}</span>
-            <Badge variant={job.status === 'on_progress' ? 'default' : 'secondary'} className="capitalize text-[10px]">
-              {job.status.replace('_', ' ')}
-            </Badge>
+            <span className="font-mono font-bold text-sm text-[#007ACC]">{job.job_number}</span>
+            <TechnicianStatusBadge status={job.status} />
           </div>
-          <h1 className="text-base font-bold truncate">{job.service_type}</h1>
+          <h1 className="text-base font-bold text-[#0F172A] truncate">{job.service_type}</h1>
         </div>
         {job.status === 'completed' && (
-          <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs text-primary border-primary/30">
+          <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs text-[#007ACC] border-[#007ACC]/30 hover:bg-[#EBF5FC] rounded-[8px]">
             <Link href={`/technician/jobs/${job.id}/bap`} target="_blank">
               <Printer className="h-3.5 w-3.5" />
               BAP (PDF)
@@ -103,78 +115,70 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
         )}
       </div>
 
+      {/* 5-Gate Visual Readiness Progress */}
+      <FiveGateProgress
+        hasCheckIn={hasCheckIn}
+        hasChecklistCompleted={hasChecklistCompleted}
+        hasPhotosCompleted={hasPhotosCompleted}
+        hasSignature={hasSignature}
+        hasReport={hasReport}
+        isCompleted={isLocked}
+      />
+
       {/* GPS Check-in / Check-out Action */}
       {!isLocked && (
         <CheckInButton jobId={job.id} attendance={attendance} />
       )}
 
-      {/* Work Order Info Card */}
-      <Card className="shadow-sm">
+      {/* Work Order Info & Quick Navigation Action Card */}
+      <Card className="shadow-xs rounded-[12px] bg-white border-[#E2E8F0]">
         <CardHeader className="p-4 pb-2">
-          <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-            Informasi Pekerjaan & Pelanggan
+          <CardTitle className="text-xs text-[#475569] uppercase tracking-wider font-semibold">
+            Informasi Pelanggan & Lokasi
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-1 space-y-3 text-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <span className="font-semibold text-foreground text-sm block">
-                {Array.isArray(customer) ? customer[0]?.name : customer?.name}
-              </span>
-              {(Array.isArray(customer) ? customer[0]?.phone : customer?.phone) && (
-                <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
-                  <Phone className="h-3 w-3 text-primary" />
-                  <a href={`tel:${Array.isArray(customer) ? customer[0]?.phone : customer?.phone}`} className="hover:underline">
-                    {Array.isArray(customer) ? customer[0]?.phone : customer?.phone}
-                  </a>
-                </div>
-              )}
+          <div className="space-y-1">
+            <span className="font-bold text-foreground text-sm block">
+              {custName || 'Pelanggan'}
+            </span>
+            <div className="flex items-start gap-1.5 text-[#475569]">
+              <MapPin className="h-3.5 w-3.5 text-[#007ACC] shrink-0 mt-0.5" />
+              <span className="leading-relaxed">{job.address}</span>
             </div>
-            {(Array.isArray(customer) ? customer[0]?.phone : customer?.phone) && (
-              <WhatsAppActionDialog
-                recipientType="customer"
-                recipientName={Array.isArray(customer) ? customer[0]?.name : customer?.name}
-                recipientPhone={Array.isArray(customer) ? customer[0]?.phone : customer?.phone}
-                templateData={{
-                  customerName: Array.isArray(customer) ? customer[0]?.name : customer?.name,
-                  technicianName: profile.name,
-                  jobNumber: job.job_number,
-                  serviceType: job.service_type,
-                  address: job.address,
-                }}
-                defaultScenario="customer_on_the_way"
-                triggerButtonText="WhatsApp Klien"
-                size="sm"
-              />
-            )}
           </div>
 
-          <div className="flex items-start gap-1.5 text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-            <span>{job.address}</span>
-          </div>
+          {/* Quick Action Bar for Field Navigation & Direct Phone/WhatsApp */}
+          <QuickActionTray
+            customerName={custName || 'Pelanggan'}
+            customerPhone={custPhone}
+            address={job.address}
+            jobNumber={job.job_number}
+            serviceType={job.service_type}
+            technicianName={profile.name}
+          />
 
           {asset && (
-            <div className="rounded-md border bg-primary/5 border-primary/20 p-2.5 space-y-1.5 text-xs">
+            <div className="rounded-[8px] border bg-[#EBF5FC]/60 border-[#D0E8F8] p-3 space-y-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-foreground flex items-center gap-1.5">
-                  <Wrench className="h-3.5 w-3.5 text-primary" />
-                  Target Mesin / Unit: {asset.asset_name}
+                <span className="font-bold text-[#0F172A] flex items-center gap-1.5">
+                  <Wrench className="h-4 w-4 text-[#007ACC]" />
+                  Unit Target: {asset.asset_name}
                 </span>
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-[6px] bg-[#007ACC] text-white">
                   {asset.brand}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-1.5 text-[11px] text-muted-foreground">
-                <div>Model: <span className="font-mono text-foreground">{asset.model_number || '-'}</span></div>
-                <div>S/N: <span className="font-mono text-foreground">{asset.serial_number || '-'}</span></div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] text-[#475569] bg-white/80 p-2 rounded-[6px] border border-[#E2E8F0]">
+                <div>Model: <span className="font-mono font-semibold text-[#0F172A]">{asset.model_number || '-'}</span></div>
+                <div>S/N: <span className="font-mono font-semibold text-[#0F172A]">{asset.serial_number || '-'}</span></div>
                 {asset.location_tag && (
-                  <div className="col-span-2">Lokasi: <span className="text-foreground">{asset.location_tag}</span></div>
+                  <div className="col-span-2">Lokasi: <span className="font-medium text-[#0F172A]">{asset.location_tag}</span></div>
                 )}
               </div>
               {asset.notes && (
-                <p className="text-[10px] text-muted-foreground italic border-t pt-1 mt-1">
-                  Catatan unit: {asset.notes}
+                <p className="text-[11px] text-[#475569] italic pt-0.5">
+                  Catatan: {asset.notes}
                 </p>
               )}
             </div>
