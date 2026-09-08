@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { RealtimeJobsListener } from '@/components/realtime/realtime-jobs-listener'
 import { MapPin, CheckCircle2, ArrowRight } from 'lucide-react'
 
 export default async function TechnicianHomePage() {
@@ -20,11 +21,14 @@ export default async function TechnicianHomePage() {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1">
-        <h1 className="text-xl font-bold tracking-tight">Tugas Lapangan Saya</h1>
-        <p className="text-xs text-muted-foreground">
-          Daftar pekerjaan servis yang ditugaskan kepada Anda hari ini
-        </p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="space-y-0.5">
+          <h1 className="text-xl font-bold tracking-tight">Tugas Lapangan Saya</h1>
+          <p className="text-xs text-muted-foreground">
+            Daftar pekerjaan servis yang ditugaskan kepada Anda hari ini
+          </p>
+        </div>
+        <RealtimeJobsListener technicianId={profile.id} compact={true} />
       </div>
 
       {assignedJobs.length === 0 ? (

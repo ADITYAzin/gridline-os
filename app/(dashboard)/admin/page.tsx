@@ -1,10 +1,11 @@
-﻿import Link from 'next/link'
+import Link from 'next/link'
 import { requireRole } from '@/lib/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { JobStatusChart } from '@/components/charts/job-status-chart'
 import { ServiceTypeChart } from '@/components/charts/service-type-chart'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { RealtimeJobsListener } from '@/components/realtime/realtime-jobs-listener'
 import {
   Building2,
   Briefcase,
@@ -65,9 +66,12 @@ export default async function AdminDashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard Operasional</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard Operasional</h1>
+            <RealtimeJobsListener orgId={profile.orgId} />
+          </div>
           <p className="text-muted-foreground mt-1">
-            Selamat datang kembali, <span className="font-semibold text-foreground">{profile.name}</span>. Pantau dan kelola seluruh penugasan teknisi.
+            Selamat datang kembali, <span className="font-semibold text-foreground">{profile.name}</span>. Pantau dan kelola seluruh penugasan teknisi secara live.
           </p>
         </div>
         <div className="flex items-center gap-3">

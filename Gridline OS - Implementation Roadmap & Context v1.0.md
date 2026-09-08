@@ -19,7 +19,9 @@
 | Fase 7 — Dashboard/reporting, production hardening | ✅ SELESAI (Recharts executive dashboard, profile & monitoring, 100% build & lint clean) |
 | Fase 8 — E2E Verification & Demo Seeding | ✅ SELESAI (10 jobs, 5-gate trigger live tested, storage evidence, sample accounts) |
 | Fase 9 — Fitur Operasional v1.1 (BAP, WhatsApp, History, Export, SLA, Form Draft) | ✅ SELESAI (PDF BAP, wa.me actions, customer detail, CSV UTF-8, SLA badge, state auto-save) |
-| Fase 10 — Next Implementations (Realtime, PWA, Tech Performance, Email, Asset Tracking) | ⏳ SIAP DIKERJAKAN (Backlog Prioritas) |
+| Fase 10.1 — Supabase Realtime (Dispatch & Monitoring) | ✅ SELESAI (Publikasi Postgres, live indicator, auto-sync, toast alert, filter) |
+| Fase 10.2+ — Backlog Prioritas Lanjutan (PWA, Tech Performance, Email, Asset Tracking) | ⏳ SIAP DIKERJAKAN |
+
 
 **Aturan emas:** tidak sekaligus besar — migrasi bertahap, direview per langkah;
 uji isolasi 2 tenant WAJIB sebelum bangun UI besar.
@@ -166,20 +168,36 @@ evidence, dan testing akun multi-tenant.
 6. **Robust UUID Regex & Form State Auto-Save**: Dukungan UUID PostgreSQL dan auto-save draft
    `sessionStorage` agar progres input form tidak pernah hilang saat terjadi error/reload.
 
-### Fase 10 — Next Implementations (Backlog Prioritas Siap Dikerjakan)
-1. **Supabase Realtime di Dispatch Board & Job Monitoring (Prioritas 1)**
-   - WebSocket subscription (`supabase.channel`) pada tabel `jobs` dan `job_attendance`.
-   - Update live status pekerjaan seketika (saat teknisi check-in atau selesai) tanpa refresh.
-2. **PWA (Progressive Web App) untuk Teknisi Lapangan (Prioritas 2)**
+### Fase 10 — Next Implementations (Eksekusi Fitur Skalabilitas & Mobile)
+
+#### 10.1 Supabase Realtime di Dispatch Board & Job Monitoring (✅ SELESAI)
+- **Database Publication & Replica Identity**:
+  - `ALTER TABLE public.jobs REPLICA IDENTITY FULL;`
+  - `ALTER TABLE public.schedules REPLICA IDENTITY FULL;`
+  - `ALTER TABLE public.job_attendance REPLICA IDENTITY FULL;`
+  - Tabel `jobs`, `schedules`, dan `job_attendance` didaftarkan ke publication `supabase_realtime` via MCP Supabase.
+- **Client Architecture & Hook**:
+  - Hook [`useRealtimeJobs`](file:///C:/Users/adity/Downloads/gridlineos/components/realtime/use-realtime-jobs.ts) dengan filter per-tenant `org_id=eq.${orgId}` atau `technician_id=eq.${technicianId}`.
+  - Notifikasi Toast instan via Sonner saat job baru dibuat, status pengerjaan berubah (`on_progress`, `completed`, `cancelled`), atau teknisi check-in GPS.
+  - Auto-sync state dengan `useTransition` dan `router.refresh()` tanpa full-page flash.
+- **UI Components & Integrasi**:
+  - Komponen [`RealtimeIndicator`](file:///C:/Users/adity/Downloads/gridlineos/components/realtime/realtime-indicator.tsx) dengan pulsing live status dot & tombol refresh manual.
+  - Komponen drop-in [`RealtimeJobsListener`](file:///C:/Users/adity/Downloads/gridlineos/components/realtime/realtime-jobs-listener.tsx).
+  - Papan dispatch interaktif [`DispatchView`](file:///C:/Users/adity/Downloads/gridlineos/app/%28dashboard%29/admin/dispatch/dispatch-view.tsx) dengan pencarian teknisi, indikator status kerja (*Sedang Bertugas*), dan sinkronisasi real-time.
+  - Terintegrasi di: **Dispatch Board** (`/admin/dispatch`), **Admin Dashboard** (`/admin`), **Daftar Pekerjaan** (`/admin/jobs`), dan **Tugas Lapangan Teknisi** (`/technician`).
+
+#### 10.2 Backlog Prioritas Siap Dikerjakan Berikutnya
+1. **PWA (Progressive Web App) untuk Teknisi Lapangan (Prioritas 2)**
    - Konfigurasi `manifest.json`, app icon, splash screen, dan mode *standalone* mobile.
    - Pengalaman installable native-like di smartphone teknisi Android & iOS.
-3. **Modul Performa & Komisi Teknisi (Prioritas 3)**
+2. **Modul Performa & Komisi Teknisi (Prioritas 3)**
    - Statistik produktivitas tim lapangan: rekap job bulanan, SLA on-time rate, durasi pengerjaan.
    - Perhitungan estimasi bonus/komisi per pekerjaan servis.
-4. **Integrasi Transactional Email Provider (Resend / SendGrid) (Prioritas 4)**
+3. **Integrasi Transactional Email Provider (Resend / SendGrid) (Prioritas 4)**
    - Otomasi pengiriman email undangan anggota tim (`/admin/technicians`) dan reset password.
-5. **Pelacakan Unit & Aset Pelanggan (Customer Asset / Equipment Tracking) (Prioritas 5)**
+4. **Pelacakan Unit & Aset Pelanggan (Customer Asset / Equipment Tracking) (Prioritas 5)**
    - Manajemen perangkat/mesin spesifik per customer (nomor seri, model, riwayat servis per unit).
+
 
 ---
 
