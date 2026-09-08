@@ -17,11 +17,11 @@ export function LoginForm({ resetSuccess = false }: { resetSuccess?: boolean }) 
   return (
     <Card className="w-full max-w-md shadow-xl border-border/40 backdrop-blur">
       <CardHeader className="space-y-2 text-center pb-6">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#007ACC] text-white shadow-sm">
           <Wrench className="h-6 w-6" />
         </div>
-        <CardTitle className="text-2xl font-bold tracking-tight">Gridline OS</CardTitle>
-        <CardDescription className="text-sm text-muted-foreground">
+        <CardTitle className="text-display-1 font-heading text-slate-900 tracking-tight">Gridline OS</CardTitle>
+        <CardDescription className="text-body-reg text-slate-500">
           Masuk ke sistem operasional jasa teknis Anda
         </CardDescription>
       </CardHeader>

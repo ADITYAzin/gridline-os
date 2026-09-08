@@ -87,16 +87,16 @@ export default async function JobsListPage({ searchParams }: PageProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Daftar Pekerjaan (Jobs)</h1>
+            <h1 className="text-heading-1 font-heading text-slate-900 tracking-tight">Daftar Pekerjaan (Jobs)</h1>
             <RealtimeJobsListener orgId={profile.orgId} />
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-body-reg text-slate-500 mt-1">
             Pantau dan kelola seluruh siklus penugasan teknisi dari awal hingga penyelesaian secara live.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <ExportJobsButton jobs={exportData} />
-          <Button asChild className="gap-2 font-semibold">
+          <Button asChild className="gap-2 font-semibold bg-[#007ACC] hover:bg-[#0062A3]">
             <Link href="/admin/jobs/new">
               <Plus className="h-4 w-4" />
               + Buat Job Baru

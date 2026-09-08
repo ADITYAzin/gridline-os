@@ -66,12 +66,12 @@ export default async function AdminDashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard Operasional</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-heading-1 text-slate-900 font-heading">Dashboard Operasional</h1>
             <RealtimeJobsListener orgId={profile.orgId} />
           </div>
-          <p className="text-muted-foreground mt-1">
-            Selamat datang kembali, <span className="font-semibold text-foreground">{profile.name}</span>. Pantau dan kelola seluruh penugasan teknisi secara live.
+          <p className="text-body-reg text-slate-500 mt-1">
+            Selamat datang kembali, <span className="font-semibold text-slate-800">{profile.name}</span>. Pantau dan kelola seluruh penugasan teknisi secara live.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -172,45 +172,45 @@ export default async function AdminDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Job Aktif</CardTitle>
+            <CardTitle className="text-sm font-semibold font-heading text-slate-700">Job Aktif</CardTitle>
             <Clock className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeJobs}</div>
-            <p className="text-xs text-muted-foreground mt-1">Pending, assigned & progress</p>
+            <div className="text-display-1 text-slate-900 font-heading">{activeJobs}</div>
+            <p className="text-caption text-slate-500 mt-1">Pending, assigned & progress</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Job Selesai</CardTitle>
+            <CardTitle className="text-sm font-semibold font-heading text-slate-700">Job Selesai</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{completedJobs}</div>
-            <p className="text-xs text-muted-foreground mt-1">Laporan & bukti terverifikasi</p>
+            <div className="text-display-1 text-slate-900 font-heading">{completedJobs}</div>
+            <p className="text-caption text-slate-500 mt-1">Laporan & bukti terverifikasi</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Teknisi</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-semibold font-heading text-slate-700">Total Teknisi</CardTitle>
+            <Users className="h-4 w-4 text-[#007ACC]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalTechs || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Teknisi aktif di lapangan</p>
+            <div className="text-display-1 text-slate-900 font-heading">{totalTechs || 0}</div>
+            <p className="text-caption text-slate-500 mt-1">Teknisi aktif di lapangan</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Customer</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-semibold font-heading text-slate-700">Total Customer</CardTitle>
+            <Building2 className="h-4 w-4 text-slate-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalCustomers || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Klien terdaftar dalam sistem</p>
+            <div className="text-display-1 text-slate-900 font-heading">{totalCustomers || 0}</div>
+            <p className="text-caption text-slate-500 mt-1">Klien terdaftar dalam sistem</p>
           </CardContent>
         </Card>
       </div>

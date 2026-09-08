@@ -80,8 +80,8 @@ export default async function TechnicianCommissionsPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-[#0F172A]">Insentif & Komisi Saya</h1>
-          <p className="text-xs text-[#475569]">
+          <h1 className="text-heading-1 font-heading text-[#0F172A] tracking-tight">Insentif & Komisi Saya</h1>
+          <p className="text-body-reg text-[#475569]">
             Rekap pendapatan transparan atas pekerjaan yang telah Anda selesaikan
           </p>
         </div>
@@ -91,17 +91,17 @@ export default async function TechnicianCommissionsPage() {
       <Card className="border-[#007ACC]/30 bg-gradient-to-br from-[#007ACC] to-[#005A99] text-white shadow-md rounded-[12px] overflow-hidden">
         <CardContent className="p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-white/80 font-medium flex items-center gap-1.5">
+            <span className="text-caption text-white/80 font-medium flex items-center gap-1.5">
               <Coins className="h-4 w-4 text-amber-300" />
               Total Insentif Terkumpul
             </span>
-            <span className="text-[10px] font-semibold bg-white/20 text-white px-2 py-0.5 rounded-full backdrop-blur-xs">
+            <span className="text-micro font-semibold bg-white/20 text-white px-2 py-0.5 rounded-full backdrop-blur-xs">
               Sistem Otomatis
             </span>
           </div>
 
           <div>
-            <div className="text-3xl font-extrabold tracking-tight font-mono">
+            <div className="text-display-1 font-heading text-white tracking-tight font-mono">
               {formatRupiah(grandTotal)}
             </div>
             <p className="text-[11px] text-white/80 mt-0.5">

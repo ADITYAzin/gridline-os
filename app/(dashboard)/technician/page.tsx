@@ -78,12 +78,12 @@ export default async function TechnicianHomePage() {
       <div className="flex items-center justify-between gap-2 border-b border-[#E2E8F0] pb-3">
         <div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-semibold text-[#007ACC] uppercase tracking-wider flex items-center gap-1">
+            <span className="text-micro font-semibold text-[#007ACC] uppercase tracking-wider flex items-center gap-1">
               <Sparkles className="h-3 w-3" /> Siap Melayani
             </span>
-            <span className="text-[11px] text-muted-foreground">• {todayStr}</span>
+            <span className="text-caption text-slate-500">• {todayStr}</span>
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-[#0F172A]">
+          <h1 className="text-heading-1 font-heading text-[#0F172A] tracking-tight">
             Semangat, {profile.name}! 👋
           </h1>
         </div>

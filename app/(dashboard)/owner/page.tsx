@@ -52,8 +52,8 @@ export default async function OwnerDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Executive Visibility Hub</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-heading-1 text-slate-900 font-heading">Executive Visibility Hub</h1>
+        <p className="text-body-reg text-slate-500 mt-1">
           Pantauan terpusat operasional lapangan untuk Owner & Management.
         </p>
       </div>
@@ -61,45 +61,45 @@ export default async function OwnerDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pekerjaan Sedang Berjalan</CardTitle>
+            <CardTitle className="text-sm font-semibold font-heading text-slate-700">Pekerjaan Sedang Berjalan</CardTitle>
             <Clock className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeJobs}</div>
-            <p className="text-xs text-muted-foreground mt-1">Dalam pengerjaan di lapangan</p>
+            <div className="text-display-1 text-slate-900 font-heading">{activeJobs}</div>
+            <p className="text-caption text-slate-500 mt-1">Dalam pengerjaan di lapangan</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Terselesaikan</CardTitle>
+            <CardTitle className="text-sm font-semibold font-heading text-slate-700">Terselesaikan</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{completedJobs}</div>
-            <p className="text-xs text-muted-foreground mt-1">Laporan & bukti valid</p>
+            <div className="text-display-1 text-slate-900 font-heading">{completedJobs}</div>
+            <p className="text-caption text-slate-500 mt-1">Laporan & bukti valid</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Pekerjaan</CardTitle>
-            <Briefcase className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-semibold font-heading text-slate-700">Total Pekerjaan</CardTitle>
+            <Briefcase className="h-4 w-4 text-[#007ACC]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalJobs}</div>
-            <p className="text-xs text-muted-foreground mt-1">Akumulasi siklus job</p>
+            <div className="text-display-1 text-slate-900 font-heading">{totalJobs}</div>
+            <p className="text-caption text-slate-500 mt-1">Akumulasi siklus job</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Kekuatan Teknisi</CardTitle>
+            <CardTitle className="text-sm font-semibold font-heading text-slate-700">Kekuatan Teknisi</CardTitle>
             <Users className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalTechs || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">SDM teknis terdaftar</p>
+            <div className="text-display-1 text-slate-900 font-heading">{totalTechs || 0}</div>
+            <p className="text-caption text-slate-500 mt-1">Tenaga spesialis terdaftar</p>
           </CardContent>
         </Card>
       </div>

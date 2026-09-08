@@ -19,15 +19,15 @@ export default async function TechnicianLayout({
             <Wrench className="h-4 w-4" />
           </div>
           <div>
-            <span className="font-bold text-sm text-[#0F172A] tracking-tight">Gridline OS</span>
-            <span className="text-[10px] text-[#007ACC] block -mt-1 font-semibold uppercase tracking-wider">
+            <span className="font-heading font-bold text-sm text-[#0F172A] tracking-tight">Gridline OS</span>
+            <span className="text-micro text-[#007ACC] block -mt-1 font-semibold uppercase tracking-wider">
               Field Technician
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-[#475569] hidden sm:inline">{profile.name}</span>
+          <span className="text-caption font-medium text-[#475569] hidden sm:inline">{profile.name}</span>
           <SignOutButton />
         </div>
       </header>

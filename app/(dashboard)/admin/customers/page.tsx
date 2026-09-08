@@ -24,8 +24,8 @@ export default async function CustomersPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Manajemen Customer</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-heading-1 font-heading text-slate-900 tracking-tight">Manajemen Customer</h1>
+          <p className="text-body-reg text-slate-500 mt-1">
             Daftar klien dan lokasi pekerjaan servis untuk penugasan job lapangan.
           </p>
         </div>
