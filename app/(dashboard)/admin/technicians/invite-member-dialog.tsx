@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useActionState } from 'react'
 import { createInviteAction, type InviteActionState } from '@/app/actions/team'
@@ -60,20 +60,27 @@ export function InviteMemberDialog() {
                 <Check className="h-4 w-4" /> Undangan Berhasil Dibuat!
               </div>
               <p className="text-xs text-muted-foreground">
-                Bagikan tautan berikut kepada rekan Anda (WhatsApp / Email). Tautan ini berlaku 24 jam:
+                {state.emailSent
+                  ? 'Email undangan resmi telah otomatis dikirimkan ke kotak masuk (inbox) calon pengguna.'
+                  : 'Undangan siap dibagikan. Konfigurasi RESEND_API_KEY untuk pengiriman email otomatis.'}
               </p>
-              <div className="flex items-center gap-2 pt-1">
-                <Input value={state.inviteLink} readOnly className="text-xs font-mono bg-card" />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  className="shrink-0 gap-1.5"
-                  onClick={() => handleCopy(state.inviteLink!)}
-                >
-                  {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-                  {copied ? 'Tersalin' : 'Salin'}
-                </Button>
+              <div className="pt-2 border-t border-emerald-500/20">
+                <p className="text-[11px] text-muted-foreground mb-1.5 font-medium">
+                  Tautan alternatif (berlaku 24 jam untuk WhatsApp/manual):
+                </p>
+                <div className="flex items-center gap-2">
+                  <Input value={state.inviteLink} readOnly className="text-xs font-mono bg-card" />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="shrink-0 gap-1.5"
+                    onClick={() => handleCopy(state.inviteLink!)}
+                  >
+                    {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                    {copied ? 'Tersalin' : 'Salin'}
+                  </Button>
+                </div>
               </div>
             </div>
 

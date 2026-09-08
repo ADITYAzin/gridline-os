@@ -20,7 +20,9 @@
 | Fase 8 — E2E Verification & Demo Seeding | ✅ SELESAI (10 jobs, 5-gate trigger live tested, storage evidence, sample accounts) |
 | Fase 9 — Fitur Operasional v1.1 (BAP, WhatsApp, History, Export, SLA, Form Draft) | ✅ SELESAI (PDF BAP, wa.me actions, customer detail, CSV UTF-8, SLA badge, state auto-save) |
 | Fase 10.1 — Supabase Realtime (Dispatch & Monitoring) | ✅ SELESAI (Publikasi Postgres, live indicator, auto-sync, toast alert, filter) |
-| Fase 10.2+ — Backlog Prioritas Lanjutan (PWA, Tech Performance, Email, Asset Tracking) | ⏳ SIAP DIKERJAKAN |
+| Fase 10.2 — Transactional Email Provider (Resend Integration) | ✅ SELESAI (Resend SDK, template HTML responsif, auto invite, resend token, forgot/reset password, dev sandbox) |
+| Fase 10.3+ — Backlog Prioritas Lanjutan (PWA, Tech Performance, Asset Tracking) | ⏳ SIAP DIKERJAKAN |
+
 
 
 **Aturan emas:** tidak sekaligus besar — migrasi bertahap, direview per langkah;
@@ -186,17 +188,30 @@ evidence, dan testing akun multi-tenant.
   - Papan dispatch interaktif [`DispatchView`](file:///C:/Users/adity/Downloads/gridlineos/app/%28dashboard%29/admin/dispatch/dispatch-view.tsx) dengan pencarian teknisi, indikator status kerja (*Sedang Bertugas*), dan sinkronisasi real-time.
   - Terintegrasi di: **Dispatch Board** (`/admin/dispatch`), **Admin Dashboard** (`/admin`), **Daftar Pekerjaan** (`/admin/jobs`), dan **Tugas Lapangan Teknisi** (`/technician`).
 
-#### 10.2 Backlog Prioritas Siap Dikerjakan Berikutnya
+#### 10.2 Integrasi Transactional Email Provider Resend (✅ SELESAI)
+- **Transport Layer & Client SDK**:
+  - Pemasangan package resmi `resend` v6.x.
+  - Modul [`lib/email/client.ts`](file:///C:/Users/adity/Downloads/gridlineos/lib/email/client.ts) dengan dukungan `sendTransactionalEmail`, parsing plain-text otomatis, dan **Dev Sandbox Fallback** (mencetak output preview ke console saat API key belum dipasang di lokal).
+- **Template Email Responsif Gridline OS**:
+  - Template undangan tim [`invite-email.ts`](file:///C:/Users/adity/Downloads/gridlineos/lib/email/templates/invite-email.ts) (header branding Gridline OS, nama pengundang, nama perusahaan, role, tombol CTA aktivasi, masa berlaku token 24 jam).
+  - Template pemulihan akun [`reset-password-email.ts`](file:///C:/Users/adity/Downloads/gridlineos/lib/email/templates/reset-password-email.ts) (tombol CTA reset sandi 60 menit, pengaman anti-pishing).
+- **Otomasi Tindakan & UI**:
+  - Otomatis kirim email saat admin mengundang anggota baru via [`createInviteAction`](file:///C:/Users/adity/Downloads/gridlineos/app/actions/team.ts) dengan fallback copy link.
+  - Penambahan tombol **Kirim Ulang Email (Resend Invite)** di tabel daftar undangan tertunda ([`app/(dashboard)/admin/technicians/page.tsx`](file:///C:/Users/adity/Downloads/gridlineos/app/%28dashboard%29/admin/technicians/page.tsx)).
+  - Halaman dan alur **Lupa Password** lengkap: [`/forgot-password`](file:///C:/Users/adity/Downloads/gridlineos/app/%28auth%29/forgot-password/page.tsx) dan [`/reset-password`](file:///C:/Users/adity/Downloads/gridlineos/app/%28auth%29/reset-password/page.tsx) dengan proteksi anti-enumeration.
+- **Konfigurasi Environment**:
+  - Disediakan variabel `RESEND_API_KEY`, `EMAIL_FROM="Gridline OS <noreply@sublims.id>"`, dan `NEXT_PUBLIC_APP_URL` pada [`.env.example`](file:///C:/Users/adity/Downloads/gridlineos/.env.example).
+
+#### 10.3 Backlog Prioritas Siap Dikerjakan Berikutnya
 1. **PWA (Progressive Web App) untuk Teknisi Lapangan (Prioritas 2)**
    - Konfigurasi `manifest.json`, app icon, splash screen, dan mode *standalone* mobile.
    - Pengalaman installable native-like di smartphone teknisi Android & iOS.
 2. **Modul Performa & Komisi Teknisi (Prioritas 3)**
    - Statistik produktivitas tim lapangan: rekap job bulanan, SLA on-time rate, durasi pengerjaan.
    - Perhitungan estimasi bonus/komisi per pekerjaan servis.
-3. **Integrasi Transactional Email Provider (Resend / SendGrid) (Prioritas 4)**
-   - Otomasi pengiriman email undangan anggota tim (`/admin/technicians`) dan reset password.
-4. **Pelacakan Unit & Aset Pelanggan (Customer Asset / Equipment Tracking) (Prioritas 5)**
+3. **Pelacakan Unit & Aset Pelanggan (Customer Asset / Equipment Tracking) (Prioritas 5)**
    - Manajemen perangkat/mesin spesifik per customer (nomor seri, model, riwayat servis per unit).
+
 
 
 ---

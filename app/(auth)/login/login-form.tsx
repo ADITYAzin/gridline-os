@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useActionState } from 'react'
 import Link from 'next/link'
@@ -11,7 +11,7 @@ import { Wrench, ArrowRight, Loader2 } from 'lucide-react'
 
 const initialState: ActionState = {}
 
-export function LoginForm() {
+export function LoginForm({ resetSuccess = false }: { resetSuccess?: boolean }) {
   const [state, formAction, isPending] = useActionState(signInAction, initialState)
 
   return (
@@ -27,6 +27,12 @@ export function LoginForm() {
       </CardHeader>
       <form action={formAction}>
         <CardContent className="space-y-4">
+          {resetSuccess && (
+            <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs font-medium text-emerald-600">
+              Password berhasil diperbarui! Silakan masuk menggunakan kata sandi baru Anda.
+            </div>
+          )}
+
           {state?.error && (
             <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm font-medium text-destructive">
               {state.error}
@@ -50,6 +56,12 @@ export function LoginForm() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
+              <Link
+                href="/forgot-password"
+                className="text-xs text-primary hover:underline"
+              >
+                Lupa password?
+              </Link>
             </div>
             <Input
               id="password"

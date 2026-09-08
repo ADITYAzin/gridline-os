@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { redirect } from 'next/navigation'
 import crypto from 'crypto'
@@ -7,6 +7,8 @@ import { z } from 'zod'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { roleHome, type Role } from '@/lib/rbac'
+import { sendTransactionalEmail } from '@/lib/email/client'
+import { generateResetPasswordEmailHtml } from '@/lib/email/templates/reset-password-email'
 
 const signInSchema = z.object({
   email: z.string().email('Email tidak valid'),
@@ -26,9 +28,24 @@ const acceptInviteSchema = z.object({
   password: z.string().min(6, 'Password minimal 6 karakter'),
 })
 
+const requestResetSchema = z.object({
+  email: z.string().email('Email tidak valid'),
+})
+
+const updatePasswordSchema = z
+  .object({
+    password: z.string().min(6, 'Password minimal 6 karakter'),
+    confirmPassword: z.string().min(6, 'Konfirmasi password minimal 6 karakter'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Konfirmasi password tidak cocok',
+    path: ['confirmPassword'],
+  })
+
 export type ActionState = {
   error?: string
   success?: boolean
+  message?: string
   fields?: Record<string, string>
 }
 
@@ -233,3 +250,83 @@ export async function signOutAction() {
   await supabase.auth.signOut()
   redirect('/login')
 }
+
+export async function requestPasswordResetAction(
+  prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const email = formData.get('email') as string
+  const parsed = requestResetSchema.safeParse({ email })
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message || 'Email tidak valid', fields: { email } }
+  }
+
+  const admin = getSupabaseAdmin()
+  const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+  // Generate recovery link via Supabase Auth Admin
+  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+    type: 'recovery',
+    email: parsed.data.email.toLowerCase().trim(),
+    options: {
+      redirectTo: `${origin}/reset-password`,
+    },
+  })
+
+  // To prevent user enumeration attacks, if user does not exist, return success
+  if (linkError || !linkData.properties?.action_link) {
+    return {
+      success: true,
+      message: 'Jika email Anda terdaftar, tautan reset kata sandi telah dikirimkan ke kotak masuk Anda.',
+    }
+  }
+
+  // Get user profile name if exists
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('name')
+    .eq('email', parsed.data.email.toLowerCase().trim())
+    .maybeSingle()
+
+  const html = generateResetPasswordEmailHtml({
+    userName: profile?.name,
+    resetLink: linkData.properties.action_link,
+    expiresInMinutes: 60,
+  })
+
+  await sendTransactionalEmail({
+    to: parsed.data.email.toLowerCase().trim(),
+    subject: 'Instruksi Reset Password - Gridline OS',
+    html,
+  })
+
+  return {
+    success: true,
+    message: 'Jika email Anda terdaftar, tautan reset kata sandi telah dikirimkan ke kotak masuk Anda.',
+  }
+}
+
+export async function updatePasswordAction(
+  prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const password = formData.get('password') as string
+  const confirmPassword = formData.get('confirmPassword') as string
+
+  const parsed = updatePasswordSchema.safeParse({ password, confirmPassword })
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message || 'Input tidak valid' }
+  }
+
+  const supabase = await createSupabaseServerClient()
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  })
+
+  if (error) {
+    return { error: 'Gagal memperbarui kata sandi: ' + error.message }
+  }
+
+  redirect('/login?reset=success')
+}
+

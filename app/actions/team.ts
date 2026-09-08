@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { revalidatePath } from 'next/cache'
 import crypto from 'crypto'
@@ -6,6 +6,8 @@ import { z } from 'zod'
 import { requireRole } from '@/lib/auth'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { INVITE } from '@/lib/constants'
+import { sendTransactionalEmail } from '@/lib/email/client'
+import { generateInviteEmailHtml } from '@/lib/email/templates/invite-email'
 
 const inviteSchema = z.object({
   email: z.string().email('Email tidak valid'),
@@ -18,6 +20,8 @@ export type InviteActionState = {
   error?: string
   success?: boolean
   inviteLink?: string
+  emailSent?: boolean
+  simulated?: boolean
 }
 
 export async function createInviteAction(prevState: InviteActionState, formData: FormData): Promise<InviteActionState> {
@@ -45,6 +49,13 @@ export async function createInviteAction(prevState: InviteActionState, formData:
     return { error: 'Pengguna dengan email ini sudah terdaftar di organisasi Anda.' }
   }
 
+  // Fetch organization name for email branding
+  const { data: org } = await admin
+    .from('organizations')
+    .select('name')
+    .eq('id', profile.orgId)
+    .single()
+
   // Generate secure random token
   const rawToken = crypto.randomBytes(32).toString('hex')
   const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex')
@@ -64,14 +75,102 @@ export async function createInviteAction(prevState: InviteActionState, formData:
     return { error: 'Gagal membuat undangan: ' + inviteError.message }
   }
 
-  revalidatePath('/admin/technicians')
-
   // Construct invite link
   const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const inviteLink = `${origin}/accept-invite?token=${rawToken}`
 
+  // Send automated transactional invite email
+  const emailHtml = generateInviteEmailHtml({
+    inviterName: profile.name,
+    organizationName: org?.name || 'Gridline OS',
+    role: parsed.data.role,
+    inviteLink,
+    expiresInHours: INVITE.expiresInHours,
+  })
+
+  const emailResult = await sendTransactionalEmail({
+    to: parsed.data.email.toLowerCase().trim(),
+    subject: `Undangan Bergabung ke Tim ${org?.name || 'Gridline OS'}`,
+    html: emailHtml,
+  })
+
+  revalidatePath('/admin/technicians')
+
   return {
     success: true,
     inviteLink,
+    emailSent: emailResult.success,
+    simulated: emailResult.simulated,
   }
 }
+
+export async function resendInviteAction(inviteId: string): Promise<{ success: boolean; error?: string; simulated?: boolean }> {
+  const profile = await requireRole('admin')
+  const admin = getSupabaseAdmin()
+
+  // Get existing invite
+  const { data: invite, error: fetchError } = await admin
+    .from('invite_tokens')
+    .select('id, email, role, consumed_at')
+    .eq('id', inviteId)
+    .eq('org_id', profile.orgId)
+    .single()
+
+  if (fetchError || !invite) {
+    return { success: false, error: 'Undangan tidak ditemukan.' }
+  }
+
+  if (invite.consumed_at) {
+    return { success: false, error: 'Undangan ini telah digunakan oleh pengguna.' }
+  }
+
+  // Fetch organization name
+  const { data: org } = await admin
+    .from('organizations')
+    .select('name')
+    .eq('id', profile.orgId)
+    .single()
+
+  // Generate new token & new 24h expiration
+  const rawToken = crypto.randomBytes(32).toString('hex')
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex')
+  const expiresAt = new Date(Date.now() + INVITE.expiresInHours * 3600 * 1000).toISOString()
+
+  const { error: updateError } = await admin
+    .from('invite_tokens')
+    .update({
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+    })
+    .eq('id', invite.id)
+
+  if (updateError) {
+    return { success: false, error: 'Gagal memperbarui token undangan.' }
+  }
+
+  const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const inviteLink = `${origin}/accept-invite?token=${rawToken}`
+
+  const emailHtml = generateInviteEmailHtml({
+    inviterName: profile.name,
+    organizationName: org?.name || 'Gridline OS',
+    role: invite.role,
+    inviteLink,
+    expiresInHours: INVITE.expiresInHours,
+  })
+
+  const emailResult = await sendTransactionalEmail({
+    to: invite.email,
+    subject: `[Kirim Ulang] Undangan Bergabung ke Tim ${org?.name || 'Gridline OS'}`,
+    html: emailHtml,
+  })
+
+  revalidatePath('/admin/technicians')
+
+  return {
+    success: emailResult.success,
+    simulated: emailResult.simulated,
+    error: emailResult.error,
+  }
+}
+
