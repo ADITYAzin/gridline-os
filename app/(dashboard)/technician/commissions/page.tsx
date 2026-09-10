@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   TrendingUp,
   Award,
-  ArrowLeft,
   ChevronRight,
   Info,
 } from 'lucide-react'
@@ -72,20 +71,20 @@ export default async function TechnicianCommissionsPage() {
 
   return (
     <div className="space-y-4 pb-4">
-      {/* Top Header */}
-      <div className="flex items-center gap-3">
-        <Button asChild variant="outline" size="sm" className="h-8 w-8 p-0 rounded-[8px]">
-          <Link href="/technician">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-heading-1 font-heading text-[#0F172A] tracking-tight">Insentif & Komisi Saya</h1>
-          <p className="text-body-reg text-[#475569]">
-            Rekap pendapatan transparan atas pekerjaan yang telah Anda selesaikan
-          </p>
+      {/* Native Tab Screen Header */}
+      <header className="border-b border-[#E2E8F0] pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#EBF5FC] text-[#007ACC] shadow-2xs">
+            <Coins className="h-4 w-4" />
+          </div>
+          <div>
+            <h1 className="text-heading-2 font-heading text-[#0F172A] tracking-tight">Insentif & Komisi</h1>
+            <p className="text-[11px] text-[#475569]">
+              Rekap pendapatan transparan atas tiket tuntas Anda
+            </p>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Hero Earnings Banner */}
       <Card className="border-[#007ACC]/30 bg-gradient-to-br from-[#007ACC] to-[#005A99] text-white shadow-md rounded-[12px] overflow-hidden">
@@ -178,8 +177,8 @@ export default async function TechnicianCommissionsPage() {
         ) : (
           <div className="space-y-2">
             {items.map((job) => (
-              <Link key={job.id} href={`/technician/jobs/${job.id}`} className="block group">
-                <Card className="shadow-xs hover:border-[#007ACC]/40 transition-all rounded-[10px] bg-white border-[#E2E8F0]">
+              <Link key={job.id} href={`/technician/jobs/${job.id}`} className="block group touch-press">
+                <Card className="shadow-xs hover:border-[#007ACC]/40 active:bg-[#F8FAFC] transition-all rounded-[10px] bg-white border-[#E2E8F0]">
                   <CardContent className="p-3.5 flex items-center justify-between gap-3">
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2">

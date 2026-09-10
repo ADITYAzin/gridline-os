@@ -2,12 +2,13 @@
 
 import { useActionState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { signInAction, type ActionState } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Wrench, ArrowRight, Loader2 } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from '@/components/ui/card'
+import { ArrowRight, Loader2 } from 'lucide-react'
 
 const initialState: ActionState = {}
 
@@ -17,10 +18,16 @@ export function LoginForm({ resetSuccess = false }: { resetSuccess?: boolean }) 
   return (
     <Card className="w-full max-w-md shadow-xl border-border/40 backdrop-blur">
       <CardHeader className="space-y-2 text-center pb-6">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#007ACC] text-white shadow-sm">
-          <Wrench className="h-6 w-6" />
+        <div className="mx-auto">
+          <Image
+            src="/images/gridlineos-logo.png"
+            alt="Gridline OS"
+            width={140}
+            height={26}
+            className="h-auto w-[140px] object-contain mx-auto"
+            priority
+          />
         </div>
-        <CardTitle className="text-display-1 font-heading text-slate-900 tracking-tight">Gridline OS</CardTitle>
         <CardDescription className="text-body-reg text-slate-500">
           Masuk ke sistem operasional jasa teknis Anda
         </CardDescription>

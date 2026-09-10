@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { requireRole } from '@/lib/auth'
 import { SignOutButton } from '@/components/navigation/sign-out-button'
 import {
@@ -6,7 +7,6 @@ import {
   Briefcase,
   Users,
   User,
-  Wrench,
   Eye,
 } from 'lucide-react'
 
@@ -29,11 +29,15 @@ export default async function OwnerLayout({
       {/* Sidebar Desktop */}
       <aside className="hidden md:flex w-64 flex-col border-r bg-card/60 backdrop-blur">
         <div className="flex h-16 items-center gap-2.5 border-b px-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white font-bold shadow-sm">
-            <Wrench className="h-5 w-5" />
-          </div>
           <div className="flex flex-col">
-            <span className="font-heading font-bold text-base tracking-tight text-slate-900">Gridline OS</span>
+            <Image
+              src="/images/gridlineos-logo.png"
+              alt="Gridline OS"
+              width={120}
+              height={22}
+              className="h-auto w-[120px] object-contain"
+              priority
+            />
             <span className="text-micro text-emerald-600 uppercase font-semibold tracking-wider flex items-center gap-1">
               <Eye className="h-3 w-3" /> Owner Hub
             </span>
@@ -68,10 +72,14 @@ export default async function OwnerLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex h-14 items-center justify-between border-b px-4 bg-card">
-          <div className="flex items-center gap-2">
-            <Wrench className="h-5 w-5 text-emerald-600" />
-            <span className="font-heading font-bold text-slate-900">Gridline OS (Owner)</span>
-          </div>
+          <Image
+            src="/images/gridlineos-logo.png"
+            alt="Gridline OS"
+            width={110}
+            height={20}
+            className="h-auto w-[110px] object-contain"
+            priority
+          />
           <SignOutButton />
         </header>
         <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">{children}</main>

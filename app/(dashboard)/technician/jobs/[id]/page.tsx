@@ -91,29 +91,33 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-4 pb-14">
-      {/* Top Header */}
-      <div className="flex items-center gap-3">
-        <Button asChild variant="outline" size="sm" className="h-8 w-8 p-0 rounded-[8px]">
-          <Link href="/technician">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-mono font-bold text-sm text-[#007ACC]">{job.job_number}</span>
-            <TechnicianStatusBadge status={job.status} />
+      {/* Native Mobile App Bar */}
+      <header className="sticky top-0 -mx-4 -mt-3 px-4 py-2.5 z-30 bg-white/95 backdrop-blur-md border-b border-[#E2E8F0] flex items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Button asChild variant="ghost" size="icon" className="h-10 w-10 shrink-0 text-[#0F172A] hover:bg-[#F1F5F9] active:bg-[#E2E8F0] rounded-[8px] touch-press">
+            <Link href="/technician" aria-label="Kembali ke Tugas Saya">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono font-bold text-xs text-[#007ACC]">{job.job_number}</span>
+              <TechnicianStatusBadge status={job.status} />
+            </div>
+            <h1 className="text-sm font-bold font-heading text-[#0F172A] truncate leading-tight">
+              {job.service_type}
+            </h1>
           </div>
-          <h1 className="text-base font-bold text-[#0F172A] truncate">{job.service_type}</h1>
         </div>
         {job.status === 'completed' && (
-          <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs text-[#007ACC] border-[#007ACC]/30 hover:bg-[#EBF5FC] rounded-[8px]">
+          <Button asChild variant="outline" size="sm" className="h-9 px-2.5 gap-1.5 text-xs font-semibold text-[#007ACC] border-[#007ACC]/30 hover:bg-[#EBF5FC] rounded-[8px] shrink-0 touch-press">
             <Link href={`/technician/jobs/${job.id}/bap`} target="_blank">
               <Printer className="h-3.5 w-3.5" />
-              BAP (PDF)
+              <span>BAP</span>
             </Link>
           </Button>
         )}
-      </div>
+      </header>
 
       {/* 5-Gate Visual Readiness Progress */}
       <FiveGateProgress

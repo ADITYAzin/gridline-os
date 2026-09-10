@@ -56,22 +56,22 @@ export function ChecklistSection({ items, disabled }: ChecklistSectionProps) {
             <li
               key={item.id}
               onClick={() => handleToggle(item.id, item.is_completed)}
-              className={`flex items-start gap-3 p-2.5 rounded-lg border text-xs cursor-pointer select-none transition-colors ${
+              className={`flex items-center gap-3 p-3 rounded-[8px] border text-xs cursor-pointer select-none transition-all touch-press min-h-[44px] ${
                 item.is_completed
                   ? 'bg-emerald-500/5 border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
-                  : 'bg-card hover:bg-muted/40 border-border/60'
+                  : 'bg-card active:bg-muted/40 border-border/60 hover:bg-muted/30'
               }`}
             >
               <div
-                className={`h-4 w-4 rounded border flex items-center justify-center mt-0.5 shrink-0 ${
+                className={`h-5 w-5 rounded-[6px] border flex items-center justify-center shrink-0 transition-transform ${
                   item.is_completed
-                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                    ? 'bg-emerald-500 border-emerald-500 text-white scale-105'
                     : 'border-muted-foreground/40 bg-muted/20'
                 }`}
               >
-                {item.is_completed && <CheckCircle2 className="h-3 w-3" />}
+                {item.is_completed && <CheckCircle2 className="h-3.5 w-3.5" />}
               </div>
-              <span className={item.is_completed ? 'line-through text-muted-foreground' : 'font-medium'}>
+              <span className={item.is_completed ? 'line-through text-muted-foreground leading-snug' : 'font-medium leading-snug'}>
                 {item.item}
               </span>
             </li>

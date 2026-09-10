@@ -32,10 +32,10 @@ export default async function TechnicianProfilePage() {
 
   return (
     <div className="space-y-4 max-w-lg mx-auto">
-      <div>
-        <h1 className="text-xl font-bold tracking-tight text-slate-900">Profil Teknisi</h1>
-        <p className="text-xs text-muted-foreground">Informasi akun, reputasi, dan bantuan teknis lapangan</p>
-      </div>
+      <header className="border-b border-[#E2E8F0] pb-3">
+        <h1 className="text-heading-2 font-heading text-[#0F172A] tracking-tight">Profil Teknisi</h1>
+        <p className="text-[11px] text-[#475569]">Informasi akun, reputasi, dan bantuan teknis lapangan</p>
+      </header>
 
       {/* Main Profile Card */}
       <Card className="shadow-sm border-slate-200 overflow-hidden">

@@ -1,12 +1,9 @@
-import Link from 'next/link'
 import { requireRole } from '@/lib/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { Card, CardContent } from '@/components/ui/card'
 import { RealtimeJobsListener } from '@/components/realtime/realtime-jobs-listener'
 import { InstallPrompt } from '@/components/pwa/install-prompt'
 import { TechnicianJobList, type TechnicianJobItem } from '@/components/technician/technician-job-list'
-import { calculateJobCommission, formatRupiah } from '@/lib/commission'
-import { Coins, ChevronRight, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 
 export default async function TechnicianHomePage() {
   const profile = await requireRole('technician')
@@ -31,20 +28,6 @@ export default async function TechnicianHomePage() {
     .order('created_at', { ascending: false })
 
   const assignedJobs = jobs || []
-  const completedJobs = assignedJobs.filter((j) => j.status === 'completed')
-
-  let totalTechCommission = 0
-  completedJobs.forEach((j) => {
-    const item = calculateJobCommission({
-      id: j.id,
-      job_number: j.job_number,
-      service_type: j.service_type,
-      status: j.status,
-      created_at: j.created_at,
-      completed_at: j.completed_at,
-    })
-    totalTechCommission += item.totalCommission
-  })
 
   // Format job items for client list
   const formattedJobs: TechnicianJobItem[] = assignedJobs.map((j) => {
@@ -72,51 +55,43 @@ export default async function TechnicianHomePage() {
     year: 'numeric',
   })
 
+  const initials = profile.name
+    ? profile.name
+        .split(' ')
+        .map((n: string) => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+    : 'TK'
+
   return (
     <div className="space-y-4 pb-4">
-      {/* Top Greeting & Realtime Sync Bar */}
-      <div className="flex items-center justify-between gap-2 border-b border-[#E2E8F0] pb-3">
-        <div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-micro font-semibold text-[#007ACC] uppercase tracking-wider flex items-center gap-1">
-              <Sparkles className="h-3 w-3" /> Siap Melayani
-            </span>
-            <span className="text-caption text-slate-500">• {todayStr}</span>
+      {/* Native Mobile App Bar */}
+      <header className="flex items-center justify-between gap-3 py-1 border-b border-[#E2E8F0] pb-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#007ACC] text-white font-bold text-sm shadow-xs">
+            <span>{initials}</span>
+            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-[#10B981] ring-2 ring-white" />
           </div>
-          <h1 className="text-heading-1 font-heading text-[#0F172A] tracking-tight">
-            Semangat, {profile.name}! 👋
-          </h1>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-micro font-semibold text-[#007ACC] uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="h-3 w-3" /> Siaga Aktif
+              </span>
+              <span className="text-[11px] text-[#475569] truncate">• {todayStr}</span>
+            </div>
+            <h1 className="text-heading-2 font-heading text-[#0F172A] tracking-tight truncate">
+              Halo, {profile.name}!
+            </h1>
+          </div>
         </div>
-        <RealtimeJobsListener technicianId={profile.id} compact={true} />
-      </div>
+        <div className="shrink-0">
+          <RealtimeJobsListener technicianId={profile.id} compact={true} />
+        </div>
+      </header>
 
       {/* PWA Mobile Add to Home Screen Banner */}
       <InstallPrompt />
-
-      {/* Quick Earnings Card with direct route to Commissions */}
-      <Link href="/technician/commissions" className="block group">
-        <Card className="border-[#007ACC]/30 bg-gradient-to-r from-white via-white to-[#EBF5FC]/60 shadow-xs hover:border-[#007ACC] transition-all rounded-[12px]">
-          <CardContent className="p-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#007ACC]/10 text-[#007ACC]">
-                <Coins className="h-5 w-5" />
-              </div>
-              <div>
-                <span className="text-[11px] text-[#475569] block font-medium">
-                  Insentif Selesai Terkumpul:
-                </span>
-                <span className="text-sm font-extrabold text-[#007ACC] font-mono">
-                  {formatRupiah(totalTechCommission)}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 text-xs font-semibold text-[#007ACC] group-hover:translate-x-0.5 transition-transform">
-              <span>Rincian</span>
-              <ChevronRight className="h-4 w-4" />
-            </div>
-          </CardContent>
-        </Card>
-      </Link>
 
       {/* Interactive Segmented Job List */}
       <TechnicianJobList jobs={formattedJobs} />

@@ -72,6 +72,7 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp"
+          capture="environment"
           className="hidden"
           onChange={handleFileChange}
         />
@@ -101,12 +102,12 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
               size="sm"
               disabled={disabled || isPending || beforePhotos.length >= 10}
               onClick={() => triggerUpload('before')}
-              className="h-7 text-xs gap-1"
+              className="h-9 text-xs font-semibold px-3 gap-1.5 rounded-[8px] border-[#007ACC]/40 text-[#007ACC] hover:bg-[#EBF5FC] active:bg-[#D0E8F8] touch-press"
             >
               {isPending && activeType === 'before' ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <Plus className="h-3 w-3" />
+                <Camera className="h-3.5 w-3.5" />
               )}
               Ambil Foto
             </Button>
@@ -114,7 +115,7 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
 
           <div className="grid grid-cols-3 gap-2">
             {beforePhotos.map((p, idx) => (
-              <div key={p.id} className="aspect-square rounded border bg-muted/40 flex items-center justify-center relative overflow-hidden">
+              <div key={p.id} className="aspect-square rounded-[8px] border border-[#E2E8F0] bg-muted/40 flex items-center justify-center relative overflow-hidden">
                 <ImageIcon className="h-5 w-5 text-muted-foreground" />
                 <span className="absolute bottom-1 right-1 text-[9px] font-mono bg-background/80 px-1 rounded">#{idx + 1}</span>
               </div>
@@ -123,7 +124,7 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
         </div>
 
         {/* After Photos Group */}
-        <div className="space-y-2 pt-2 border-t">
+        <div className="space-y-2 pt-2 border-t border-[#E2E8F0]">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold flex items-center gap-1.5">
               <span>Foto Sesudah Pengerjaan (After)</span>
@@ -141,12 +142,12 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
               size="sm"
               disabled={disabled || isPending || afterPhotos.length >= 10}
               onClick={() => triggerUpload('after')}
-              className="h-7 text-xs gap-1"
+              className="h-9 text-xs font-semibold px-3 gap-1.5 rounded-[8px] border-[#007ACC]/40 text-[#007ACC] hover:bg-[#EBF5FC] active:bg-[#D0E8F8] touch-press"
             >
               {isPending && activeType === 'after' ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <Plus className="h-3 w-3" />
+                <Camera className="h-3.5 w-3.5" />
               )}
               Ambil Foto
             </Button>

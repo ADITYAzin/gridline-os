@@ -80,7 +80,7 @@ export function WorkReportForm({ jobId, existingReport, disabled }: WorkReportFo
           )}
 
           <div className="space-y-1">
-            <Label htmlFor="res" className="text-xs">Hasil Pekerjaan & Tindakan Teknis *</Label>
+            <Label htmlFor="res" className="text-xs font-medium text-[#475569]">Hasil Pekerjaan & Tindakan Teknis *</Label>
             <Textarea
               id="res"
               rows={3}
@@ -88,11 +88,12 @@ export function WorkReportForm({ jobId, existingReport, disabled }: WorkReportFo
               onChange={(e) => setResult(e.target.value)}
               placeholder="Contoh: Pembersihan filter selesai, freon ditambah 20 psi, kebocoran pipa diperbaiki..."
               disabled={disabled || isPending}
+              className="rounded-[8px] border-[#E2E8F0] text-sm focus-visible:ring-[#007ACC]"
             />
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="nt" className="text-xs">Catatan Tambahan / Rekomendasi (Opsional)</Label>
+            <Label htmlFor="nt" className="text-xs font-medium text-[#475569]">Catatan Tambahan / Rekomendasi (Opsional)</Label>
             <Textarea
               id="nt"
               rows={2}
@@ -100,11 +101,16 @@ export function WorkReportForm({ jobId, existingReport, disabled }: WorkReportFo
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Contoh: Disarankan servis rutin kembali 3 bulan mendatang..."
               disabled={disabled || isPending}
+              className="rounded-[8px] border-[#E2E8F0] text-sm focus-visible:ring-[#007ACC]"
             />
           </div>
 
           {!disabled && (
-            <Button type="submit" className="w-full gap-2 text-xs font-semibold" disabled={isPending}>
+            <Button
+              type="submit"
+              className="w-full h-11 gap-2 text-xs font-semibold bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white rounded-[8px] shadow-xs touch-press"
+              disabled={isPending}
+            >
               {isPending ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" /> Mengirim Laporan...

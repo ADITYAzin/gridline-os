@@ -73,7 +73,7 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
         <Button
           onClick={() => handleAction('in')}
           disabled={isPending}
-          className="w-full h-12 gap-2 font-bold shadow-xs bg-[#007ACC] hover:bg-[#0062A3] text-white rounded-[8px]"
+          className="w-full h-12 gap-2 font-bold shadow-xs bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white rounded-[8px] touch-press"
         >
           {isPending ? (
             <>
@@ -101,7 +101,7 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
             variant="outline"
             size="sm"
             disabled={isPending}
-            className="h-8 text-xs font-semibold gap-1.5 border-[#007ACC]/30 text-[#007ACC] hover:bg-white rounded-[6px]"
+            className="h-9 text-xs font-semibold gap-1.5 border-[#007ACC]/30 text-[#007ACC] hover:bg-white active:bg-[#EBF5FC] rounded-[8px] touch-press"
           >
             {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MapPin className="h-3.5 w-3.5" />}
             Check-out Selesai

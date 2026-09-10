@@ -114,15 +114,15 @@ export function TechnicianJobList({ jobs }: TechnicianJobListProps) {
       )}
 
       {/* Segmented Tab Filter */}
-      <div className="flex items-center p-1 bg-[#F1F5F9] rounded-[10px] gap-1">
+      <div className="flex items-center p-1 bg-[#F1F5F9] rounded-[10px] gap-1 select-none">
         <button
           type="button"
           onClick={() => setActiveTab('active')}
           className={cn(
-            'flex-1 py-2 text-xs font-semibold rounded-[8px] transition-all',
+            'flex-1 py-2 text-xs font-semibold rounded-[8px] transition-all touch-press min-h-[36px]',
             activeTab === 'active'
               ? 'bg-white text-[#007ACC] shadow-xs'
-              : 'text-[#475569] hover:text-[#0F172A]'
+              : 'text-[#475569] active:text-[#0F172A]'
           )}
         >
           Aktif ({activeJobs.length})
@@ -131,10 +131,10 @@ export function TechnicianJobList({ jobs }: TechnicianJobListProps) {
           type="button"
           onClick={() => setActiveTab('completed')}
           className={cn(
-            'flex-1 py-2 text-xs font-semibold rounded-[8px] transition-all',
+            'flex-1 py-2 text-xs font-semibold rounded-[8px] transition-all touch-press min-h-[36px]',
             activeTab === 'completed'
               ? 'bg-white text-[#007ACC] shadow-xs'
-              : 'text-[#475569] hover:text-[#0F172A]'
+              : 'text-[#475569] active:text-[#0F172A]'
           )}
         >
           Selesai ({completedJobs.length})
@@ -143,10 +143,10 @@ export function TechnicianJobList({ jobs }: TechnicianJobListProps) {
           type="button"
           onClick={() => setActiveTab('all')}
           className={cn(
-            'flex-1 py-2 text-xs font-semibold rounded-[8px] transition-all',
+            'flex-1 py-2 text-xs font-semibold rounded-[8px] transition-all touch-press min-h-[36px]',
             activeTab === 'all'
               ? 'bg-white text-[#007ACC] shadow-xs'
-              : 'text-[#475569] hover:text-[#0F172A]'
+              : 'text-[#475569] active:text-[#0F172A]'
           )}
         >
           Semua ({jobs.length})
@@ -175,8 +175,8 @@ export function TechnicianJobList({ jobs }: TechnicianJobListProps) {
       ) : (
         <div className="space-y-2.5">
           {displayedJobs.map((job) => (
-            <Link key={job.id} href={`/technician/jobs/${job.id}`} className="block group">
-              <Card className="shadow-xs hover:border-[#007ACC]/50 transition-all rounded-[10px] bg-white border-[#E2E8F0]">
+            <Link key={job.id} href={`/technician/jobs/${job.id}`} className="block group touch-press">
+              <Card className="shadow-xs hover:border-[#007ACC]/50 active:bg-[#F8FAFC] active:border-[#007ACC]/60 transition-all rounded-[10px] bg-white border-[#E2E8F0]">
                 <CardHeader className="p-3.5 pb-2 space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono font-bold text-[#007ACC]">
