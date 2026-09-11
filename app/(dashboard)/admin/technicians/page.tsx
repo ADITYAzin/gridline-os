@@ -102,51 +102,63 @@ export default async function TechniciansPage({ searchParams }: PageProps) {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="text-xs">Email Penerima</TableHead>
-                      <TableHead className="text-xs">Peran Ditugaskan</TableHead>
-                      <TableHead className="text-xs">Masa Aktif Token</TableHead>
-                      <TableHead className="text-xs text-right">Aksi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {invites.map((inv) => {
-                      const isExpired = new Date(inv.expires_at) < new Date()
-                      return (
-                        <TableRow key={inv.id}>
-                          <TableCell className="font-medium text-xs">
-                            <div className="flex items-center gap-1.5">
-                              <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span>{inv.email}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-[11px] capitalize">
-                              {inv.role}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {isExpired ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-destructive">
-                                <AlertCircle className="h-3 w-3" /> Kedaluwarsa
-                              </span>
-                            ) : (
-                              <span className="text-[11px] text-muted-foreground">
-                                Berlaku s/d {new Date(inv.expires_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })},{' '}
-                                {new Date(inv.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <ResendInviteButton inviteId={inv.id} email={inv.email} />
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#F8FAFC]">
+                        <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                          Email Penerima
+                        </TableHead>
+                        <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                          Peran Ditugaskan
+                        </TableHead>
+                        <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                          Masa Aktif Token
+                        </TableHead>
+                        <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] text-center">
+                          Aksi
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invites.map((inv) => {
+                        const isExpired = new Date(inv.expires_at) < new Date()
+                        return (
+                          <TableRow key={inv.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors group">
+                            <TableCell className="px-4 py-2 align-middle font-medium text-xs">
+                              <div className="flex items-center gap-1.5">
+                                <Mail className="h-3.5 w-3.5 text-[#64748B]" />
+                                <span>{inv.email}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-4 py-2 align-middle">
+                              <Badge variant="outline" className="text-[11px] capitalize">
+                                {inv.role}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="px-4 py-2 align-middle">
+                              {isExpired ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-destructive">
+                                  <AlertCircle className="h-3 w-3" /> Kedaluwarsa
+                                </span>
+                              ) : (
+                                <span className="text-[11px] text-[#64748B]">
+                                  Berlaku s/d {new Date(inv.expires_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })},{' '}
+                                  {new Date(inv.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="px-4 py-2 align-middle text-center">
+                              <div className="flex items-center justify-center">
+                                <ResendInviteButton inviteId={inv.id} email={inv.email} />
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -158,23 +170,31 @@ export default async function TechniciansPage({ searchParams }: PageProps) {
             </CardHeader>
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Nama</TableHead>
-                  <TableHead>Peran</TableHead>
-                  <TableHead>Kontak</TableHead>
-                  <TableHead className="w-[140px]">Bergabung</TableHead>
+                <TableRow className="border-b border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#F8FAFC]">
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                    Nama
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                    Peran
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                    Kontak
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] w-[140px]">
+                    Bergabung
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {list.map((m) => (
-                  <TableRow key={m.id}>
-                    <TableCell>
-                      <div className="font-semibold">{m.name}</div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <TableRow key={m.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors group">
+                    <TableCell className="px-4 py-2 align-middle">
+                      <div className="font-semibold text-[13px] text-[#0F172A]">{m.name}</div>
+                      <div className="text-xs text-[#64748B] flex items-center gap-1">
                         <Mail className="h-3 w-3" /> {m.email}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-2 align-middle">
                       <Badge
                         variant={
                           m.role === 'admin'
@@ -188,8 +208,8 @@ export default async function TechniciansPage({ searchParams }: PageProps) {
                         {m.role}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="text-xs text-muted-foreground">
+                    <TableCell className="px-4 py-2 align-middle">
+                      <div className="text-xs text-[#64748B]">
                         {m.phone ? (
                           <span className="flex items-center gap-1">
                             <Phone className="h-3 w-3" /> {m.phone}
@@ -199,7 +219,7 @@ export default async function TechniciansPage({ searchParams }: PageProps) {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="px-4 py-2 align-middle text-xs text-[#64748B]">
                       {new Date(m.created_at).toLocaleDateString('id-ID', {
                         day: 'numeric',
                         month: 'short',

@@ -96,10 +96,10 @@ export default async function JobsListPage({ searchParams }: PageProps) {
         </div>
         <div className="flex items-center gap-2">
           <ExportJobsButton jobs={exportData} />
-          <Button asChild className="gap-2 font-semibold bg-[#007ACC] hover:bg-[#0062A3]">
+          <Button asChild className="gap-2 font-medium bg-[#007ACC] hover:bg-primary hover:text-white rounded-[8px] h-9 text-xs shadow-[0_1px_2px_0_rgba(0,122,204,0.15)]">
             <Link href="/admin/jobs/new">
               <Plus className="h-4 w-4" />
-              + Buat Job Baru
+              Buat Job Baru
             </Link>
           </Button>
         </div>
@@ -144,125 +144,145 @@ export default async function JobsListPage({ searchParams }: PageProps) {
           )}
         </Card>
       ) : (
-        <Card className="shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[110px]">No. Job</TableHead>
-                <TableHead>Customer & Lokasi</TableHead>
-                <TableHead>Layanan & Kendala</TableHead>
-                <TableHead>Teknisi</TableHead>
-                <TableHead>Prioritas</TableHead>
-                <TableHead>Status & SLA</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {jobList.map((j) => {
-                type CustType = { id: string; name: string; phone?: string | null }
-                const customer = (Array.isArray(j.customers) ? j.customers[0] : j.customers) as CustType | null
-                type TechType = { name: string }
-                const technician = (Array.isArray(j.profiles) ? j.profiles[0] : j.profiles) as TechType | null
-                type SchedType = { start_at: string; end_at: string }
-                const sched = (Array.isArray(j.schedules) ? j.schedules[0] : j.schedules) as SchedType | null
+        <div className="rounded-[12px] bg-[#FFFFFF] border border-[#E2E8F0] shadow-[0_1px_3px_0_rgba(15,23,42,0.03),0_1px_2px_0_rgba(15,23,42,0.02)] overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#F8FAFC]">
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] w-[110px]">
+                    No. Job
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                    Customer & Lokasi
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                    Layanan & Kendala
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                    Teknisi
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                    Prioritas
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                    Status & SLA
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] text-center">
+                    Aksi
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {jobList.map((j) => {
+                  type CustType = { id: string; name: string; phone?: string | null }
+                  const customer = (Array.isArray(j.customers) ? j.customers[0] : j.customers) as CustType | null
+                  type TechType = { name: string }
+                  const technician = (Array.isArray(j.profiles) ? j.profiles[0] : j.profiles) as TechType | null
+                  type SchedType = { start_at: string; end_at: string }
+                  const sched = (Array.isArray(j.schedules) ? j.schedules[0] : j.schedules) as SchedType | null
 
-                const priorityBadge: 'destructive' | 'default' | 'secondary' =
-                  j.priority === 'high'
-                    ? 'destructive'
-                    : j.priority === 'medium'
-                    ? 'default'
-                    : 'secondary'
+                  const priorityBadge: 'destructive' | 'default' | 'secondary' =
+                    j.priority === 'high'
+                      ? 'destructive'
+                      : j.priority === 'medium'
+                      ? 'default'
+                      : 'secondary'
 
-                const statusBadge =
-                  j.status === 'completed'
-                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                    : j.status === 'cancelled'
-                    ? 'bg-destructive/10 text-destructive border-destructive/20'
-                    : j.status === 'on_progress'
-                    ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                    : j.status === 'assigned'
-                    ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                    : 'bg-muted text-muted-foreground'
+                  const statusBadge =
+                    j.status === 'completed'
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                      : j.status === 'cancelled'
+                      ? 'bg-destructive/10 text-destructive border-destructive/20'
+                      : j.status === 'on_progress'
+                      ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                      : j.status === 'assigned'
+                      ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                      : 'bg-muted text-muted-foreground'
 
-                return (
-                  <TableRow key={j.id}>
-                    <TableCell className="font-mono font-bold text-xs text-primary">
-                      <Link href={`/admin/jobs/${j.id}`} className="hover:underline">
-                        {j.job_number}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      {customer?.id ? (
-                        <Link
-                          href={`/admin/customers/${customer.id}`}
-                          className="font-semibold text-sm hover:underline hover:text-primary"
-                        >
-                          {customer.name}
+                  return (
+                    <TableRow key={j.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors group">
+                      <TableCell className="px-4 py-2 align-middle font-mono font-bold text-xs text-primary">
+                        <Link href={`/admin/jobs/${j.id}`} className="hover:underline">
+                          {j.job_number}
                         </Link>
-                      ) : (
-                        <div className="font-semibold text-sm">
-                          {customer?.name || 'Customer'}
-                        </div>
-                      )}
-                      <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate max-w-xs">
-                        <MapPin className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{j.address}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium text-sm">{j.service_type}</div>
-                      <div className="text-xs text-muted-foreground line-clamp-1 max-w-xs">{j.issue}</div>
-                    </TableCell>
-                    <TableCell>
-                      {technician?.name ? (
-                        <div className="flex items-center gap-1.5 text-xs font-medium">
-                          <User className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{technician.name}</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">Belum ada</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={priorityBadge} className="capitalize text-[10px] font-semibold">
-                        {j.priority}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1 items-start">
-                        <Badge variant="outline" className={`capitalize text-[10px] font-semibold ${statusBadge}`}>
-                          {j.status.replace('_', ' ')}
-                        </Badge>
-                        <SlaBadge
-                          status={j.status}
-                          scheduledEnd={sched?.end_at}
-                          completedAt={j.completed_at}
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {j.status === 'completed' && (
-                          <Button asChild variant="outline" size="sm" className="h-8 px-2 text-xs gap-1">
-                            <Link href={`/admin/jobs/${j.id}/bap`} target="_blank">
-                              <Printer className="h-3.5 w-3.5" />
-                              BAP
-                            </Link>
-                          </Button>
+                      </TableCell>
+                      <TableCell className="px-4 py-2 align-middle">
+                        {customer?.id ? (
+                          <Link
+                            href={`/admin/customers/${customer.id}`}
+                            className="font-semibold text-sm hover:underline hover:text-[#007ACC]"
+                          >
+                            {customer.name}
+                          </Link>
+                        ) : (
+                          <div className="font-semibold text-sm">
+                            {customer?.name || 'Customer'}
+                          </div>
                         )}
-                        <Button asChild variant="outline" size="sm" className="h-8 w-8 p-0">
-                          <Link href={`/admin/jobs/${j.id}`}>
+                        <div className="text-xs text-[#64748B] flex items-center gap-1 mt-0.5 truncate max-w-xs">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{j.address}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-2 align-middle">
+                        <div className="font-medium text-sm text-[#0F172A]">{j.service_type}</div>
+                        <div className="text-xs text-[#64748B] line-clamp-1 max-w-xs">{j.issue}</div>
+                      </TableCell>
+                      <TableCell className="px-4 py-2 align-middle">
+                        {technician?.name ? (
+                          <div className="flex items-center gap-1.5 text-xs font-medium text-[#0F172A]">
+                            <User className="h-3.5 w-3.5 text-[#64748B]" />
+                            <span>{technician.name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[#94A3B8] italic">Belum ada</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="px-4 py-2 align-middle">
+                        <Badge variant={priorityBadge} className="capitalize text-[10px] font-semibold">
+                          {j.priority}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-4 py-2 align-middle">
+                        <div className="flex flex-col gap-1 items-start">
+                          <Badge variant="outline" className={`capitalize text-[10px] font-semibold ${statusBadge}`}>
+                            {j.status.replace('_', ' ')}
+                          </Badge>
+                          <SlaBadge
+                            status={j.status}
+                            scheduledEnd={sched?.end_at}
+                            completedAt={j.completed_at}
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-2 align-middle text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          {j.status === 'completed' && (
+                            <Link
+                              href={`/admin/jobs/${j.id}/bap`}
+                              target="_blank"
+                              title="Cetak BAP"
+                              className="h-8 w-8 rounded-[8px] border border-[#E2E8F0] hover:bg-primary hover:text-white text-[#64748B] transition-colors flex items-center justify-center shrink-0"
+                            >
+                              <Printer className="h-3.5 w-3.5" />
+                            </Link>
+                          )}
+                          <Link
+                            href={`/admin/jobs/${j.id}`}
+                            title="Lihat Detail"
+                            className="h-8 w-8 rounded-[8px] border border-[#E2E8F0] hover:bg-primary hover:text-white text-[#64748B] transition-colors flex items-center justify-center shrink-0"
+                          >
                             <Eye className="h-4 w-4" />
                           </Link>
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </Card>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       )}
     </div>
   )

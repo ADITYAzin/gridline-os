@@ -65,39 +65,49 @@ export function TechnicianCommissionDialog({ metrics }: TechnicianCommissionDial
             Belum ada pekerjaan selesai yang tercatat untuk teknisi ini pada periode ini.
           </div>
         ) : (
-          <div className="rounded-lg border overflow-hidden">
+          <div className="rounded-lg border border-[#E2E8F0] overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/40">
-                  <TableHead className="text-xs font-semibold">Nomor Job</TableHead>
-                  <TableHead className="text-xs font-semibold">Layanan</TableHead>
-                  <TableHead className="text-xs font-semibold">Durasi</TableHead>
-                  <TableHead className="text-xs font-semibold">SLA Tepat Waktu</TableHead>
-                  <TableHead className="text-xs font-semibold text-right">Total Insentif</TableHead>
+                <TableRow className="border-b border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#F8FAFC]">
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                    Nomor Job
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                    Layanan
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                    Durasi
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                    SLA Tepat Waktu
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] text-center">
+                    Total Insentif
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {metrics.completedJobs.map((job) => (
-                  <TableRow key={job.id}>
-                    <TableCell className="font-mono text-xs font-bold text-primary">
+                  <TableRow key={job.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors group">
+                    <TableCell className="px-4 py-2 align-middle font-mono text-xs font-bold text-[#007ACC]">
                       {job.job_number}
                     </TableCell>
-                    <TableCell className="text-xs">{job.service_type}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="px-4 py-2 align-middle text-xs text-[#0F172A]">{job.service_type}</TableCell>
+                    <TableCell className="px-4 py-2 align-middle text-xs text-[#64748B]">
                       {formatDuration(job.durationMinutes || 0)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-2 align-middle">
                       {job.isOnTime ? (
                         <Badge variant="outline" className="text-[10px] gap-1 text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
                           <CheckCircle2 className="h-3 w-3" /> On-Time (+{formatRupiah(job.onTimeBonus)})
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
+                        <Badge variant="outline" className="text-[10px] gap-1 text-[#64748B]">
                           <Clock className="h-3 w-3" /> Melebihi Batas
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs font-bold text-right">
+                    <TableCell className="px-4 py-2 align-middle text-xs font-bold text-center">
                       {formatRupiah(job.totalCommission)}
                     </TableCell>
                   </TableRow>

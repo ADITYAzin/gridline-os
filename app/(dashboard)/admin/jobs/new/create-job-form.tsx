@@ -233,8 +233,9 @@ export function CreateJobForm({
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="customerId">Pilih Customer *</Label>
-                  <Link href="/admin/customers" className="text-xs text-primary hover:underline font-medium">
-                    + Customer Baru
+                  <Link href="/admin/customers" className="text-xs text-primary hover:underline font-medium flex items-center gap-1">
+                    <Plus className="h-3 w-3" />
+                    Customer Baru
                   </Link>
                 </div>
                 <input type="hidden" name="customerId" value={formValues.customerId} />
@@ -263,9 +264,10 @@ export function CreateJobForm({
                     <Link
                       href={`/admin/customers/${formValues.customerId}`}
                       target="_blank"
-                      className="text-xs text-primary hover:underline font-medium"
+                      className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
                     >
-                      + Tambah Unit Baru
+                      <Plus className="h-3 w-3" />
+                      Tambah Unit Baru
                     </Link>
                   )}
                 </div>

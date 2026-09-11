@@ -1,6 +1,5 @@
 import { requireRole } from '@/lib/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ExportJobsButton } from '@/components/jobs/export-jobs-button'
@@ -70,78 +69,96 @@ export default async function OwnerJobsPage() {
         <ExportJobsButton jobs={exportData} filenamePrefix="Laporan-Eksekutif-Jobs" />
       </div>
 
-      <Card className="shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[110px]">No. Job</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Layanan</TableHead>
-              <TableHead>Teknisi</TableHead>
-              <TableHead>Prioritas</TableHead>
-              <TableHead>Status & SLA</TableHead>
-              <TableHead className="text-right">Tanggal</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {list.map((j) => {
-              type CustType = { name: string }
-              const customer = (Array.isArray(j.customers) ? j.customers[0] : j.customers) as CustType | null
-              type TechType = { name: string }
-              const technician = (Array.isArray(j.profiles) ? j.profiles[0] : j.profiles) as TechType | null
-              type SchedType = { start_at: string; end_at: string }
-              const sched = (Array.isArray(j.schedules) ? j.schedules[0] : j.schedules) as SchedType | null
+      <div className="rounded-[12px] bg-[#FFFFFF] border border-[#E2E8F0] shadow-[0_1px_3px_0_rgba(15,23,42,0.03),0_1px_2px_0_rgba(15,23,42,0.02)] overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#F8FAFC]">
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] w-[110px]">
+                  No. Job
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                  Customer
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                  Layanan
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                  Teknisi
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                  Prioritas
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                  Status & SLA
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] text-center">
+                  Tanggal
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {list.map((j) => {
+                type CustType = { name: string }
+                const customer = (Array.isArray(j.customers) ? j.customers[0] : j.customers) as CustType | null
+                type TechType = { name: string }
+                const technician = (Array.isArray(j.profiles) ? j.profiles[0] : j.profiles) as TechType | null
+                type SchedType = { start_at: string; end_at: string }
+                const sched = (Array.isArray(j.schedules) ? j.schedules[0] : j.schedules) as SchedType | null
 
-              return (
-                <TableRow key={j.id}>
-                  <TableCell className="font-mono font-bold text-xs text-primary">{j.job_number}</TableCell>
-                  <TableCell>
-                    <span className="font-semibold text-sm">
-                      {customer?.name || 'Customer'}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm font-medium">{j.service_type}</span>
-                  </TableCell>
-                  <TableCell>
-                    {technician?.name ? (
-                      <span className="text-xs font-medium flex items-center gap-1">
-                        <User className="h-3 w-3 text-muted-foreground" />
-                        {technician.name}
+                return (
+                  <TableRow key={j.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors group">
+                    <TableCell className="px-4 py-2 align-middle font-mono font-bold text-xs text-[#007ACC]">
+                      {j.job_number}
+                    </TableCell>
+                    <TableCell className="px-4 py-2 align-middle">
+                      <span className="font-semibold text-sm text-[#0F172A]">
+                        {customer?.name || 'Customer'}
                       </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">Belum ada</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="capitalize text-[10px]">
-                      {j.priority}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1 items-start">
-                      <Badge
-                        variant={j.status === 'completed' ? 'default' : 'secondary'}
-                        className="capitalize text-[10px]"
-                      >
-                        {j.status.replace('_', ' ')}
+                    </TableCell>
+                    <TableCell className="px-4 py-2 align-middle">
+                      <span className="text-sm font-medium text-[#0F172A]">{j.service_type}</span>
+                    </TableCell>
+                    <TableCell className="px-4 py-2 align-middle">
+                      {technician?.name ? (
+                        <span className="text-xs font-medium flex items-center gap-1 text-[#0F172A]">
+                          <User className="h-3 w-3 text-[#64748B]" />
+                          {technician.name}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-[#94A3B8] italic">Belum ada</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="px-4 py-2 align-middle">
+                      <Badge variant="outline" className="capitalize text-[10px]">
+                        {j.priority}
                       </Badge>
-                      <SlaBadge
-                        status={j.status}
-                        scheduledEnd={sched?.end_at}
-                        completedAt={j.completed_at}
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right text-xs text-muted-foreground">
-                    {new Date(j.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      </Card>
+                    </TableCell>
+                    <TableCell className="px-4 py-2 align-middle">
+                      <div className="flex flex-col gap-1 items-start">
+                        <Badge
+                          variant={j.status === 'completed' ? 'default' : 'secondary'}
+                          className="capitalize text-[10px]"
+                        >
+                          {j.status.replace('_', ' ')}
+                        </Badge>
+                        <SlaBadge
+                          status={j.status}
+                          scheduledEnd={sched?.end_at}
+                          completedAt={j.completed_at}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-2 align-middle text-center text-xs text-[#64748B]">
+                      {new Date(j.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     </div>
   )
 }

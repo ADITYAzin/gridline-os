@@ -86,20 +86,20 @@ export function CustomerAssetsTab({
   assets,
 }: CustomerAssetsTabProps) {
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <Card className="rounded-[12px] border border-[#E2E8F0] bg-[#FFFFFF] shadow-[0_1px_3px_0_rgba(15,23,42,0.03),0_1px_2px_0_rgba(15,23,42,0.02)] overflow-hidden">
+      <CardHeader className="pb-3 border-b border-[#F1F5F9]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
               <Wrench className="h-4 w-4 text-primary" />
               Daftar Unit Mesin & Aset Pelanggan
             </CardTitle>
-            <CardDescription className="text-xs mt-0.5">
+            <CardDescription className="text-xs mt-1">
               Kelola daftar mesin, spesifikasi pabrikan, nomor seri, dan status garansi untuk {customerName}.
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs border-[#E2E8F0] text-[#475569]">
               {assets.length} Unit Terdaftar
             </Badge>
             <AssetDialog customerId={customerId} />
@@ -108,18 +108,18 @@ export function CustomerAssetsTab({
       </CardHeader>
 
       {assets.length === 0 ? (
-        <div className="p-8 text-center border-t border-dashed">
-          <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary mb-3">
+        <div className="p-8 text-center">
+          <div className="inline-flex h-10 w-10 items-center justify-center rounded-[8px] bg-primary/10 text-primary mb-4">
             <Wrench className="h-5 w-5" />
           </div>
           <p className="text-sm font-semibold text-foreground">Belum ada unit / mesin terdaftar</p>
-          <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto mb-4">
+          <p className="text-xs text-muted-foreground mt-2 max-w-sm mx-auto mb-6">
             Daftarkan unit pendingin, CCTV, atau kelistrikan milik customer ini untuk memudahkan pencatatan riwayat servis berkala.
           </p>
           <AssetDialog
             customerId={customerId}
             trigger={
-              <Button size="sm" className="gap-1.5 font-semibold text-xs">
+              <Button size="sm" className="gap-2 font-medium text-xs rounded-[8px]">
                 <Plus className="h-3.5 w-3.5" />
                 Registrasi Unit Pertama
               </Button>
@@ -129,57 +129,70 @@ export function CustomerAssetsTab({
       ) : (
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Nama Peralatan & Brand</TableHead>
-              <TableHead>Model & Serial No.</TableHead>
-              <TableHead>Lokasi</TableHead>
-              <TableHead>Garansi</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
+            <TableRow className="border-b border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#F8FAFC]">
+              <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                Nama Peralatan & Brand
+              </TableHead>
+              <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                Model & Serial No.
+              </TableHead>
+              <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                Lokasi
+              </TableHead>
+              <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                Garansi
+              </TableHead>
+              <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                Status
+              </TableHead>
+              <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] text-center">
+                Aksi
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {assets.map((asset) => (
-              <TableRow key={asset.id}>
-                <TableCell>
-                  <div className="font-medium text-xs text-foreground">{asset.asset_name}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    Merk: <span className="font-semibold text-foreground/80">{asset.brand}</span>
+              <TableRow key={asset.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors group">
+                <TableCell className="px-4 py-2 align-middle">
+                  <div className="font-medium text-xs text-[#0F172A]">{asset.asset_name}</div>
+                  <div className="text-[11px] text-[#64748B]">
+                    Merk: <span className="font-semibold text-[#0F172A]/80">{asset.brand}</span>
                   </div>
                   {asset.notes && (
-                    <div className="text-[10px] text-muted-foreground line-clamp-1 italic mt-0.5">
+                    <div className="text-[10px] text-[#94A3B8] line-clamp-1 italic mt-1">
                       {asset.notes}
                     </div>
                   )}
                 </TableCell>
-                <TableCell>
-                  <div className="text-xs font-mono">{asset.model_number || '-'}</div>
-                  <div className="text-[11px] text-muted-foreground font-mono">
+                <TableCell className="px-4 py-2 align-middle">
+                  <div className="text-xs font-mono text-[#0F172A]">{asset.model_number || '-'}</div>
+                  <div className="text-[11px] text-[#64748B] font-mono">
                     SN: {asset.serial_number || '-'}
                   </div>
                 </TableCell>
-                <TableCell className="text-xs">
+                <TableCell className="px-4 py-2 align-middle text-xs">
                   {asset.location_tag ? (
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <MapPin className="h-3 w-3 text-primary shrink-0" />
+                    <div className="flex items-center gap-2 text-[#64748B]">
+                      <MapPin className="h-3.5 w-3.5 text-[#007ACC] shrink-0" />
                       <span>{asset.location_tag}</span>
                     </div>
                   ) : (
-                    <span className="text-muted-foreground">-</span>
+                    <span className="text-[#94A3B8]">-</span>
                   )}
                 </TableCell>
-                <TableCell className="text-xs">
+                <TableCell className="px-4 py-2 align-middle text-xs">
                   {getWarrantyBadge(asset.warranty_expires_at)}
                 </TableCell>
-                <TableCell>{getStatusBadge(asset.status)}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1.5">
-                    <Button asChild size="sm" variant="outline" className="h-7 px-2 text-[11px] gap-1">
-                      <Link href={`/admin/jobs/new?customerId=${customerId}&assetId=${asset.id}`}>
-                        <Wrench className="h-3 w-3 text-primary" />
-                        Servis
-                      </Link>
-                    </Button>
+                <TableCell className="px-4 py-2 align-middle">{getStatusBadge(asset.status)}</TableCell>
+                <TableCell className="px-4 py-2 align-middle text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Link
+                      href={`/admin/jobs/new?customerId=${customerId}&assetId=${asset.id}`}
+                      title="Servis Unit"
+                      className="h-8 w-8 rounded-[8px] border border-[#E2E8F0] hover:bg-primary hover:text-white text-[#64748B] transition-colors flex items-center justify-center shrink-0"
+                    >
+                      <Wrench className="h-3.5 w-3.5" />
+                    </Link>
                     <AssetDialog customerId={customerId} asset={asset} />
                   </div>
                 </TableCell>

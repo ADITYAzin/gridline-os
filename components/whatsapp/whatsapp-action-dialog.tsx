@@ -88,7 +88,7 @@ export function WhatsAppActionDialog({
           className={`gap-1.5 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-800 font-medium ${className}`}
         >
           <MessageSquare className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-          {triggerButtonText || (recipientType === 'customer' ? 'WhatsApp Klien' : 'WhatsApp Teknisi')}
+          {size !== 'icon' && (triggerButtonText !== undefined ? triggerButtonText : (recipientType === 'customer' ? 'WhatsApp Klien' : 'WhatsApp Teknisi'))}
         </Button>
       </DialogTrigger>
 

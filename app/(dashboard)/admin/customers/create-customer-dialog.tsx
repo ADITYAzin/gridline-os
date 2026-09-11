@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, Loader2, Building2, Phone, Mail, MapPin } from 'lucide-react'
 
 const initialState: CustomerActionState = {}
 
@@ -47,92 +47,140 @@ export function CreateCustomerDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 font-semibold">
+        <button
+          type="button"
+          className="h-10 px-4 rounded-[8px] bg-[#007ACC] hover:bg-primary hover:text-white active:bg-[#004F82] text-[#FFFFFF] font-medium text-[13.5px] flex items-center gap-2 shadow-[0_1px_2px_0_rgba(0,122,204,0.15)] transition-all cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#007ACC]/25"
+        >
           <Plus className="h-4 w-4" />
-          Tambah Customer
-        </Button>
+          <span>Tambah Customer</span>
+        </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Tambah Data Customer</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="sm:max-w-md rounded-[12px] border border-[#E2E8F0] shadow-[0_4px_20px_-4px_rgba(15,23,42,0.08),0_2px_6px_-2px_rgba(15,23,42,0.04)] bg-[#FFFFFF] p-6">
+        <DialogHeader className="space-y-2 pb-3 border-b border-[#F1F5F9]">
+          <DialogTitle className="font-heading text-[18px] font-semibold text-[#0F172A]">
+            Tambah Data Customer
+          </DialogTitle>
+          <DialogDescription className="text-[13px] text-[#475569]">
             Masukkan informasi klien untuk kebutuhan penugasan pekerjaan teknisi.
           </DialogDescription>
         </DialogHeader>
-        <form action={formAction} className="space-y-4 pt-2">
+
+        <form action={formAction} className="space-y-4 pt-4">
           {state.error && (
-            <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-xs font-medium text-destructive">
+            <div className="rounded-[8px] bg-[#FEF2F2] border border-[#EF4444]/30 p-3 text-[12.5px] font-medium text-[#B91C1C]">
               {state.error}
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="name">Nama Customer / Bisnis *</Label>
-            <Input
-              id="name"
-              name="name"
-              required
-              value={formData.name}
-              onChange={(e) => updateField('name', e.target.value)}
-              placeholder="PT Graha Pratama / Ibu Siti"
-              disabled={isPending}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="phone">Nomor Telepon / WA</Label>
-              <Input
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={(e) => updateField('phone', e.target.value)}
-                placeholder="08123456789"
+          {/* Customer Name */}
+          <div className="space-y-2">
+            <label htmlFor="name" className="block text-[12px] font-medium text-[#475569] tracking-[0.01em]">
+              Nama Customer / Bisnis <span className="text-[#EF4444]">*</span>
+            </label>
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#94A3B8]">
+                <Building2 className="h-4 w-4" />
+              </div>
+              <input
+                id="name"
+                name="name"
+                required
+                value={formData.name}
+                onChange={(e) => updateField('name', e.target.value)}
+                placeholder="PT Graha Pratama / Ibu Siti"
                 disabled={isPending}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => updateField('email', e.target.value)}
-                placeholder="kontak@perusahaan.com"
-                disabled={isPending}
+                className="w-full h-10 rounded-[8px] border border-[#E2E8F0] bg-[#FFFFFF] pl-9 pr-3 text-[14px] text-[#0F172A] placeholder:text-[#94A3B8] transition-all focus:border-[#007ACC] focus:ring-4 focus:ring-[#007ACC]/15 outline-none disabled:bg-[#F1F5F9]"
               />
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="address">Alamat Lengkap Servis *</Label>
-            <Textarea
-              id="address"
-              name="address"
-              required
-              rows={3}
-              value={formData.address}
-              onChange={(e) => updateField('address', e.target.value)}
-              placeholder="Jl. Sudirman No. 45, Gedung A Lt. 3, Jakarta Selatan"
-              disabled={isPending}
-            />
+          {/* 2 Cols: Phone & Email */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label htmlFor="phone" className="block text-[12px] font-medium text-[#475569] tracking-[0.01em]">
+                Nomor Telepon / WA
+              </label>
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#94A3B8]">
+                  <Phone className="h-4 w-4" />
+                </div>
+                <input
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={(e) => updateField('phone', e.target.value)}
+                  placeholder="08123456789"
+                  disabled={isPending}
+                  className="w-full h-10 rounded-[8px] border border-[#E2E8F0] bg-[#FFFFFF] pl-9 pr-3 text-[14px] text-[#0F172A] placeholder:text-[#94A3B8] transition-all focus:border-[#007ACC] focus:ring-4 focus:ring-[#007ACC]/15 outline-none disabled:bg-[#F1F5F9]"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-[12px] font-medium text-[#475569] tracking-[0.01em]">
+                Alamat Email
+              </label>
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#94A3B8]">
+                  <Mail className="h-4 w-4" />
+                </div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => updateField('email', e.target.value)}
+                  placeholder="kontak@perusahaan.com"
+                  disabled={isPending}
+                  className="w-full h-10 rounded-[8px] border border-[#E2E8F0] bg-[#FFFFFF] pl-9 pr-3 text-[14px] text-[#0F172A] placeholder:text-[#94A3B8] transition-all focus:border-[#007ACC] focus:ring-4 focus:ring-[#007ACC]/15 outline-none disabled:bg-[#F1F5F9]"
+                />
+              </div>
+            </div>
           </div>
 
-          <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+          {/* Address */}
+          <div className="space-y-2">
+            <label htmlFor="address" className="block text-[12px] font-medium text-[#475569] tracking-[0.01em]">
+              Alamat Lengkap Servis <span className="text-[#EF4444]">*</span>
+            </label>
+            <div className="relative">
+              <textarea
+                id="address"
+                name="address"
+                required
+                rows={3}
+                value={formData.address}
+                onChange={(e) => updateField('address', e.target.value)}
+                placeholder="Jl. Sudirman No. 45, Gedung A Lt. 3, Jakarta Selatan"
+                disabled={isPending}
+                className="w-full rounded-[8px] border border-[#E2E8F0] bg-[#FFFFFF] p-3 text-[13.5px] text-[#0F172A] placeholder:text-[#94A3B8] transition-all focus:border-[#007ACC] focus:ring-4 focus:ring-[#007ACC]/15 outline-none disabled:bg-[#F1F5F9] resize-none"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="pt-4 gap-2 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              disabled={isPending}
+              className="h-10 px-4 rounded-[8px] border border-[#CBD5E1] bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#0F172A] font-medium text-[13.5px] transition-colors focus:outline-none"
+            >
               Batal
-            </Button>
-            <Button type="submit" disabled={isPending}>
+            </button>
+            <button
+              type="submit"
+              disabled={isPending}
+              className="h-10 px-4 rounded-[8px] bg-[#007ACC] hover:bg-primary hover:text-white active:bg-[#004F82] text-white font-medium text-[13.5px] shadow-[0_1px_2px_0_rgba(0,122,204,0.15)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
               {isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Menyimpan...
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Menyimpan...</span>
                 </>
               ) : (
-                'Simpan Customer'
+                <span>Simpan Customer</span>
               )}
-            </Button>
+            </button>
           </DialogFooter>
         </form>
       </DialogContent>

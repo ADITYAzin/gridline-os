@@ -14,10 +14,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const { reset } = await searchParams
   const resetSuccess = reset === 'success'
 
-  return (
-    <main className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-background via-muted/30 to-background">
-      <LoginForm resetSuccess={resetSuccess} />
-    </main>
-  )
+  return <LoginForm resetSuccess={resetSuccess} />
 }
 

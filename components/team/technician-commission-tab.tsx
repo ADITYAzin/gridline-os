@@ -106,38 +106,52 @@ export function TechnicianCommissionTab({ metrics }: TechnicianCommissionTabProp
         ) : (
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/10">
-                <TableHead className="text-xs">Nama Teknisi</TableHead>
-                <TableHead className="text-xs text-center">Job Selesai</TableHead>
-                <TableHead className="text-xs">Komisi Dasar</TableHead>
-                <TableHead className="text-xs">Bonus SLA On-Time</TableHead>
-                <TableHead className="text-xs">Total Komisi</TableHead>
-                <TableHead className="text-xs text-right">Aksi</TableHead>
+              <TableRow className="border-b border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#F8FAFC]">
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                  Nama Teknisi
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] text-center">
+                  Job Selesai
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                  Komisi Dasar
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                  Bonus SLA On-Time
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                  Total Komisi
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] text-center">
+                  Aksi
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {metrics.map((m) => (
-                <TableRow key={m.technicianId} className="hover:bg-muted/30">
-                  <TableCell>
-                    <div className="font-semibold text-xs text-foreground">{m.name}</div>
-                    <div className="text-[11px] text-muted-foreground">{m.email}</div>
+                <TableRow key={m.technicianId} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors group">
+                  <TableCell className="px-4 py-2 align-middle">
+                    <div className="font-semibold text-xs text-[#0F172A]">{m.name}</div>
+                    <div className="text-[11px] text-[#64748B]">{m.email}</div>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="px-4 py-2 align-middle text-center">
                     <Badge variant="secondary" className="text-xs font-mono">
                       {m.totalCompleted} job
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell className="px-4 py-2 align-middle text-xs">
                     {formatRupiah(m.totalBaseCommission)}
                   </TableCell>
-                  <TableCell className="text-xs text-emerald-600 font-medium">
+                  <TableCell className="px-4 py-2 align-middle text-xs text-emerald-600 font-medium">
                     +{formatRupiah(m.totalBonusCommission)}
                   </TableCell>
-                  <TableCell className="text-xs font-bold text-primary">
+                  <TableCell className="px-4 py-2 align-middle text-xs font-bold text-[#007ACC]">
                     {formatRupiah(m.totalCommission)}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <TechnicianCommissionDialog metrics={m} />
+                  <TableCell className="px-4 py-2 align-middle text-center">
+                    <div className="flex items-center justify-center">
+                      <TechnicianCommissionDialog metrics={m} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

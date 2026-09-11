@@ -110,13 +110,25 @@ export function TechnicianPerformanceTab({ metrics }: TechnicianPerformanceTabPr
         ) : (
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/10">
-                <TableHead className="w-12 text-center text-xs">Rank</TableHead>
-                <TableHead className="text-xs">Nama Teknisi</TableHead>
-                <TableHead className="text-xs text-center">Beban Kerja</TableHead>
-                <TableHead className="text-xs">SLA Tepat Waktu</TableHead>
-                <TableHead className="text-xs">Rata-rata Durasi</TableHead>
-                <TableHead className="text-xs text-right">Status Lapangan</TableHead>
+              <TableRow className="border-b border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#F8FAFC]">
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] w-12 text-center">
+                  Rank
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                  Nama Teknisi
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] text-center">
+                  Beban Kerja
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                  SLA Tepat Waktu
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                  Rata-rata Durasi
+                </TableHead>
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] text-center">
+                  Status Lapangan
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -126,8 +138,8 @@ export function TechnicianPerformanceTab({ metrics }: TechnicianPerformanceTabPr
                 const isTop3 = index === 2 && m.totalCompleted > 0
 
                 return (
-                  <TableRow key={m.technicianId} className="hover:bg-muted/30">
-                    <TableCell className="text-center font-bold text-xs">
+                  <TableRow key={m.technicianId} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors group">
+                    <TableCell className="px-4 py-2 align-middle text-center font-bold text-xs">
                       {isTop1 ? (
                         <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/20 text-amber-600">
                           🥇
@@ -141,28 +153,28 @@ export function TechnicianPerformanceTab({ metrics }: TechnicianPerformanceTabPr
                           🥉
                         </span>
                       ) : (
-                        <span className="text-muted-foreground">#{index + 1}</span>
+                        <span className="text-[#94A3B8]">#{index + 1}</span>
                       )}
                     </TableCell>
-                    <TableCell>
-                      <div className="font-semibold text-xs text-foreground">{m.name}</div>
-                      <div className="text-[11px] text-muted-foreground">{m.email}</div>
+                    <TableCell className="px-4 py-2 align-middle">
+                      <div className="font-semibold text-xs text-[#0F172A]">{m.name}</div>
+                      <div className="text-[11px] text-[#64748B]">{m.email}</div>
                     </TableCell>
-                    <TableCell className="text-center">
-                      <div className="text-xs font-bold">{m.totalCompleted} <span className="text-muted-foreground font-normal">/ {m.totalAssigned}</span></div>
-                      <div className="text-[10px] text-muted-foreground">
+                    <TableCell className="px-4 py-2 align-middle text-center">
+                      <div className="text-xs font-bold text-[#0F172A]">{m.totalCompleted} <span className="text-[#64748B] font-normal">/ {m.totalAssigned}</span></div>
+                      <div className="text-[10px] text-[#94A3B8]">
                         {m.totalActive > 0 ? `${m.totalActive} aktif` : '0 aktif'}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-2 align-middle">
                       <div className="space-y-1 w-32">
                         <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-semibold">{m.onTimeRate}%</span>
-                          <span className="text-muted-foreground text-[10px]">
+                          <span className="font-semibold text-[#0F172A]">{m.onTimeRate}%</span>
+                          <span className="text-[#94A3B8] text-[10px]">
                             {m.onTimeCount}/{m.totalCompleted}
                           </span>
                         </div>
-                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div className="h-1.5 w-full rounded-full bg-[#F1F5F9] overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all ${
                               m.onTimeRate >= 85
@@ -176,12 +188,12 @@ export function TechnicianPerformanceTab({ metrics }: TechnicianPerformanceTabPr
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="px-4 py-2 align-middle text-xs text-[#64748B]">
                       {formatDuration(m.averageDurationMinutes)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="px-4 py-2 align-middle text-center">
                       {m.totalActive > 0 ? (
-                        <Badge variant="default" className="text-[10px] bg-blue-600 hover:bg-blue-600">
+                        <Badge variant="default" className="text-[10px] bg-[#007ACC] hover:bg-[#007ACC]">
                           Sedang Bertugas
                         </Badge>
                       ) : (

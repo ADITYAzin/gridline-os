@@ -85,22 +85,22 @@ export default async function CustomerDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-6 max-w-6xl">
       {/* Top Header & Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2E8F0] pb-4">
         <div className="flex items-center gap-3">
-          <Button asChild variant="outline" size="sm" className="h-8 w-8 p-0">
+          <Button asChild variant="outline" size="sm" className="h-8 w-8 p-0 rounded-[8px] border-[#E2E8F0]">
             <Link href="/admin/customers">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight">{customer.name}</h1>
-              <Badge variant="outline" className="text-xs">
+              <h1 className="font-heading text-2xl font-bold tracking-tight text-[#0F172A]">{customer.name}</h1>
+              <Badge variant="outline" className="text-xs border-[#E2E8F0] text-[#475569]">
                 Klien Terdaftar
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              ID Customer: <span className="font-mono">{customer.id}</span>
+            <p className="text-xs text-muted-foreground mt-1">
+              ID Customer: <span className="font-mono text-[#475569]">{customer.id}</span>
             </p>
           </div>
         </div>
@@ -116,13 +116,14 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                 address: customer.address,
               }}
               triggerButtonText="Hubungi WhatsApp"
+              className="rounded-[8px] h-9 text-xs"
             />
           )}
 
-          <Button asChild className="gap-1.5 font-semibold" size="sm">
+          <Button asChild className="gap-2 font-medium bg-[#007ACC] hover:bg-[#0062A3] rounded-[8px] h-9 text-xs shadow-[0_1px_2px_0_rgba(0,122,204,0.15)]">
             <Link href={`/admin/jobs/new?customerId=${customer.id}`}>
               <Plus className="h-4 w-4" />
-              + Buat Job Baru
+              Buat Job Baru
             </Link>
           </Button>
         </div>
@@ -130,10 +131,10 @@ export default async function CustomerDetailPage({ params }: PageProps) {
 
       {/* Customer Info Card & Metric Summary */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="md:col-span-2 shadow-sm">
+        <Card className="md:col-span-2 rounded-[12px] border border-[#E2E8F0] bg-[#FFFFFF] shadow-[0_1px_3px_0_rgba(15,23,42,0.03),0_1px_2px_0_rgba(15,23,42,0.02)]">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
-              <Building2 className="h-4 w-4 text-primary" />
+              <Building2 className="h-4 w-4 text-[#007ACC]" />
               Detail Kontak & Lokasi
             </CardTitle>
           </CardHeader>
@@ -164,7 +165,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
+        <Card className="rounded-[12px] border border-[#E2E8F0] bg-[#FFFFFF] shadow-[0_1px_3px_0_rgba(15,23,42,0.03),0_1px_2px_0_rgba(15,23,42,0.02)]">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground">Unit Mesin / Aset</CardTitle>
           </CardHeader>
@@ -176,12 +177,12 @@ export default async function CustomerDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
+        <Card className="rounded-[12px] border border-[#E2E8F0] bg-[#FFFFFF] shadow-[0_1px_3px_0_rgba(15,23,42,0.03),0_1px_2px_0_rgba(15,23,42,0.02)]">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground">Status Pekerjaan</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{activeJobs}</div>
+            <div className="text-2xl font-bold text-[#007ACC]">{activeJobs}</div>
             <p className="text-[11px] text-muted-foreground mt-1">
               {completedJobs} selesai / {totalJobs} total tiket
             </p>
@@ -191,12 +192,12 @@ export default async function CustomerDetailPage({ params }: PageProps) {
 
       {/* Main Tabs: Assets & Equipment and Service History */}
       <Tabs defaultValue="assets" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 sm:w-[400px]">
-          <TabsTrigger value="assets" className="gap-1.5 text-xs">
+        <TabsList className="grid w-full grid-cols-2 sm:w-[400px] border border-[#E2E8F0] bg-[#F1F5F9] rounded-[8px]">
+          <TabsTrigger value="assets" className="gap-2 text-xs rounded-[6px]">
             <Wrench className="h-3.5 w-3.5" />
             Unit Mesin / Aset ({totalAssets})
           </TabsTrigger>
-          <TabsTrigger value="history" className="gap-1.5 text-xs">
+          <TabsTrigger value="history" className="gap-2 text-xs rounded-[6px]">
             <Briefcase className="h-3.5 w-3.5" />
             Riwayat Servis ({totalJobs})
           </TabsTrigger>
@@ -211,19 +212,19 @@ export default async function CustomerDetailPage({ params }: PageProps) {
         </TabsContent>
 
         <TabsContent value="history" className="mt-0">
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
+          <Card className="rounded-[12px] border border-[#E2E8F0] bg-[#FFFFFF] shadow-[0_1px_3px_0_rgba(15,23,42,0.03),0_1px_2px_0_rgba(15,23,42,0.02)] overflow-hidden">
+            <CardHeader className="pb-3 border-b border-[#F1F5F9]">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Briefcase className="h-4 w-4 text-primary" />
+                    <Briefcase className="h-4 w-4 text-[#007ACC]" />
                     Riwayat Servis Pelanggan (Service History)
                   </CardTitle>
                   <CardDescription className="text-xs mt-0.5">
                     Daftar semua riwayat penugasan, perbaikan, dan pemeliharaan untuk customer ini.
                   </CardDescription>
                 </div>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs border-[#E2E8F0] text-[#475569]">
                   {jobList.length} Catatan
                 </Badge>
               </div>
@@ -243,13 +244,25 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[120px]">No. Tiket</TableHead>
-                    <TableHead>Layanan & Keluhan</TableHead>
-                    <TableHead>Teknisi</TableHead>
-                    <TableHead>Jadwal / Tanggal</TableHead>
-                    <TableHead>Status & SLA</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
+                  <TableRow className="border-b border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#F8FAFC]">
+                    <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] w-[120px]">
+                      No. Tiket
+                    </TableHead>
+                    <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                      Layanan & Keluhan
+                    </TableHead>
+                    <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                      Teknisi
+                    </TableHead>
+                    <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                      Jadwal / Tanggal
+                    </TableHead>
+                    <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                      Status & SLA
+                    </TableHead>
+                    <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] text-center">
+                      Aksi
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -260,22 +273,22 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                     const sched = (Array.isArray(j.schedules) ? j.schedules[0] : j.schedules) as ScheduleType
 
                     return (
-                      <TableRow key={j.id}>
-                        <TableCell className="font-mono font-semibold text-primary">
+                      <TableRow key={j.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors group">
+                        <TableCell className="px-4 py-2 align-middle font-mono font-semibold text-primary">
                           <Link href={`/admin/jobs/${j.id}`} className="hover:underline">
                             {j.job_number}
                           </Link>
                         </TableCell>
-                        <TableCell>
-                          <div className="font-medium text-xs">{j.service_type}</div>
-                          <div className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                        <TableCell className="px-4 py-2 align-middle">
+                          <div className="font-medium text-xs text-[#0F172A]">{j.service_type}</div>
+                          <div className="text-[11px] text-[#64748B] line-clamp-1 mt-0.5">
                             {j.issue}
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs">
-                          {tech ? tech.name : <span className="text-muted-foreground italic">Belum ditugaskan</span>}
+                        <TableCell className="px-4 py-2 align-middle text-xs">
+                          {tech ? tech.name : <span className="text-[#94A3B8] italic">Belum ditugaskan</span>}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell className="px-4 py-2 align-middle text-xs text-[#64748B]">
                           {sched ? (
                             <div>
                               <div>{new Date(sched.start_at).toLocaleDateString('id-ID')}</div>
@@ -287,7 +300,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                             new Date(j.created_at).toLocaleDateString('id-ID')
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-2 align-middle">
                           <div className="flex flex-col gap-1 items-start">
                             <Badge
                               variant={
@@ -308,21 +321,25 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                             />
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <TableCell className="px-4 py-2 align-middle text-center">
+                          <div className="flex items-center justify-center gap-2">
                             {j.status === 'completed' && (
-                              <Button asChild variant="outline" size="sm" className="h-7 px-2 text-[11px] gap-1">
-                                <Link href={`/admin/jobs/${j.id}/bap`} target="_blank">
-                                  <Printer className="h-3 w-3" />
-                                  BAP
-                                </Link>
-                              </Button>
-                            )}
-                            <Button asChild variant="ghost" size="sm" className="h-7 w-7 p-0">
-                              <Link href={`/admin/jobs/${j.id}`}>
-                                <Eye className="h-3.5 w-3.5" />
+                              <Link
+                                href={`/admin/jobs/${j.id}/bap`}
+                                target="_blank"
+                                title="Cetak BAP"
+                                className="h-8 w-8 rounded-[8px] border border-[#E2E8F0] hover:bg-primary hover:text-white text-[#64748B] transition-colors flex items-center justify-center shrink-0"
+                              >
+                                <Printer className="h-3.5 w-3.5" />
                               </Link>
-                            </Button>
+                            )}
+                            <Link
+                              href={`/admin/jobs/${j.id}`}
+                              title="Lihat Detail"
+                              className="h-8 w-8 rounded-[8px] border border-[#E2E8F0] hover:bg-primary hover:text-white text-[#64748B] transition-colors flex items-center justify-center shrink-0"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Link>
                           </div>
                         </TableCell>
                       </TableRow>
