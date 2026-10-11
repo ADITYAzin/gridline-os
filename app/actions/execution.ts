@@ -23,32 +23,30 @@ export async function checkInAction(jobId: string, latitude?: number, longitude?
 
   const now = new Date().toISOString()
 
-  // 2. Upsert attendance
-  const { error: attError } = await admin.from('job_attendance').upsert(
-    {
-      org_id: profile.orgId,
-      job_id: jobId,
-      technician_id: profile.id,
-      check_in_at: now,
-      check_in_latitude: latitude || null,
-      check_in_longitude: longitude || null,
-    },
-    { onConflict: 'job_id' },
-  )
+  // 2. Upsert attendance & update job status in parallel
+  const [attResult] = await Promise.all([
+    admin.from('job_attendance').upsert(
+      {
+        org_id: profile.orgId,
+        job_id: jobId,
+        technician_id: profile.id,
+        check_in_at: now,
+        check_in_latitude: latitude || null,
+        check_in_longitude: longitude || null,
+      },
+      { onConflict: 'job_id' },
+    ),
+    admin
+      .from('jobs')
+      .update({ status: 'on_progress' })
+      .eq('id', jobId),
+  ])
 
-  if (attError) {
-    return { error: 'Gagal mencatat check-in: ' + attError.message }
+  if (attResult.error) {
+    return { error: 'Gagal mencatat check-in: ' + attResult.error.message }
   }
 
-  // 3. Update job status to on_progress
-  await admin
-    .from('jobs')
-    .update({ status: 'on_progress' })
-    .eq('id', jobId)
-
   revalidatePath(`/technician/jobs/${jobId}`)
-  revalidatePath('/technician')
-  revalidatePath(`/admin/jobs/${jobId}`)
   return { success: true }
 }
 
@@ -154,7 +152,6 @@ export async function uploadJobPhotoAction(jobId: string, type: 'before' | 'afte
   }
 
   revalidatePath(`/technician/jobs/${jobId}`)
-  revalidatePath(`/admin/jobs/${jobId}`)
   return { success: true }
 }
 
@@ -204,7 +201,6 @@ export async function submitSignatureAction(jobId: string, customerName: string,
   }
 
   revalidatePath(`/technician/jobs/${jobId}`)
-  revalidatePath(`/admin/jobs/${jobId}`)
   return { success: true }
 }
 
@@ -234,7 +230,6 @@ export async function submitWorkReportAction(jobId: string, result: string, note
   }
 
   revalidatePath(`/technician/jobs/${jobId}`)
-  revalidatePath(`/admin/jobs/${jobId}`)
   return { success: true }
 }
 

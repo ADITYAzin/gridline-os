@@ -15,15 +15,19 @@ interface CheckInButtonProps {
 
 export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
   const [isPending, startTransition] = useTransition()
+  const [isLocating, setIsLocating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const isCheckedIn = Boolean(attendance?.check_in_at)
   const isCheckedOut = Boolean(attendance?.check_out_at)
+  const isBusy = isPending || isLocating
 
   const handleAction = (type: 'in' | 'out') => {
     setError(null)
+    setIsLocating(true)
 
     const executeWithCoords = (lat?: number, lng?: number) => {
+      setIsLocating(false)
       startTransition(async () => {
         const res = type === 'in' ? await checkInAction(jobId, lat, lng) : await checkOutAction(jobId, lat, lng)
         if (res.error) {
@@ -32,15 +36,16 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
       })
     }
 
-    if (navigator.geolocation) {
+    if (typeof window !== 'undefined' && 'geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           executeWithCoords(pos.coords.latitude, pos.coords.longitude)
         },
         () => {
+          // If GPS fails or times out, proceed immediately so user is never blocked
           executeWithCoords()
         },
-        { timeout: 5000 },
+        { timeout: 3000, enableHighAccuracy: false, maximumAge: 60000 },
       )
     } else {
       executeWithCoords()
@@ -72,12 +77,16 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
       {!isCheckedIn ? (
         <Button
           onClick={() => handleAction('in')}
-          disabled={isPending}
-          className="w-full h-12 gap-2 font-bold shadow-xs bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white rounded-[8px] touch-press"
+          disabled={isBusy}
+          className="w-full h-12 gap-2 font-bold shadow-xs bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white rounded-[8px] touch-press cursor-pointer"
         >
-          {isPending ? (
+          {isLocating ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Mencatat Lokasi GPS...
+              <Loader2 className="h-4 w-4 animate-spin" /> Mendapatkan Lokasi GPS...
+            </>
+          ) : isPending ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Mencatat Check-in...
             </>
           ) : (
             <>
@@ -100,11 +109,22 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
             onClick={() => handleAction('out')}
             variant="outline"
             size="sm"
-            disabled={isPending}
-            className="h-9 text-xs font-semibold gap-1.5 border-[#007ACC]/30 text-[#007ACC] hover:bg-white active:bg-[#EBF5FC] rounded-[8px] touch-press"
+            disabled={isBusy}
+            className="h-9 text-xs font-semibold gap-1.5 border-[#007ACC]/30 text-[#007ACC] hover:bg-white active:bg-[#EBF5FC] rounded-[8px] touch-press cursor-pointer"
           >
-            {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MapPin className="h-3.5 w-3.5" />}
-            Check-out Selesai
+            {isLocating ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> GPS...
+              </>
+            ) : isPending ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Menyimpan...
+              </>
+            ) : (
+              <>
+                <MapPin className="h-3.5 w-3.5" /> Check-out Selesai
+              </>
+            )}
           </Button>
         </div>
       )}

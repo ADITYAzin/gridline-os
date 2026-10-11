@@ -27,18 +27,15 @@ export async function proxy(request: NextRequest) {
     },
   )
 
-  await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
   const isProtected = protectedPrefixes.some((prefix) => pathname.startsWith(prefix))
 
-  if (isProtected) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
+  if (isProtected && !user) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return response

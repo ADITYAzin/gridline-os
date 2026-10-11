@@ -2,10 +2,11 @@
 
 import { useState, useTransition, useRef } from 'react'
 import { uploadJobPhotoAction } from '@/app/actions/execution'
+import { compressImage } from '@/lib/image-compress'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Camera, Image as ImageIcon, Loader2, Plus, Check } from 'lucide-react'
+import { Camera, Image as ImageIcon, Loader2, Check } from 'lucide-react'
 
 interface JobPhoto {
   id: string
@@ -22,34 +23,49 @@ interface PhotoUploadSectionProps {
 
 export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSectionProps) {
   const [isPending, startTransition] = useTransition()
+  const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [activeType, setActiveType] = useState<'before' | 'after'>('before')
 
+  const isUploading = isPending || isProcessing
   const beforePhotos = photos.filter((p) => p.type === 'before')
   const afterPhotos = photos.filter((p) => p.type === 'after')
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawFile = e.target.files?.[0]
+    if (!rawFile) return
 
     setError(null)
-    const formData = new FormData()
-    formData.append('file', file)
+    setIsProcessing(true)
 
-    startTransition(async () => {
-      const res = await uploadJobPhotoAction(jobId, activeType, formData)
-      if (res.error) {
-        setError(res.error)
-      }
+    try {
+      const file = await compressImage(rawFile)
+      const formData = new FormData()
+      formData.append('file', file)
+
+      startTransition(async () => {
+        try {
+          const res = await uploadJobPhotoAction(jobId, activeType, formData)
+          if (res.error) {
+            setError(res.error)
+          }
+        } finally {
+          setIsProcessing(false)
+        }
+      })
+    } catch {
+      setIsProcessing(false)
+      setError('Gagal memproses foto sebelum diunggah.')
+    } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
-    })
+    }
   }
 
   const triggerUpload = (type: 'before' | 'after') => {
-    if (disabled) return
+    if (disabled || isUploading) return
     setActiveType(type)
     fileInputRef.current?.click()
   }
@@ -100,16 +116,16 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
               type="button"
               variant="outline"
               size="sm"
-              disabled={disabled || isPending || beforePhotos.length >= 10}
+              disabled={disabled || isUploading || beforePhotos.length >= 10}
               onClick={() => triggerUpload('before')}
-              className="h-9 text-xs font-semibold px-3 gap-1.5 rounded-[8px] border-[#007ACC]/40 text-[#007ACC] hover:bg-[#EBF5FC] active:bg-[#D0E8F8] touch-press"
+              className="h-9 text-xs font-semibold px-3 gap-1.5 rounded-[8px] border-[#007ACC]/40 text-[#007ACC] hover:bg-[#EBF5FC] active:bg-[#D0E8F8] touch-press cursor-pointer"
             >
-              {isPending && activeType === 'before' ? (
+              {isUploading && activeType === 'before' ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <Camera className="h-3.5 w-3.5" />
               )}
-              Ambil Foto
+              {isUploading && activeType === 'before' ? 'Mengunggah...' : 'Ambil Foto'}
             </Button>
           </div>
 
@@ -120,6 +136,12 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
                 <span className="absolute bottom-1 right-1 text-[9px] font-mono bg-background/80 px-1 rounded">#{idx + 1}</span>
               </div>
             ))}
+            {isUploading && activeType === 'before' && (
+              <div className="aspect-square rounded-[8px] border-2 border-dashed border-[#007ACC]/50 bg-[#EBF5FC]/60 flex flex-col items-center justify-center gap-1 animate-pulse">
+                <Loader2 className="h-4 w-4 text-[#007ACC] animate-spin" />
+                <span className="text-[10px] text-[#007ACC] font-medium">Proses...</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -140,16 +162,16 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
               type="button"
               variant="outline"
               size="sm"
-              disabled={disabled || isPending || afterPhotos.length >= 10}
+              disabled={disabled || isUploading || afterPhotos.length >= 10}
               onClick={() => triggerUpload('after')}
-              className="h-9 text-xs font-semibold px-3 gap-1.5 rounded-[8px] border-[#007ACC]/40 text-[#007ACC] hover:bg-[#EBF5FC] active:bg-[#D0E8F8] touch-press"
+              className="h-9 text-xs font-semibold px-3 gap-1.5 rounded-[8px] border-[#007ACC]/40 text-[#007ACC] hover:bg-[#EBF5FC] active:bg-[#D0E8F8] touch-press cursor-pointer"
             >
-              {isPending && activeType === 'after' ? (
+              {isUploading && activeType === 'after' ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <Camera className="h-3.5 w-3.5" />
               )}
-              Ambil Foto
+              {isUploading && activeType === 'after' ? 'Mengunggah...' : 'Ambil Foto'}
             </Button>
           </div>
 
@@ -160,6 +182,12 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
                 <span className="absolute bottom-1 right-1 text-[9px] font-mono bg-background/80 px-1 rounded">#{idx + 1}</span>
               </div>
             ))}
+            {isUploading && activeType === 'after' && (
+              <div className="aspect-square rounded-[8px] border-2 border-dashed border-[#007ACC]/50 bg-[#EBF5FC]/60 flex flex-col items-center justify-center gap-1 animate-pulse">
+                <Loader2 className="h-4 w-4 text-[#007ACC] animate-spin" />
+                <span className="text-[10px] text-[#007ACC] font-medium">Proses...</span>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

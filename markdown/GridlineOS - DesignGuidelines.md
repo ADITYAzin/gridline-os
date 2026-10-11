@@ -3,7 +3,7 @@
 > **Platform:** Field Service Management (B2B SaaS)  
 > **Target Products:** Dispatcher Web Portal, Manager Operational Dashboard, Field Technician Poppinsface  
 > **Brand Identity:** Gridline Blue (`#007ACC`)  
-> **Typography System:** Sora & Poppins (mengikuti Tech Stack & Libraries)  
+> **Typography System:** Plus Jakarta Sans & Poppins (mengikuti Tech Stack & Libraries)
 
 ---
 
@@ -51,16 +51,16 @@ Used for dispatch status tags, technician SLA tracking, and audit reports.
 ## 2. Typography System
 
 To maintain visual cohesion, the entire system relies on a maximum of **two font families**:
-* **Headline Font:** `Sora` — Modern, geometric, clean architectural feel.
+* **Headline Font:** `Plus Jakarta Sans` — Modern, geometric, clean architectural feel.
 * **Body / UI Font:** `Poppins` — High x-height, neutral geometric grotesque optimized for data density.
 
 ### Typographic Hierarchy Scale
 
 | Style Level | Font Family | Size | Weight | Line Height | Tracking | Purpose |
 |---|---|---|---|---|---|---|
-| **Display 1** | Sora | 32px | 700 (Bold) | 40px | -0.02em | KPI Metric Numbers, Login titles |
-| **Heading 1** | Sora | 24px | 600 (SemiBold) | 32px | -0.015em | View & Board Titles (e.g., Job Board) |
-| **Heading 2** | Sora | 18px | 600 (SemiBold) | 26px | -0.01em | Modal headers, Card category titles |
+| **Display 1** | Plus Jakarta Sans | 32px | 700 (Bold) | 40px | -0.02em | KPI Metric Numbers, Login titles |
+| **Heading 1** | Plus Jakarta Sans | 24px | 600 (SemiBold) | 32px | -0.015em | View & Board Titles (e.g., Job Board) |
+| **Heading 2** | Plus Jakarta Sans | 18px | 600 (SemiBold) | 26px | -0.01em | Modal headers, Card category titles |
 | **Body Large** | Poppins | 16px | 400 / 500 | 24px | 0 | Lead summaries, modal introductions |
 | **Body Regular** | Poppins | 14px | 400 / 500 | 20px | 0 | Form inputs, table cells, primary descriptions |
 | **Caption** | Poppins | 12px | 500 (Medium) | 16px | +0.01em | Field labels, timestamps, badge labels |

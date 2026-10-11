@@ -18,8 +18,9 @@
 - **Component:** shadcn/ui
 - **Primitive:** Radix UI
 - **Icons:** Lucide React
-- **Headline Font:** Sora
+- **Headline Font:** Plus Jakarta Sans
 - **Body / Description Font:** Poppins
+- **Monospace Utility Font:** Poppins
 - **Animation:** Framer Motion
 - **Charts:** Recharts
 

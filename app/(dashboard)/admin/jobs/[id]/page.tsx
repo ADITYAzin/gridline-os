@@ -36,37 +36,9 @@ export default async function JobDetailPage({ params }: PageProps) {
   const { id } = await params
   const supabase = await createSupabaseServerClient()
 
-  // 1. Fetch Job
-  const { data: job } = await supabase
-    .from('jobs')
-    .select(`
-      id,
-      job_number,
-      service_type,
-      issue,
-      instructions,
-      address,
-      priority,
-      status,
-      technician_id,
-      created_at,
-      completed_at,
-      cancelled_at,
-      cancellation_reason,
-      customers(id, name, phone, email, address),
-      customer_assets(id, asset_name, brand, model_number, serial_number, location_tag, warranty_expires_at, status),
-      profiles!jobs_technician_id_fkey(id, name, phone, email)
-    `)
-    .eq('id', id)
-    .eq('org_id', profile.orgId)
-    .maybeSingle()
-
-  if (!job) {
-    notFound()
-  }
-
-  // 2. Fetch Supporting Artifacts in Parallel
+  // 1. Fetch Job and Supporting Artifacts in Parallel (Eliminate Waterfall)
   const [
+    { data: job },
     { data: schedule },
     { data: checklist },
     { data: photos },
@@ -74,6 +46,29 @@ export default async function JobDetailPage({ params }: PageProps) {
     { data: report },
     { data: technicians },
   ] = await Promise.all([
+    supabase
+      .from('jobs')
+      .select(`
+        id,
+        job_number,
+        service_type,
+        issue,
+        instructions,
+        address,
+        priority,
+        status,
+        technician_id,
+        created_at,
+        completed_at,
+        cancelled_at,
+        cancellation_reason,
+        customers(id, name, phone, email, address),
+        customer_assets(id, asset_name, brand, model_number, serial_number, location_tag, warranty_expires_at, status),
+        profiles!jobs_technician_id_fkey(id, name, phone, email)
+      `)
+      .eq('id', id)
+      .eq('org_id', profile.orgId)
+      .maybeSingle(),
     supabase.from('schedules').select('start_at, end_at').eq('job_id', id).maybeSingle(),
     supabase.from('checklist_items').select('*').eq('job_id', id).order('created_at', { ascending: true }),
     supabase.from('job_photos').select('*').eq('job_id', id),
@@ -81,6 +76,10 @@ export default async function JobDetailPage({ params }: PageProps) {
     supabase.from('work_reports').select('*').eq('job_id', id).maybeSingle(),
     supabase.from('profiles').select('id, name').eq('org_id', profile.orgId).eq('role', 'technician').order('name'),
   ])
+
+  if (!job) {
+    notFound()
+  }
 
   const customer = job.customers as unknown as { id: string; name: string; phone: string | null; email: string | null; address: string | null } | null
   const assignedTech = job.profiles as unknown as { id: string; name: string; phone: string | null; email: string | null } | null

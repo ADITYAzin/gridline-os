@@ -24,45 +24,44 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
   const { id } = await params
   const supabase = await createSupabaseServerClient()
 
-  // 1. Fetch Job (guaranteed only technician assigned)
-  const { data: job } = await supabase
-    .from('jobs')
-    .select(`
-      id,
-      job_number,
-      service_type,
-      issue,
-      instructions,
-      address,
-      priority,
-      status,
-      technician_id,
-      customers(name, phone),
-      customer_assets(id, asset_name, brand, model_number, serial_number, location_tag, notes)
-    `)
-    .eq('id', id)
-    .eq('org_id', profile.orgId)
-    .eq('technician_id', profile.id)
-    .maybeSingle()
-
-  if (!job) {
-    notFound()
-  }
-
-  // 2. Fetch Supporting Artifacts
+  // 1. Fetch Job and Supporting Artifacts in Parallel (Eliminate Waterfall)
   const [
+    { data: job },
     { data: attendance },
     { data: checklist },
     { data: photos },
     { data: signature },
     { data: report },
   ] = await Promise.all([
+    supabase
+      .from('jobs')
+      .select(`
+        id,
+        job_number,
+        service_type,
+        issue,
+        instructions,
+        address,
+        priority,
+        status,
+        technician_id,
+        customers(name, phone),
+        customer_assets(id, asset_name, brand, model_number, serial_number, location_tag, notes)
+      `)
+      .eq('id', id)
+      .eq('org_id', profile.orgId)
+      .eq('technician_id', profile.id)
+      .maybeSingle(),
     supabase.from('job_attendance').select('check_in_at, check_out_at').eq('job_id', id).maybeSingle(),
     supabase.from('checklist_items').select('id, item, is_completed').eq('job_id', id).order('created_at', { ascending: true }),
     supabase.from('job_photos').select('id, type, file_url, created_at').eq('job_id', id),
     supabase.from('signatures').select('customer_name, signed_at').eq('job_id', id).maybeSingle(),
     supabase.from('work_reports').select('result, notes, submitted_at').eq('job_id', id).maybeSingle(),
   ])
+
+  if (!job) {
+    notFound()
+  }
 
   const customer = job.customers as unknown as { name: string; phone: string | null } | null
   const custName = Array.isArray(customer) ? customer[0]?.name : customer?.name

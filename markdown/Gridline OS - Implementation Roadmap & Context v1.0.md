@@ -25,7 +25,7 @@
 | Fase 10.4 — Modul Performa & Komisi Teknisi | ✅ SELESAI (Leaderboard, KPI on-time rate, durasi lapangan, skema komisi & bonus SLA, modal rincian per tiket, kartu teknisi) |
 | Fase 10.5 — Customer Asset & Equipment Tracking | ✅ SELESAI (Serial number, garansi, relasi tiket servis, spec banner, BAP PDF integration) |
 | Fase 10.6 — Desain UI/UX Interface Teknisi & Tool Lapangan | ✅ SELESAI (Gridline Blue #007ACC design token, BottomNav 3-tab, FiveGate visual tracker, Quick Action tray Maps/Call, modul Komisi Saya, hero job card, mobile-first Fitts's law touch targets) |
-| Fase 10.7 — Instalasi & Standarisasi Typography System | ✅ SELESAI (Sora headline & KPI, Poppins body/UI, Geist Mono, typographic scale utilities, diterapkan di seluruh interface role Admin/Owner/Tech/Auth) |
+| Fase 10.7 — Instalasi & Standarisasi Typography System | ✅ SELESAI (Plus Jakarta Sans headline & KPI, Poppins body/UI and mono utility, typographic scale utilities, diterapkan di seluruh interface role Admin/Owner/Tech/Auth) |
 
 
 
@@ -280,14 +280,14 @@ evidence, dan testing akun multi-tenant.
   - **Profil Teknisi & Hotline Dispatch ([`app/(dashboard)/technician/profile/page.tsx`](file:///C:/Users/adity/Downloads/gridlineos/app/%28dashboard%29/technician/profile/page.tsx))**: Status akun siaga aktif, tingkat keberhasilan penyelesaian (success rate), kontak hotline dispatcher darurat, dan sign-out yang aman.
   - **Work Order Mobile View ([`app/(dashboard)/technician/jobs/[id]/page.tsx`](file:///C:/Users/adity/Downloads/gridlineos/app/%28dashboard%29/technician/jobs/%5Bid%5D/page.tsx))**: Terintegrasi langsung dengan 5-Gate tracker, Quick Action Tray, target asset banner, dan tombol check-in GPS yang ramah sentuhan.
 
-### Fase 10.7 — Instalasi & Standarisasi Typography System (Sora & Poppins)
+### Fase 10.7 — Instalasi & Standarisasi Typography System (Plus Jakarta Sans & Poppins)
 - **Instalasi Font Google Resmi**:
-  - `Sora`: Headline & KPI numbers font (`next/font/google`, weights 400-800, CSS var `--font-sora`).
+  - `Plus Jakarta Sans`: Headline & KPI numbers font (`next/font/google`, weights 400-800, CSS var `--font-plus-jakarta-sans`).
   - `Poppins`: Body, UI inputs, table cells, form labels (`next/font/google`, weights 300-700, CSS var `--font-poppins`).
-  - `Geist Mono`: Monospace font untuk kode tiket GL-XXXX dan serial number (`--font-mono`).
+  - `Poppins`: Monospace utility font untuk kode tiket GL-XXXX dan serial number (`--font-mono` maps to `--font-poppins`).
 - **Konfigurasi Tailwind v4 & Base Layer ([`app/globals.css`](file:///C:/Users/adity/Downloads/gridlineos/app/globals.css))**:
   - Root `html` & `body` menggunakan default `font-sans` (`Poppins`).
-  - Seluruh heading elements (`h1` s.d. `h6`) otomatis menggunakan `font-heading` (`Sora`).
+  - Seluruh heading elements (`h1` s.d. `h6`) otomatis menggunakan `font-heading` (`Plus Jakarta Sans`).
   - Utility classes skala hierarki tipografi:
     - `text-display-1` (32px Bold, -0.02em tracking)
     - `text-heading-1` (24px SemiBold, -0.015em tracking)
