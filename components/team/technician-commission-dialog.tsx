@@ -25,7 +25,7 @@ export function TechnicianCommissionDialog({ metrics }: TechnicianCommissionDial
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
+        <Button variant="ghost" size="sm" className="h-8 text-xs gap-1">
           <Eye className="h-3 w-3 text-primary" />
           Rincian
         </Button>

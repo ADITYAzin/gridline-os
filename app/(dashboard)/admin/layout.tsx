@@ -38,10 +38,10 @@ export default async function AdminLayout({
         <div className="px-3 pt-3 pb-3 shrink-0">
           <Button
             asChild
-            className="w-full h-10 rounded-[8px] bg-[#007ACC] hover:bg-primary hover:text-white active:bg-[#004F82] text-white font-medium text-[13.5px] gap-2 shadow-[0_1px_2px_0_rgba(0,122,204,0.15)] transition-all cursor-pointer"
+            className="w-full h-8 rounded-[8px] bg-[#007ACC] hover:bg-primary hover:text-white active:bg-[#004F82] text-white font-medium text-xs gap-2 shadow-[0_1px_2px_0_rgba(0,122,204,0.15)] transition-all cursor-pointer"
           >
             <Link href="/admin/jobs/new">
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
               <span>Buat Job Baru</span>
             </Link>
           </Button>

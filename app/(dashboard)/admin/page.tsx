@@ -116,7 +116,7 @@ export default async function AdminDashboardPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <Button asChild variant="secondary" size="sm" className="w-full gap-1">
+                  <Button asChild variant="secondary" className="w-full h-8 gap-1 text-xs">
                     <Link href="/admin/customers">
                       Mulai Tambah <ArrowUpRight className="h-3.5 w-3.5" />
                     </Link>
@@ -136,7 +136,7 @@ export default async function AdminDashboardPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <Button asChild variant="secondary" size="sm" className="w-full gap-1">
+                  <Button asChild variant="secondary" className="w-full h-8 gap-1 text-xs">
                     <Link href="/admin/technicians">
                       Undang Anggota <ArrowUpRight className="h-3.5 w-3.5" />
                     </Link>
@@ -156,7 +156,7 @@ export default async function AdminDashboardPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <Button asChild variant="default" size="sm" className="w-full gap-1">
+                  <Button asChild variant="default" className="w-full h-8 gap-1 text-xs">
                     <Link href="/admin/jobs/new">
                       Buat Job Sekarang <ArrowUpRight className="h-3.5 w-3.5" />
                     </Link>

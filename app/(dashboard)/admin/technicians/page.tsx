@@ -70,7 +70,7 @@ export default async function TechniciansPage({ searchParams }: PageProps) {
       </div>
 
       <Tabs defaultValue={activeTab} className="w-full space-y-6">
-        <TabsList className="grid w-full grid-cols-3 max-w-md h-9">
+        <TabsList className="grid w-full grid-cols-3 max-w-md h-8 p-0.5">
           <TabsTrigger value="members" className="text-xs font-semibold gap-1.5">
             <Users className="h-3.5 w-3.5" />
             Tim & Akses

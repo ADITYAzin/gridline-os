@@ -82,7 +82,7 @@ export function RealtimeIndicator({
         <Button
           variant="outline"
           size="icon"
-          className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
+          className="h-8 w-7 rounded-full text-muted-foreground hover:text-foreground"
           onClick={onRefresh}
           disabled={isRefreshing}
           title="Segarkan data sekarang"

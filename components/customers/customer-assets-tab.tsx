@@ -92,15 +92,15 @@ export function CustomerAssetsTab({
           <div>
             <CardTitle className="text-base flex items-center gap-2">
               <Wrench className="h-4 w-4 text-primary" />
-              Daftar Unit Mesin & Aset Pelanggan
+              Daftar Unit Aset Pelanggan
             </CardTitle>
             <CardDescription className="text-xs mt-1">
-              Kelola daftar mesin, spesifikasi pabrikan, nomor seri, dan status garansi untuk {customerName}.
+              Kelola daftar unit aset pelanggan, nomor seri, dan status garansi untuk {customerName}.
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs border-[#E2E8F0] text-[#475569]">
-              {assets.length} Unit Terdaftar
+              {assets.length} Unit Aset Terdaftar
             </Badge>
             <AssetDialog customerId={customerId} />
           </div>
@@ -112,16 +112,16 @@ export function CustomerAssetsTab({
           <div className="inline-flex h-10 w-10 items-center justify-center rounded-[8px] bg-primary/10 text-primary mb-4">
             <Wrench className="h-5 w-5" />
           </div>
-          <p className="text-sm font-semibold text-foreground">Belum ada unit / mesin terdaftar</p>
+          <p className="text-sm font-semibold text-foreground">Belum ada unit aset pelanggan terdaftar</p>
           <p className="text-xs text-muted-foreground mt-2 max-w-sm mx-auto mb-6">
-            Daftarkan unit pendingin, CCTV, atau kelistrikan milik customer ini untuk memudahkan pencatatan riwayat servis berkala.
+            Daftarkan unit aset milik customer ini untuk memudahkan pencatatan riwayat servis berkala.
           </p>
           <AssetDialog
             customerId={customerId}
             trigger={
-              <Button size="sm" className="gap-2 font-medium text-xs rounded-[8px]">
+              <Button className="h-8 gap-2 font-medium text-xs rounded-[8px]">
                 <Plus className="h-3.5 w-3.5" />
-                Registrasi Unit Pertama
+                Registrasi Unit Aset Pertama
               </Button>
             }
           />
@@ -131,7 +131,7 @@ export function CustomerAssetsTab({
           <TableHeader>
             <TableRow className="border-b border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#F8FAFC]">
               <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
-                Nama Peralatan & Brand
+                Nama Unit Aset & Brand
               </TableHead>
               <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
                 Model & Serial No.
@@ -188,7 +188,7 @@ export function CustomerAssetsTab({
                   <div className="flex items-center justify-center gap-2">
                     <Link
                       href={`/admin/jobs/new?customerId=${customerId}&assetId=${asset.id}`}
-                      title="Servis Unit"
+                      title="Servis Unit Aset"
                       className="h-8 w-8 rounded-[8px] border border-[#E2E8F0] hover:bg-primary hover:text-white text-[#64748B] transition-colors flex items-center justify-center shrink-0"
                     >
                       <Wrench className="h-3.5 w-3.5" />

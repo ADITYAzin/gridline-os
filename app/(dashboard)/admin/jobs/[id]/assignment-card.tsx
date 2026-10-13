@@ -105,7 +105,7 @@ export function AssignmentCard({
           <Label htmlFor="tech">Pilih Teknisi</Label>
           <Select value={techId} onValueChange={setTechId} disabled={isLocked || isPending}>
             <SelectTrigger>
-              <SelectValue placeholder="-- Pilih Teknisi --" />
+              <SelectValue placeholder="Pilih teknisi" />
             </SelectTrigger>
             <SelectContent>
               {technicians.map((t) => (

@@ -196,7 +196,7 @@ export function SignaturePadModal({ jobId, existingSignature, disabled }: Signat
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-medium text-[#475569]">Goreskan Tanda Tangan di Kotak Ini</Label>
-                    <Button type="button" variant="ghost" size="sm" onClick={clearCanvas} className="h-7 text-xs px-2 text-rose-600 hover:bg-rose-50 rounded-[6px] touch-press">
+                    <Button type="button" variant="ghost" size="sm" onClick={clearCanvas} className="h-8 text-xs px-2 text-rose-600 hover:bg-rose-50 rounded-[6px] touch-press">
                       <RotateCcw className="h-3 w-3 mr-1" /> Hapus
                     </Button>
                   </div>

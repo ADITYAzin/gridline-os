@@ -183,7 +183,7 @@ export function BapDocument({
 
               {asset && (
                 <>
-                  <span className="text-slate-500">Unit Mesin / Aset</span>
+                  <span className="text-slate-500">Unit Aset Pelanggan</span>
                   <span className="col-span-2 font-semibold text-slate-900">
                     [{asset.brand}] {asset.asset_name}
                   </span>

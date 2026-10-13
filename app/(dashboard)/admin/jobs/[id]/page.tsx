@@ -202,7 +202,7 @@ export default async function JobDetailPage({ params }: PageProps) {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                       <Wrench className="h-3.5 w-3.5 text-primary" />
-                      Unit Mesin / Aset Pelanggan
+                      Unit Aset Pelanggan
                     </span>
                     <Badge variant="outline" className="text-[10px] capitalize">
                       {asset.status.replace('_', ' ')}

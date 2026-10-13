@@ -96,7 +96,7 @@ export default async function JobsListPage({ searchParams }: PageProps) {
         </div>
         <div className="flex items-center gap-2">
           <ExportJobsButton jobs={exportData} />
-          <Button asChild className="gap-2 font-medium bg-[#007ACC] hover:bg-primary hover:text-white rounded-[8px] h-9 text-xs shadow-[0_1px_2px_0_rgba(0,122,204,0.15)]">
+          <Button asChild className="gap-2 font-medium bg-[#007ACC] hover:bg-primary hover:text-white rounded-[8px] h-8 text-xs shadow-[0_1px_2px_0_rgba(0,122,204,0.15)]">
             <Link href="/admin/jobs/new">
               <Plus className="h-4 w-4" />
               Buat Job Baru
@@ -114,7 +114,7 @@ export default async function JobsListPage({ searchParams }: PageProps) {
             <Link
               key={tab.value}
               href={href}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`inline-flex items-center justify-center h-8 rounded-md px-3 text-xs font-semibold whitespace-nowrap transition-colors ${
                 isActive
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'

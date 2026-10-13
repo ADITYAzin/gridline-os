@@ -82,7 +82,7 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
         </div>
 
         <div className="flex items-center gap-2">
-          <Button asChild className="gap-2 font-medium bg-[#007ACC] hover:bg-primary hover:text-white rounded-[8px] h-9 text-xs shadow-[0_1px_2px_0_rgba(0,122,204,0.15)]">
+          <Button asChild className="gap-2 font-medium bg-[#007ACC] hover:bg-primary hover:text-white rounded-[8px] h-8 text-xs shadow-[0_1px_2px_0_rgba(0,122,204,0.15)]">
             <Link href="/admin/jobs/new">
               <Plus className="h-4 w-4" />
               Buat Job Baru
@@ -247,7 +247,7 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
                               </div>
                             </div>
 
-                            <Button asChild variant="ghost" size="sm" className="w-full h-7 text-xs gap-1 mt-1">
+                            <Button asChild variant="ghost" size="sm" className="w-full h-8 text-xs gap-1 mt-1">
                               <Link href={`/admin/jobs/${job.id}`}>
                                 Lihat Detail <ArrowRight className="h-3 w-3" />
                               </Link>

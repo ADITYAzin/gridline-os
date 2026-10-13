@@ -232,7 +232,7 @@ export function CreateJobForm({
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="customerId">Pilih Customer *</Label>
+                  <Label htmlFor="customerId" className="text-xs font-medium text-[#475569]">Pilih Pelanggan *</Label>
                   <Link href="/admin/customers" className="text-xs text-primary hover:underline font-medium flex items-center gap-1">
                     <Plus className="h-3 w-3" />
                     Customer Baru
@@ -240,12 +240,12 @@ export function CreateJobForm({
                 </div>
                 <input type="hidden" name="customerId" value={formValues.customerId} />
                 <Select value={formValues.customerId} onValueChange={handleCustomerChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="-- Pilih Pelanggan --" />
+                  <SelectTrigger className="h-9 text-xs w-full">
+                    <SelectValue placeholder="Pilih pelanggan" />
                   </SelectTrigger>
                   <SelectContent>
                     {customers.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
+                      <SelectItem key={c.id} value={c.id} className="text-xs">
                         {c.name}
                       </SelectItem>
                     ))}
@@ -253,12 +253,12 @@ export function CreateJobForm({
                 </Select>
               </div>
 
-              {/* Pilihan Unit Mesin / Aset Pelanggan */}
+              {/* Pilihan Unit Aset Pelanggan */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="assetId" className="flex items-center gap-1.5">
+                  <Label htmlFor="assetId" className="flex items-center gap-1.5 text-xs font-medium text-[#475569]">
                     <Wrench className="h-3.5 w-3.5 text-primary" />
-                    Unit Mesin / Aset Pelanggan (Equipment Asset)
+                    Unit Aset Pelanggan
                   </Label>
                   {formValues.customerId && (
                     <Link
@@ -267,7 +267,7 @@ export function CreateJobForm({
                       className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
                     >
                       <Plus className="h-3 w-3" />
-                      Tambah Unit Baru
+                      Tambah Unit Aset Baru
                     </Link>
                   )}
                 </div>
@@ -277,21 +277,21 @@ export function CreateJobForm({
                   onValueChange={(val) => updateField('assetId', val === 'none' ? '' : val)}
                   disabled={!formValues.customerId}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 text-xs w-full">
                     <SelectValue
                       placeholder={
                         !formValues.customerId
                           ? 'Pilih pelanggan terlebih dahulu'
                           : availableAssets.length === 0
-                          ? 'Belum ada unit terdaftar (Pekerjaan umum)'
-                          : '-- Pilih Unit Mesin / Aset --'
+                          ? 'Belum ada unit aset terdaftar (Servis umum)'
+                          : 'Pilih unit aset pelanggan'
                       }
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">-- Tanpa Unit Khusus / Servis Umum --</SelectItem>
+                    <SelectItem value="none" className="text-xs">Tanpa unit aset khusus (Servis umum)</SelectItem>
                     {availableAssets.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
+                      <SelectItem key={a.id} value={a.id} className="text-xs">
                         [{a.brand}] {a.assetName} {a.modelNumber ? `(${a.modelNumber})` : ''} {a.locationTag ? `- ${a.locationTag}` : ''}
                       </SelectItem>
                     ))}
@@ -302,19 +302,19 @@ export function CreateJobForm({
                   <div className="rounded-md border bg-muted/30 p-2.5 text-xs text-muted-foreground grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
                     <div>
                       <span className="text-[10px] text-muted-foreground uppercase font-semibold">Merk:</span>
-                      <div className="text-foreground font-medium">{selectedAsset.brand}</div>
+                      <div className="text-foreground font-medium text-xs">{selectedAsset.brand}</div>
                     </div>
                     <div>
                       <span className="text-[10px] text-muted-foreground uppercase font-semibold">Model:</span>
-                      <div className="text-foreground font-medium font-mono">{selectedAsset.modelNumber || '-'}</div>
+                      <div className="text-foreground font-medium font-mono text-xs">{selectedAsset.modelNumber || '-'}</div>
                     </div>
                     <div>
                       <span className="text-[10px] text-muted-foreground uppercase font-semibold">Serial No:</span>
-                      <div className="text-foreground font-medium font-mono">{selectedAsset.serialNumber || '-'}</div>
+                      <div className="text-foreground font-medium font-mono text-xs">{selectedAsset.serialNumber || '-'}</div>
                     </div>
                     <div>
                       <span className="text-[10px] text-muted-foreground uppercase font-semibold">Lokasi:</span>
-                      <div className="text-foreground font-medium">{selectedAsset.locationTag || '-'}</div>
+                      <div className="text-foreground font-medium text-xs">{selectedAsset.locationTag || '-'}</div>
                     </div>
                   </div>
                 )}
@@ -322,39 +322,40 @@ export function CreateJobForm({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="serviceType">Jenis Servis / Layanan *</Label>
+                  <Label htmlFor="serviceType" className="text-xs font-medium text-[#475569]">Jenis Servis / Layanan *</Label>
                   <Input
                     id="serviceType"
                     name="serviceType"
                     required
                     value={formValues.serviceType}
                     onChange={(e) => updateField('serviceType', e.target.value)}
-                    placeholder="Contoh: Servis AC, Pasang CCTV, Perbaikan Panel"
+                    placeholder="Masukkan jenis servis atau layanan"
                     disabled={isPending}
+                    className="h-9 text-xs"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="priority">Prioritas *</Label>
+                  <Label htmlFor="priority" className="text-xs font-medium text-[#475569]">Prioritas *</Label>
                   <input type="hidden" name="priority" value={formValues.priority} />
                   <Select
                     value={formValues.priority}
                     onValueChange={(v) => updateField('priority', v as 'low' | 'medium' | 'high')}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Prioritas" />
+                    <SelectTrigger className="h-9 text-xs w-full">
+                      <SelectValue placeholder="Pilih tingkat prioritas" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Rendah (Low)</SelectItem>
-                      <SelectItem value="medium">Normal / Sedang (Medium)</SelectItem>
-                      <SelectItem value="high">Mendesak (High / Urgent)</SelectItem>
+                      <SelectItem value="low" className="text-xs">Rendah (Low)</SelectItem>
+                      <SelectItem value="medium" className="text-xs">Normal (Medium)</SelectItem>
+                      <SelectItem value="high" className="text-xs">Mendesak (High)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="issue">Deskripsi Masalah / Keluhan *</Label>
+                <Label htmlFor="issue" className="text-xs font-medium text-[#475569]">Deskripsi Masalah / Keluhan *</Label>
                 <Textarea
                   id="issue"
                   name="issue"
@@ -362,26 +363,28 @@ export function CreateJobForm({
                   rows={3}
                   value={formValues.issue}
                   onChange={(e) => updateField('issue', e.target.value)}
-                  placeholder="AC tidak dingin dan mengeluarkan air menetes di ruang server..."
+                  placeholder="Masukkan deskripsi masalah atau keluhan pelanggan"
                   disabled={isPending}
+                  className="text-xs"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="instructions">Instruksi Khusus untuk Teknisi (Opsional)</Label>
+                <Label htmlFor="instructions" className="text-xs font-medium text-[#475569]">Instruksi Khusus untuk Teknisi (Opsional)</Label>
                 <Textarea
                   id="instructions"
                   name="instructions"
                   rows={2}
                   value={formValues.instructions}
                   onChange={(e) => updateField('instructions', e.target.value)}
-                  placeholder="Temui security di lobi utama untuk minta kunci tangga..."
+                  placeholder="Masukkan instruksi khusus atau catatan untuk teknisi"
                   disabled={isPending}
+                  className="text-xs"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="address">Alamat Lokasi Pengerjaan *</Label>
+                <Label htmlFor="address" className="text-xs font-medium text-[#475569]">Alamat Lokasi Pengerjaan *</Label>
                 <Textarea
                   id="address"
                   name="address"
@@ -389,8 +392,9 @@ export function CreateJobForm({
                   rows={2}
                   value={formValues.address}
                   onChange={(e) => updateField('address', e.target.value)}
-                  placeholder="Alamat detail lokasi..."
+                  placeholder="Masukkan alamat lengkap lokasi pengerjaan"
                   disabled={isPending}
+                  className="text-xs"
                 />
               </div>
             </CardContent>
@@ -406,23 +410,24 @@ export function CreateJobForm({
                 Penugasan & Jadwal (Opsional)
               </CardTitle>
               <CardDescription className="text-xs">
-                Dapat ditentukan sekarang atau dibiarkan Pending untuk dijadwalkan nanti.
+                Dapat ditentukan sekarang atau dibiarkan kosong untuk dijadwalkan nanti.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="space-y-1.5">
-                <Label htmlFor="technicianId">Teknisi Bertugas</Label>
+                <Label htmlFor="technicianId" className="text-xs font-medium text-[#475569]">Teknisi Bertugas</Label>
                 <input type="hidden" name="technicianId" value={formValues.technicianId} />
                 <Select
-                  value={formValues.technicianId}
-                  onValueChange={(val) => updateField('technicianId', val)}
+                  value={formValues.technicianId || 'none'}
+                  onValueChange={(val) => updateField('technicianId', val === 'none' ? '' : val)}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="-- Belum Ditugaskan --" />
+                  <SelectTrigger className="h-9 text-xs w-full">
+                    <SelectValue placeholder="Pilih teknisi yang ditugaskan" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none" className="text-xs">Belum ditugaskan</SelectItem>
                     {technicians.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
+                      <SelectItem key={t.id} value={t.id} className="text-xs">
                         {t.name}
                       </SelectItem>
                     ))}
@@ -433,7 +438,7 @@ export function CreateJobForm({
               {formValues.technicianId && (
                 <>
                   <div className="space-y-1.5">
-                    <Label htmlFor="scheduleDate" className="flex items-center gap-1.5">
+                    <Label htmlFor="scheduleDate" className="flex items-center gap-1.5 text-xs font-medium text-[#475569]">
                       <Calendar className="h-3.5 w-3.5" /> Tanggal Pengerjaan
                     </Label>
                     <Input
@@ -444,12 +449,13 @@ export function CreateJobForm({
                       onChange={(e) => updateField('scheduleDate', e.target.value)}
                       required={Boolean(formValues.technicianId)}
                       disabled={isPending}
+                      className="h-9 text-xs"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1.5">
-                      <Label htmlFor="startTime" className="text-xs flex items-center gap-1">
+                      <Label htmlFor="startTime" className="text-xs flex items-center gap-1 font-medium text-[#475569]">
                         <Clock className="h-3 w-3" /> Jam Mulai
                       </Label>
                       <Input
@@ -460,10 +466,11 @@ export function CreateJobForm({
                         onChange={(e) => updateField('startTime', e.target.value)}
                         required={Boolean(formValues.technicianId)}
                         disabled={isPending}
+                        className="h-9 text-xs"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="endTime" className="text-xs flex items-center gap-1">
+                      <Label htmlFor="endTime" className="text-xs flex items-center gap-1 font-medium text-[#475569]">
                         <Clock className="h-3 w-3" /> Jam Selesai
                       </Label>
                       <Input
@@ -474,6 +481,7 @@ export function CreateJobForm({
                         onChange={(e) => updateField('endTime', e.target.value)}
                         required={Boolean(formValues.technicianId)}
                         disabled={isPending}
+                        className="h-9 text-xs"
                       />
                     </div>
                   </div>

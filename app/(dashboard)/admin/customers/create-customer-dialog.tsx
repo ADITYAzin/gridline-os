@@ -47,13 +47,13 @@ export function CreateCustomerDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button
+        <Button
           type="button"
-          className="h-10 px-4 rounded-[8px] bg-[#007ACC] hover:bg-primary hover:text-white active:bg-[#004F82] text-[#FFFFFF] font-medium text-[13.5px] flex items-center gap-2 shadow-[0_1px_2px_0_rgba(0,122,204,0.15)] transition-all cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#007ACC]/25"
+          className="h-8 px-3 rounded-[8px] bg-[#007ACC] hover:bg-primary hover:text-white active:bg-[#004F82] text-[#FFFFFF] font-medium text-xs flex items-center gap-2 shadow-[0_1px_2px_0_rgba(0,122,204,0.15)] transition-all cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#007ACC]/25"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-3.5 w-3.5" />
           <span>Tambah Customer</span>
-        </button>
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md rounded-[12px] border border-[#E2E8F0] shadow-[0_4px_20px_-4px_rgba(15,23,42,0.08),0_2px_6px_-2px_rgba(15,23,42,0.04)] bg-[#FFFFFF] p-6">
         <DialogHeader className="space-y-2 pb-3 border-b border-[#F1F5F9]">
@@ -159,28 +159,29 @@ export function CreateCustomerDialog() {
           </div>
 
           <DialogFooter className="pt-4 gap-2 sm:gap-2">
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={() => setOpen(false)}
               disabled={isPending}
-              className="h-10 px-4 rounded-[8px] border border-[#CBD5E1] bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#0F172A] font-medium text-[13.5px] transition-colors focus:outline-none"
+              className="h-8 px-3.5 rounded-[8px] border border-[#CBD5E1] bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#0F172A] font-medium text-xs transition-colors"
             >
               Batal
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={isPending}
-              className="h-10 px-4 rounded-[8px] bg-[#007ACC] hover:bg-primary hover:text-white active:bg-[#004F82] text-white font-medium text-[13.5px] shadow-[0_1px_2px_0_rgba(0,122,204,0.15)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="h-8 px-3.5 rounded-[8px] bg-[#007ACC] hover:bg-primary hover:text-white active:bg-[#004F82] text-white font-medium text-xs shadow-[0_1px_2px_0_rgba(0,122,204,0.15)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   <span>Menyimpan...</span>
                 </>
               ) : (
                 <span>Simpan Customer</span>
               )}
-            </button>
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

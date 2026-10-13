@@ -95,9 +95,6 @@ export default async function CustomerDetailPage({ params }: PageProps) {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-heading text-2xl font-bold tracking-tight text-[#0F172A]">{customer.name}</h1>
-              <Badge variant="outline" className="text-xs border-[#E2E8F0] text-[#475569]">
-                Klien Terdaftar
-              </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               ID Customer: <span className="font-mono text-[#475569]">{customer.id}</span>
@@ -116,11 +113,11 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                 address: customer.address,
               }}
               triggerButtonText="Hubungi WhatsApp"
-              className="rounded-[8px] h-9 text-xs"
+              className="rounded-[8px] h-8 text-xs"
             />
           )}
 
-          <Button asChild className="gap-2 font-medium bg-[#007ACC] hover:bg-[#0062A3] rounded-[8px] h-9 text-xs shadow-[0_1px_2px_0_rgba(0,122,204,0.15)]">
+          <Button asChild className="gap-2 font-medium bg-[#007ACC] hover:bg-[#0062A3] rounded-[8px] h-8 text-xs shadow-[0_1px_2px_0_rgba(0,122,204,0.15)]">
             <Link href={`/admin/jobs/new?customerId=${customer.id}`}>
               <Plus className="h-4 w-4" />
               Buat Job Baru
@@ -167,12 +164,12 @@ export default async function CustomerDetailPage({ params }: PageProps) {
 
         <Card className="rounded-[12px] border border-[#E2E8F0] bg-[#FFFFFF] shadow-[0_1px_3px_0_rgba(15,23,42,0.03),0_1px_2px_0_rgba(15,23,42,0.02)]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground">Unit Mesin / Aset</CardTitle>
+            <CardTitle className="text-xs font-semibold text-muted-foreground">Unit Aset Pelanggan</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{totalAssets}</div>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Unit peralatan terdaftar
+              Unit aset terdaftar
             </p>
           </CardContent>
         </Card>
@@ -192,10 +189,10 @@ export default async function CustomerDetailPage({ params }: PageProps) {
 
       {/* Main Tabs: Assets & Equipment and Service History */}
       <Tabs defaultValue="assets" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 sm:w-[400px] border border-[#E2E8F0] bg-[#F1F5F9] rounded-[8px]">
+        <TabsList className="grid w-full grid-cols-2 sm:w-[400px] border border-[#E2E8F0] bg-[#F1F5F9] rounded-[8px] h-8 p-0.5">
           <TabsTrigger value="assets" className="gap-2 text-xs rounded-[6px]">
             <Wrench className="h-3.5 w-3.5" />
-            Unit Mesin / Aset ({totalAssets})
+            Unit Aset Pelanggan ({totalAssets})
           </TabsTrigger>
           <TabsTrigger value="history" className="gap-2 text-xs rounded-[6px]">
             <Briefcase className="h-3.5 w-3.5" />

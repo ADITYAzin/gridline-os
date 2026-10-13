@@ -101,7 +101,7 @@ export function ExportJobsButton({
       size="sm"
       onClick={handleExport}
       disabled={isExporting || jobs.length === 0}
-      className="gap-1.5 shadow-sm text-xs font-semibold"
+      className="h-8 gap-1.5 shadow-sm text-xs font-semibold"
     >
       {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
       {label}

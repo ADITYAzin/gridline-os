@@ -75,9 +75,9 @@ export function AssetDialog({ customerId, asset, trigger, onSuccess }: AssetDial
             Edit
           </Button>
         ) : (
-          <Button size="sm" className="gap-1.5 font-semibold text-xs">
+          <Button className="h-8 gap-1.5 font-semibold text-xs">
             <Plus className="h-3.5 w-3.5" />
-            Tambah Unit / Mesin
+            Tambah Unit Aset Pelanggan
           </Button>
         )}
       </DialogTrigger>
@@ -86,12 +86,12 @@ export function AssetDialog({ customerId, asset, trigger, onSuccess }: AssetDial
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wrench className="h-4 w-4 text-primary" />
-            {isEditing ? 'Edit Informasi Unit / Mesin' : 'Registrasi Unit Mesin Baru'}
+            {isEditing ? 'Edit Unit Aset Pelanggan' : 'Registrasi Unit Aset Pelanggan'}
           </DialogTitle>
           <DialogDescription className="text-xs">
             {isEditing
-              ? 'Perbarui spesifikasi atau status unit mesin pelanggan.'
-              : 'Daftarkan unit peralatan pelanggan untuk pelacakan riwayat servis & garansi.'}
+              ? 'Perbarui data spesifikasi atau status unit aset pelanggan.'
+              : 'Daftarkan unit aset pelanggan untuk pelacakan riwayat servis & garansi.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -107,11 +107,11 @@ export function AssetDialog({ customerId, asset, trigger, onSuccess }: AssetDial
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5 col-span-2">
-              <Label htmlFor="assetName">Nama / Tipe Peralatan *</Label>
+              <Label htmlFor="assetName">Nama Unit Aset Pelanggan *</Label>
               <Input
                 id="assetName"
                 name="assetName"
-                placeholder="Contoh: AC Split Inverter 2 PK"
+                placeholder="Masukkan nama unit aset pelanggan"
                 defaultValue={asset?.asset_name || ''}
                 required
                 className="h-8 text-xs"
@@ -123,7 +123,7 @@ export function AssetDialog({ customerId, asset, trigger, onSuccess }: AssetDial
               <Input
                 id="brand"
                 name="brand"
-                placeholder="Contoh: Daikin / Panasonic"
+                placeholder="Masukkan merk atau brand unit aset"
                 defaultValue={asset?.brand || ''}
                 required
                 className="h-8 text-xs"
@@ -135,7 +135,7 @@ export function AssetDialog({ customerId, asset, trigger, onSuccess }: AssetDial
               <Input
                 id="modelNumber"
                 name="modelNumber"
-                placeholder="Contoh: FTKC50TVM4"
+                placeholder="Masukkan nomor model unit aset"
                 defaultValue={asset?.model_number || ''}
                 className="h-8 text-xs font-mono"
               />
@@ -146,7 +146,7 @@ export function AssetDialog({ customerId, asset, trigger, onSuccess }: AssetDial
               <Input
                 id="serialNumber"
                 name="serialNumber"
-                placeholder="Contoh: SN-88392193"
+                placeholder="Masukkan nomor seri (S/N) unit aset"
                 defaultValue={asset?.serial_number || ''}
                 className="h-8 text-xs font-mono"
               />
@@ -157,7 +157,7 @@ export function AssetDialog({ customerId, asset, trigger, onSuccess }: AssetDial
               <Input
                 id="locationTag"
                 name="locationTag"
-                placeholder="Contoh: Lt. 2 Ruang Rapat"
+                placeholder="Masukkan lokasi penempatan unit aset"
                 defaultValue={asset?.location_tag || ''}
                 className="h-8 text-xs"
               />
@@ -186,7 +186,7 @@ export function AssetDialog({ customerId, asset, trigger, onSuccess }: AssetDial
             </div>
 
             <div className="space-y-1.5 col-span-2">
-              <Label htmlFor="status">Status Operasional Unit</Label>
+              <Label htmlFor="status">Status Operasional Aset</Label>
               <Select name="status" defaultValue={asset?.status || 'operational'}>
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="Pilih status" />
@@ -206,7 +206,7 @@ export function AssetDialog({ customerId, asset, trigger, onSuccess }: AssetDial
                 id="notes"
                 name="notes"
                 rows={2}
-                placeholder="Keterangan kondisi unit, kapasitas pipa, freon type, dll."
+                placeholder="Masukkan catatan teknis atau kondisi unit aset"
                 defaultValue={asset?.notes || ''}
                 className="text-xs resize-none"
               />
@@ -217,14 +217,13 @@ export function AssetDialog({ customerId, asset, trigger, onSuccess }: AssetDial
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => setOpen(false)}
               disabled={isPending}
-              className="text-xs"
+              className="h-8 text-xs"
             >
               Batal
             </Button>
-            <Button type="submit" size="sm" disabled={isPending} className="text-xs font-semibold">
+            <Button type="submit" disabled={isPending} className="h-8 text-xs font-semibold">
               {isPending ? (
                 <>
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -233,7 +232,7 @@ export function AssetDialog({ customerId, asset, trigger, onSuccess }: AssetDial
               ) : isEditing ? (
                 'Simpan Perubahan'
               ) : (
-                'Daftarkan Unit'
+                'Daftarkan Unit Aset'
               )}
             </Button>
           </DialogFooter>

@@ -32,7 +32,7 @@ export default async function NewJobPage({ searchParams }: PageProps) {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Buat Job Baru</h1>
           <p className="text-xs text-muted-foreground">
-            Nomor job unik berurutan (GL-XXXX) akan dibangkitkan otomatis untuk organisasi Anda.
+            Nomor job (GL-XXXX) dibuat otomatis oleh sistem.
           </p>
         </div>
       </div>

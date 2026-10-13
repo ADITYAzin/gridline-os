@@ -170,7 +170,7 @@ export default async function TechnicianCommissionsPage() {
             <CardDescription className="text-xs mt-1">
               Selesaikan tiket pekerjaan servis pertama Anda untuk mulai mengumpulkan komisi & insentif.
             </CardDescription>
-            <Button asChild size="sm" className="mt-4 text-xs font-semibold bg-[#007ACC] hover:bg-[#0062A3]">
+            <Button asChild className="mt-4 h-8 text-xs font-semibold bg-[#007ACC] hover:bg-[#0062A3]">
               <Link href="/technician">Lihat Tugas Aktif</Link>
             </Button>
           </Card>

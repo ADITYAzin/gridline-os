@@ -19,7 +19,7 @@ export function LoginForm({ resetSuccess = false }: { resetSuccess?: boolean }) 
           Masuk ke Akun Anda
         </h1>
         <p className="text-[13.5px] text-[#475569] font-normal leading-[18px]">
-          Akses portal operasional teknisi dan dispatch Gridline OS
+          Pantau dan kelola semua aktivitas operasional
         </p>
       </div>
 

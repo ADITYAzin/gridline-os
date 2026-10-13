@@ -14,9 +14,9 @@ export default function TechniciansLoading() {
 
       {/* Tabs Skeleton */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
-        <Skeleton className="h-9 w-36 rounded-lg bg-slate-200" />
-        <Skeleton className="h-9 w-36 rounded-lg bg-slate-200" />
-        <Skeleton className="h-9 w-36 rounded-lg bg-slate-200" />
+        <Skeleton className="h-8 w-36 rounded-lg bg-slate-200" />
+        <Skeleton className="h-8 w-36 rounded-lg bg-slate-200" />
+        <Skeleton className="h-8 w-36 rounded-lg bg-slate-200" />
       </div>
 
       {/* Table Skeleton */}
