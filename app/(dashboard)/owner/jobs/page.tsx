@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ExportJobsButton } from '@/components/jobs/export-jobs-button'
 import { SlaBadge } from '@/components/jobs/sla-badge'
-import { User } from 'lucide-react'
+import { User, Calendar, Clock } from 'lucide-react'
 
 export default async function OwnerJobsPage() {
   const profile = await requireRole('owner')
@@ -92,8 +92,8 @@ export default async function OwnerJobsPage() {
                 <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
                   Status & SLA
                 </TableHead>
-                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] text-center">
-                  Tanggal
+                <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                  Jadwal Servis
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -149,8 +149,43 @@ export default async function OwnerJobsPage() {
                         />
                       </div>
                     </TableCell>
-                    <TableCell className="px-4 py-2 align-middle text-center text-xs text-[#64748B]">
-                      {new Date(j.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                    <TableCell className="px-4 py-2 align-middle">
+                      {sched?.start_at ? (
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#0F172A]">
+                            <Calendar className="h-3.5 w-3.5 text-[#007ACC] shrink-0" />
+                            <span>
+                              {new Date(sched.start_at).toLocaleDateString('id-ID', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[11px] text-[#64748B]">
+                            <Clock className="h-3 w-3 text-[#94A3B8] shrink-0" />
+                            <span>
+                              {new Date(sched.start_at).toLocaleTimeString('id-ID', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                              {sched.end_at
+                                ? ` - ${new Date(sched.end_at).toLocaleTimeString('id-ID', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}`
+                                : ''}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-0.5">
+                          <span className="text-xs text-[#94A3B8] italic block">Belum dijadwalkan</span>
+                          <span className="text-[10px] text-[#94A3B8] block">
+                            Dibuat: {new Date(j.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                          </span>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 )

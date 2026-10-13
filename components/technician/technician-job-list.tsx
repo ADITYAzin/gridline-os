@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { TechnicianStatusBadge } from '@/components/technician/status-badge'
-import { MapPin, ArrowRight, Navigation, CheckCircle2, AlertCircle, Wrench } from 'lucide-react'
+import { MapPin, ArrowRight, Navigation, CheckCircle2, AlertCircle, Wrench, Calendar, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface TechnicianJobItem {
@@ -20,6 +20,8 @@ export interface TechnicianJobItem {
   completedAt: string | null
   assetName?: string | null
   assetBrand?: string | null
+  scheduledStart?: string | null
+  scheduledEnd?: string | null
 }
 
 interface TechnicianJobListProps {
@@ -72,6 +74,33 @@ export function TechnicianJobList({ jobs }: TechnicianJobListProps) {
                 <Wrench className="h-3.5 w-3.5 shrink-0" />
                 <span className="font-medium truncate">
                   Unit: [{nextJob.assetBrand}] {nextJob.assetName}
+                </span>
+              </div>
+            )}
+
+            {nextJob.scheduledStart && (
+              <div className="flex items-center gap-2 text-xs text-[#0F172A] bg-white/80 border border-[#CBD5E1] p-2 rounded-[6px]">
+                <Calendar className="h-3.5 w-3.5 text-[#007ACC] shrink-0" />
+                <span className="font-semibold">
+                  {new Date(nextJob.scheduledStart).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </span>
+                <span className="text-[#94A3B8]">•</span>
+                <Clock className="h-3 w-3 text-[#64748B] shrink-0" />
+                <span className="text-[11px] text-[#475569]">
+                  {new Date(nextJob.scheduledStart).toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                  {nextJob.scheduledEnd
+                    ? ` - ${new Date(nextJob.scheduledEnd).toLocaleTimeString('id-ID', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}`
+                    : ''}
                 </span>
               </div>
             )}
@@ -192,7 +221,39 @@ export function TechnicianJobList({ jobs }: TechnicianJobListProps) {
                     {job.issue}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-3.5 pt-1 text-xs text-[#475569] space-y-1 border-t border-[#F1F5F9] mt-2">
+                <CardContent className="p-3.5 pt-1 text-xs text-[#475569] space-y-1.5 border-t border-[#F1F5F9] mt-2">
+                  {job.scheduledStart ? (
+                    <div className="flex items-center gap-1.5 text-xs text-[#0F172A] font-medium">
+                      <Calendar className="h-3.5 w-3.5 text-[#007ACC] shrink-0" />
+                      <span>
+                        {new Date(job.scheduledStart).toLocaleDateString('id-ID', {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
+                      </span>
+                      <span className="text-muted-foreground">•</span>
+                      <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="text-[11px] text-[#64748B]">
+                        {new Date(job.scheduledStart).toLocaleTimeString('id-ID', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                        {job.scheduledEnd
+                          ? ` - ${new Date(job.scheduledEnd).toLocaleTimeString('id-ID', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}`
+                          : ''}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-[11px] text-[#94A3B8]">
+                      <Calendar className="h-3 w-3 shrink-0" />
+                      <span>
+                        Dibuat: {new Date(job.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="truncate">{job.address}</span>

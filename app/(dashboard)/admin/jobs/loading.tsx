@@ -10,8 +10,8 @@ export default function JobsListLoading() {
           <Skeleton className="h-4 w-96 max-w-full rounded bg-slate-200" />
         </div>
         <div className="flex items-center gap-2">
-          <Skeleton className="h-9 w-28 rounded-lg bg-slate-200" />
-          <Skeleton className="h-9 w-28 rounded-lg bg-slate-200" />
+          <Skeleton className="h-8 w-28 rounded-lg bg-slate-200" />
+          <Skeleton className="h-8 w-28 rounded-lg bg-slate-200" />
         </div>
       </div>
 
@@ -29,6 +29,7 @@ export default function JobsListLoading() {
           <Skeleton className="h-4 w-24 rounded bg-slate-200" />
           <Skeleton className="h-4 w-36 rounded bg-slate-200" />
           <Skeleton className="h-4 w-28 rounded bg-slate-200" />
+          <Skeleton className="h-4 w-24 rounded bg-slate-200" />
           <Skeleton className="h-4 w-20 rounded bg-slate-200" />
           <Skeleton className="h-4 w-16 rounded bg-slate-200" />
         </div>

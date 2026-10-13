@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ExportJobsButton } from '@/components/jobs/export-jobs-button'
 import { SlaBadge } from '@/components/jobs/sla-badge'
 import { RealtimeJobsListener } from '@/components/realtime/realtime-jobs-listener'
-import { Plus, Briefcase, User, MapPin, Eye, Printer } from 'lucide-react'
+import { Plus, Briefcase, User, MapPin, Eye, Printer, Calendar, Clock } from 'lucide-react'
 
 interface PageProps {
   searchParams: Promise<{ status?: string }>
@@ -159,6 +159,9 @@ export default async function JobsListPage({ searchParams }: PageProps) {
                     Layanan & Kendala
                   </TableHead>
                   <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
+                    Jadwal Servis
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
                     Teknisi
                   </TableHead>
                   <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
@@ -227,6 +230,44 @@ export default async function JobsListPage({ searchParams }: PageProps) {
                       <TableCell className="px-4 py-2 align-middle">
                         <div className="font-medium text-sm text-[#0F172A]">{j.service_type}</div>
                         <div className="text-xs text-[#64748B] line-clamp-1 max-w-xs">{j.issue}</div>
+                      </TableCell>
+                      <TableCell className="px-4 py-2 align-middle">
+                        {sched?.start_at ? (
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#0F172A]">
+                              <Calendar className="h-3.5 w-3.5 text-[#007ACC] shrink-0" />
+                              <span>
+                                {new Date(sched.start_at).toLocaleDateString('id-ID', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[11px] text-[#64748B]">
+                              <Clock className="h-3 w-3 text-[#94A3B8] shrink-0" />
+                              <span>
+                                {new Date(sched.start_at).toLocaleTimeString('id-ID', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                                {sched.end_at
+                                  ? ` - ${new Date(sched.end_at).toLocaleTimeString('id-ID', {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}`
+                                  : ''}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <span className="text-xs text-[#94A3B8] italic block">Belum dijadwalkan</span>
+                            <span className="text-[10px] text-[#94A3B8] block">
+                              Dibuat: {new Date(j.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                            </span>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="px-4 py-2 align-middle">
                         {technician?.name ? (

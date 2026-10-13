@@ -21,6 +21,8 @@ import {
   Printer,
   Eye,
   Wrench,
+  Calendar,
+  Clock,
 } from 'lucide-react'
 
 interface PageProps {
@@ -285,16 +287,42 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                         <TableCell className="px-4 py-2 align-middle text-xs">
                           {tech ? tech.name : <span className="text-[#94A3B8] italic">Belum ditugaskan</span>}
                         </TableCell>
-                        <TableCell className="px-4 py-2 align-middle text-xs text-[#64748B]">
-                          {sched ? (
-                            <div>
-                              <div>{new Date(sched.start_at).toLocaleDateString('id-ID')}</div>
-                              <div className="text-[10px]">
-                                {new Date(sched.start_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} - {new Date(sched.end_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        <TableCell className="px-4 py-2 align-middle">
+                          {sched?.start_at ? (
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1.5 text-xs font-semibold text-[#0F172A]">
+                                <Calendar className="h-3.5 w-3.5 text-[#007ACC] shrink-0" />
+                                <span>
+                                  {new Date(sched.start_at).toLocaleDateString('id-ID', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 text-[11px] text-[#64748B]">
+                                <Clock className="h-3 w-3 text-[#94A3B8] shrink-0" />
+                                <span>
+                                  {new Date(sched.start_at).toLocaleTimeString('id-ID', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                  {sched.end_at
+                                    ? ` - ${new Date(sched.end_at).toLocaleTimeString('id-ID', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}`
+                                    : ''}
+                                </span>
                               </div>
                             </div>
                           ) : (
-                            new Date(j.created_at).toLocaleDateString('id-ID')
+                            <div className="space-y-0.5">
+                              <span className="text-xs text-[#94A3B8] italic block">Belum dijadwalkan</span>
+                              <span className="text-[10px] text-[#94A3B8] block">
+                                Dibuat: {new Date(j.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                              </span>
+                            </div>
                           )}
                         </TableCell>
                         <TableCell className="px-4 py-2 align-middle">

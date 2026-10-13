@@ -22,7 +22,8 @@ export default async function TechnicianHomePage() {
       status,
       created_at,
       completed_at,
-      customer_assets(asset_name, brand)
+      customer_assets(asset_name, brand),
+      schedules(start_at, end_at)
     `)
     .eq('technician_id', profile.id)
     .order('created_at', { ascending: false })
@@ -33,6 +34,8 @@ export default async function TechnicianHomePage() {
   const formattedJobs: TechnicianJobItem[] = assignedJobs.map((j) => {
     type AssetInfo = { asset_name: string; brand: string } | null
     const asset = (Array.isArray(j.customer_assets) ? j.customer_assets[0] : j.customer_assets) as AssetInfo
+    type SchedType = { start_at: string; end_at: string } | null
+    const sched = (Array.isArray(j.schedules) ? j.schedules[0] : j.schedules) as SchedType
     return {
       id: j.id,
       jobNumber: j.job_number,
@@ -45,6 +48,8 @@ export default async function TechnicianHomePage() {
       completedAt: j.completed_at,
       assetName: asset?.asset_name || null,
       assetBrand: asset?.brand || null,
+      scheduledStart: sched?.start_at || null,
+      scheduledEnd: sched?.end_at || null,
     }
   })
 
