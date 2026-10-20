@@ -69,7 +69,7 @@ export function CancellationDialog({ jobId }: { jobId: string }) {
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Contoh: Klien meminta reschedule minggu depan / lokasi banjir..."
+              placeholder="Masukkan alasan pembatalan pekerjaan ini"
               disabled={isPending}
             />
           </div>

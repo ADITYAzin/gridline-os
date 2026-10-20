@@ -33,10 +33,21 @@ const updateAssetSchema = createAssetSchema.extend({
   assetId: postgresUuid('ID Asset wajib diisi'),
 })
 
+export interface AssetOption {
+  id: string
+  customerId: string
+  assetName: string
+  brand: string
+  modelNumber: string | null
+  serialNumber: string | null
+  locationTag: string | null
+}
+
 export type AssetActionState = {
   error?: string
   success?: boolean
   assetId?: string
+  asset?: AssetOption
   fields?: Record<string, string>
 }
 
@@ -86,7 +97,7 @@ export async function createCustomerAssetAction(
       status: parsed.data.status,
       notes: parsed.data.notes || null,
     })
-    .select('id')
+    .select('id, customer_id, asset_name, brand, model_number, serial_number, location_tag')
     .single()
 
   if (error || !asset) {
@@ -100,7 +111,19 @@ export async function createCustomerAssetAction(
 
   revalidatePath(`/admin/customers/${parsed.data.customerId}`)
   revalidatePath('/admin/jobs/new')
-  return { success: true, assetId: asset.id }
+  return {
+    success: true,
+    assetId: asset.id,
+    asset: {
+      id: asset.id,
+      customerId: asset.customer_id,
+      assetName: asset.asset_name,
+      brand: asset.brand,
+      modelNumber: asset.model_number,
+      serialNumber: asset.serial_number,
+      locationTag: asset.location_tag,
+    },
+  }
 }
 
 export async function updateCustomerAssetAction(
@@ -135,7 +158,7 @@ export async function updateCustomerAssetAction(
 
   const admin = getSupabaseAdmin()
 
-  const { error } = await admin
+  const { data: updatedAsset, error } = await admin
     .from('customer_assets')
     .update({
       asset_name: parsed.data.assetName,
@@ -151,6 +174,8 @@ export async function updateCustomerAssetAction(
     })
     .eq('id', parsed.data.assetId)
     .eq('org_id', profile.orgId)
+    .select('id, customer_id, asset_name, brand, model_number, serial_number, location_tag')
+    .single()
 
   if (error) {
     return {
@@ -163,7 +188,21 @@ export async function updateCustomerAssetAction(
 
   revalidatePath(`/admin/customers/${parsed.data.customerId}`)
   revalidatePath('/admin/jobs/new')
-  return { success: true, assetId: parsed.data.assetId }
+  return {
+    success: true,
+    assetId: parsed.data.assetId,
+    asset: updatedAsset
+      ? {
+          id: updatedAsset.id,
+          customerId: updatedAsset.customer_id,
+          assetName: updatedAsset.asset_name,
+          brand: updatedAsset.brand,
+          modelNumber: updatedAsset.model_number,
+          serialNumber: updatedAsset.serial_number,
+          locationTag: updatedAsset.location_tag,
+        }
+      : undefined,
+  }
 }
 
 export async function getCustomerAssets(customerId: string) {

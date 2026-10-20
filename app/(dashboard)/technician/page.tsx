@@ -25,6 +25,7 @@ export default async function TechnicianHomePage() {
       customer_assets(asset_name, brand),
       schedules(start_at, end_at)
     `)
+    .eq('org_id', profile.orgId)
     .eq('technician_id', profile.id)
     .order('created_at', { ascending: false })
 

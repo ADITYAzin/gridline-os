@@ -144,6 +144,35 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
               const job = Array.isArray(s.jobs) ? s.jobs[0] : s.jobs
               return job?.status === 'on_progress'
             })
+            const activeTechSchedules = techSchedules.filter((s) => {
+              const job = Array.isArray(s.jobs) ? s.jobs[0] : s.jobs
+              return job && job.status !== 'cancelled'
+            })
+
+            // Sort schedules: active jobs first (on_progress -> assigned/pending -> completed), cancelled jobs placed strictly at the end
+            const sortedSchedules = [...techSchedules].sort((a, b) => {
+              const jobA = Array.isArray(a.jobs) ? a.jobs[0] : a.jobs
+              const jobB = Array.isArray(b.jobs) ? b.jobs[0] : b.jobs
+
+              const isCancelledA = jobA?.status === 'cancelled'
+              const isCancelledB = jobB?.status === 'cancelled'
+
+              if (isCancelledA && !isCancelledB) return 1
+              if (!isCancelledA && isCancelledB) return -1
+
+              const getPriority = (st?: string) => {
+                if (st === 'on_progress') return 1
+                if (st === 'assigned' || st === 'pending') return 2
+                if (st === 'completed') return 3
+                return 4
+              }
+
+              const prioA = getPriority(jobA?.status)
+              const prioB = getPriority(jobB?.status)
+              if (prioA !== prioB) return prioA - prioB
+
+              return new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+            })
 
             return (
               <Card key={tech.id} className="shadow-sm overflow-hidden border-border/80">
@@ -166,7 +195,10 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs font-medium">
-                      {techSchedules.length} Pekerjaan Terjadwal
+                      {activeTechSchedules.length} Pekerjaan Aktif
+                      {techSchedules.length > activeTechSchedules.length
+                        ? ` (${techSchedules.length - activeTechSchedules.length} Batal)`
+                        : ''}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -179,7 +211,7 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
                     </div>
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {techSchedules.map((s) => {
+                      {sortedSchedules.map((s) => {
                         const job = (Array.isArray(s.jobs) ? s.jobs[0] : s.jobs) as ScheduleJobItem | null
                         if (!job) return null
                         const customer = job.customers
@@ -198,37 +230,64 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
 
                         const isCompleted = job.status === 'completed'
                         const isProgress = job.status === 'on_progress'
+                        const isCancelled = job.status === 'cancelled'
 
                         return (
                           <div
                             key={s.id}
-                            className={`rounded-lg border p-3.5 space-y-2 transition-all ${
+                            className={`rounded-lg border border-border p-3.5 space-y-2 transition-all ${
                               isProgress
                                 ? 'bg-primary/5 border-primary/40 shadow-sm ring-1 ring-primary/20'
-                                : isCompleted
-                                ? 'bg-muted/20 border-border opacity-75'
-                                : 'bg-card hover:border-primary/50'
+                                : isCancelled
+                                ? 'bg-slate-50/70 dark:bg-slate-900/40 border-dashed border-border/80 opacity-60 hover:opacity-100'
+                                : 'bg-card'
                             }`}
                           >
                             <div className="flex items-center justify-between gap-1 flex-wrap">
-                              <span className="font-mono font-bold text-xs text-primary">{job.job_number}</span>
+                              <span
+                                className={`font-mono font-bold text-xs ${
+                                  isCancelled ? 'text-muted-foreground line-through' : 'text-primary'
+                                }`}
+                              >
+                                {job.job_number}
+                              </span>
                               <div className="flex items-center gap-1">
                                 <Badge
-                                  variant={isProgress ? 'default' : 'secondary'}
-                                  className="capitalize text-[10px]"
+                                  variant={
+                                    isProgress
+                                      ? 'default'
+                                      : isCancelled
+                                      ? 'destructive'
+                                      : isCompleted
+                                      ? 'outline'
+                                      : 'secondary'
+                                  }
+                                  className={`capitalize text-[10px] ${
+                                    isCancelled
+                                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 hover:bg-rose-500/20'
+                                      : ''
+                                  }`}
                                 >
-                                  {job.status.replace('_', ' ')}
+                                  {isCancelled ? 'Dibatalkan' : job.status.replace('_', ' ')}
                                 </Badge>
-                                <SlaBadge
-                                  status={job.status}
-                                  scheduledEnd={s.end_at}
-                                  completedAt={job.completed_at}
-                                />
+                                {!isCancelled && (
+                                  <SlaBadge
+                                    status={job.status}
+                                    scheduledEnd={s.end_at}
+                                    completedAt={job.completed_at}
+                                  />
+                                )}
                               </div>
                             </div>
 
                             <div>
-                              <span className="font-semibold text-xs block">{job.service_type}</span>
+                              <span
+                                className={`font-semibold text-xs block ${
+                                  isCancelled ? 'text-muted-foreground line-through' : ''
+                                }`}
+                              >
+                                {job.service_type}
+                              </span>
                               <span className="text-[11px] text-muted-foreground block truncate">
                                 {Array.isArray(customer) ? customer[0]?.name : customer?.name}
                               </span>
@@ -247,7 +306,12 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
                               </div>
                             </div>
 
-                            <Button asChild variant="ghost" size="sm" className="w-full h-8 text-xs gap-1 mt-1">
+                            <Button
+                              asChild
+                              variant="outline"
+                              size="sm"
+                              className="w-full h-8 text-xs gap-1.5 mt-1 bg-[#F1F5F9] dark:bg-slate-800 text-[#475569] dark:text-slate-300 border-[#E2E8F0] dark:border-slate-700 hover:bg-[#007ACC] hover:text-white hover:border-[#007ACC] dark:hover:bg-[#007ACC] dark:hover:text-white font-medium rounded-[8px] transition-colors"
+                            >
                               <Link href={`/admin/jobs/${job.id}`}>
                                 Lihat Detail <ArrowRight className="h-3 w-3" />
                               </Link>

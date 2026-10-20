@@ -6,11 +6,18 @@ export default async function AdminProfilePage() {
   const profile = await requireRole('admin')
   const supabase = await createSupabaseServerClient()
 
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('id, name, subscription_tier, created_at')
-    .eq('id', profile.orgId)
-    .single()
+  const [{ data: org }, { data: services }] = await Promise.all([
+    supabase
+      .from('organizations')
+      .select('id, name, address, city, province, postal_code, phone, email, subscription_tier, is_onboarded, created_at')
+      .eq('id', profile.orgId)
+      .single(),
+    supabase
+      .from('company_services')
+      .select('id, name, description, default_price, is_active, created_at')
+      .eq('org_id', profile.orgId)
+      .order('name', { ascending: true }),
+  ])
 
   return (
     <AdminProfileClient
@@ -22,6 +29,7 @@ export default async function AdminProfilePage() {
         orgId: profile.orgId,
       }}
       organization={org}
+      initialServices={services || []}
     />
   )
 }

@@ -3,9 +3,6 @@
 import { useState, useActionState } from 'react'
 import { createCustomerAction, type CustomerActionState } from '@/app/actions/customers'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -15,14 +12,38 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Plus, Loader2, Building2, Phone, Mail, MapPin } from 'lucide-react'
+import { Plus, Loader2, Building2, Phone, Mail } from 'lucide-react'
 
 const initialState: CustomerActionState = {}
 
-export function CreateCustomerDialog() {
-  const [open, setOpen] = useState(false)
+interface CreateCustomerDialogProps {
+  trigger?: React.ReactNode
+  initialName?: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  onCustomerCreated?: (customer: { id: string; name: string; address: string; phone?: string | null }) => void
+}
+
+export function CreateCustomerDialog({
+  trigger,
+  initialName = '',
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  onCustomerCreated,
+}: CreateCustomerDialogProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+
+  const setOpen = (val: boolean) => {
+    if (!isControlled) {
+      setInternalOpen(val)
+    }
+    controlledOnOpenChange?.(val)
+  }
+
   const [formData, setFormData] = useState({
-    name: '',
+    name: initialName || '',
     phone: '',
     email: '',
     address: '',
@@ -34,6 +55,9 @@ export function CreateCustomerDialog() {
       if (res.success) {
         setFormData({ name: '', phone: '', email: '', address: '' })
         setOpen(false)
+        if (res.customer && onCustomerCreated) {
+          onCustomerCreated(res.customer)
+        }
       }
       return res
     },
@@ -44,17 +68,30 @@ export function CreateCustomerDialog() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen)
+    if (isOpen) {
+      setFormData({ name: initialName || '', phone: '', email: '', address: '' })
+    } else {
+      setFormData({ name: '', phone: '', email: '', address: '' })
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          type="button"
-          className="h-8 px-3 rounded-[8px] bg-[#007ACC] hover:bg-primary hover:text-white active:bg-[#004F82] text-[#FFFFFF] font-medium text-xs flex items-center gap-2 shadow-[0_1px_2px_0_rgba(0,122,204,0.15)] transition-all cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#007ACC]/25"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          <span>Tambah Customer</span>
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : !isControlled ? (
+        <DialogTrigger asChild>
+          <Button
+            type="button"
+            className="h-8 px-3 rounded-[8px] bg-[#007ACC] hover:bg-primary hover:text-white active:bg-[#004F82] text-[#FFFFFF] font-medium text-xs flex items-center gap-2 shadow-[0_1px_2px_0_rgba(0,122,204,0.15)] transition-all cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#007ACC]/25"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>Tambah Customer</span>
+          </Button>
+        </DialogTrigger>
+      ) : null}
       <DialogContent className="sm:max-w-md rounded-[12px] border border-[#E2E8F0] shadow-[0_4px_20px_-4px_rgba(15,23,42,0.08),0_2px_6px_-2px_rgba(15,23,42,0.04)] bg-[#FFFFFF] p-6">
         <DialogHeader className="space-y-2 pb-3 border-b border-[#F1F5F9]">
           <DialogTitle className="font-heading text-[18px] font-semibold text-[#0F172A]">

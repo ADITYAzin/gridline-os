@@ -6,12 +6,22 @@ import { AdminSidebarNav } from '@/components/navigation/sidebar-nav'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { CompanyOnboardingDialog } from '@/components/onboarding/company-onboarding-dialog'
+
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   const profile = await requireRole('admin')
+  const supabase = await createSupabaseServerClient()
+
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('name, is_onboarded, address, city, phone')
+    .eq('id', profile.orgId)
+    .single()
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
@@ -80,6 +90,13 @@ export default async function AdminLayout({
         <main className="flex-1 p-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
+        <CompanyOnboardingDialog
+          companyName={org?.name || ''}
+          isOnboarded={org?.is_onboarded ?? true}
+          defaultAddress={org?.address}
+          defaultCity={org?.city}
+          defaultPhone={org?.phone}
+        />
       </div>
     </div>
   )

@@ -288,5 +288,6 @@ export async function cancelJobAction(jobId: string, reason: string): Promise<{ 
 
   revalidatePath(`/admin/jobs/${jobId}`)
   revalidatePath('/admin/jobs')
+  revalidatePath('/admin/dispatch')
   return { success: true }
 }

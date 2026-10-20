@@ -58,7 +58,7 @@ export async function requireUser(): Promise<SessionProfile> {
 export async function requireRole(role: Role): Promise<SessionProfile> {
   const profile = await requireUser()
   if (profile.role !== role) {
-    notFound()
+    redirect(homeForRole(profile.role))
   }
   return profile
 }

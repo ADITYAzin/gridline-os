@@ -62,6 +62,47 @@ export type Database = {
           },
         ]
       }
+      company_services: {
+        Row: {
+          created_at: string
+          default_price: number | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_price?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_price?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_services_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_assets: {
         Row: {
           asset_name: string
@@ -504,24 +545,45 @@ export type Database = {
       }
       organizations: {
         Row: {
+          address: string | null
+          city: string | null
           created_at: string
+          email: string | null
           id: string
+          is_onboarded: boolean
           job_sequence: number
           name: string
+          phone: string | null
+          postal_code: string | null
+          province: string | null
           subscription_tier: string | null
         }
         Insert: {
+          address?: string | null
+          city?: string | null
           created_at?: string
+          email?: string | null
           id?: string
+          is_onboarded?: boolean
           job_sequence?: number
           name: string
+          phone?: string | null
+          postal_code?: string | null
+          province?: string | null
           subscription_tier?: string | null
         }
         Update: {
+          address?: string | null
+          city?: string | null
           created_at?: string
+          email?: string | null
           id?: string
+          is_onboarded?: boolean
           job_sequence?: number
           name?: string
+          phone?: string | null
+          postal_code?: string | null
+          province?: string | null
           subscription_tier?: string | null
         }
         Relationships: []

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useActionState } from 'react'
+import { useState, useActionState, useEffect } from 'react'
 import Link from 'next/link'
 import { createJobAction, type JobActionState } from '@/app/actions/jobs'
 import { Button } from '@/components/ui/button'
@@ -16,12 +16,10 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Plus, AlertCircle, Calendar, Clock, UserCheck, RotateCcw, CheckCircle2, Wrench } from 'lucide-react'
-
-interface CustomerOption {
-  id: string
-  name: string
-  address: string
-}
+import { CreateCustomerDialog } from '@/app/(dashboard)/admin/customers/create-customer-dialog'
+import { AssetDialog } from '@/components/customers/asset-dialog'
+import { toast } from 'sonner'
+import { CustomerSearchSelect, type CustomerOption } from './customer-select'
 
 interface TechOption {
   id: string
@@ -38,12 +36,20 @@ export interface AssetOption {
   locationTag: string | null
 }
 
+export interface ServiceOption {
+  id: string
+  name: string
+  description?: string | null
+  default_price?: number | null
+}
+
 interface CreateJobFormProps {
   customers: CustomerOption[]
   technicians: TechOption[]
   assets?: AssetOption[]
   defaultCustomerId?: string
   defaultAssetId?: string
+  services?: ServiceOption[]
 }
 
 interface FormFields {
@@ -60,6 +66,15 @@ interface FormFields {
   endTime: string
 }
 
+const DEFAULT_SERVICE_OPTIONS = [
+  'Instalasi / Pasang Baru',
+  'Servis & Perawatan Berkala',
+  'Perbaikan & Reparasi Kerusakan',
+  'Pengecekan / Diagnosa Troubleshooting',
+  'Bongkar Pasang / Relokasi Unit',
+  'Penggantian Suku Cadang (Sparepart)',
+]
+
 const DRAFT_STORAGE_KEY = 'gridline_new_job_draft_v1'
 const initialState: JobActionState = {}
 
@@ -69,7 +84,20 @@ export function CreateJobForm({
   assets = [],
   defaultCustomerId,
   defaultAssetId,
+  services = [],
 }: CreateJobFormProps) {
+  const [customerList, setCustomerList] = useState<CustomerOption[]>(customers)
+  const [serviceList, setServiceList] = useState<ServiceOption[]>(services)
+  const [assetList, setAssetList] = useState<AssetOption[]>(assets)
+
+  useEffect(() => {
+    setServiceList(services)
+  }, [services])
+
+  useEffect(() => {
+    setAssetList(assets)
+  }, [assets])
+
   const initialCustomer = defaultCustomerId ? customers.find((c) => c.id === defaultCustomerId) : undefined
 
   const getBlankValues = (): FormFields => ({
@@ -112,6 +140,24 @@ export function CreateJobForm({
       startTime: savedData.startTime || '09:00',
       endTime: savedData.endTime || '11:00',
     }
+  })
+
+  const isPredefined = (val: string) => {
+    if (!val) return true
+    if (services.some((s) => s.name === val)) return true
+    if (DEFAULT_SERVICE_OPTIONS.includes(val)) return true
+    return false
+  }
+
+  const [isCustomService, setIsCustomService] = useState<boolean>(() => {
+    const st = formValues.serviceType || ''
+    if (!st) return false
+    return !isPredefined(st)
+  })
+  const [customServiceText, setCustomServiceText] = useState<string>(() => {
+    const st = formValues.serviceType || ''
+    if (!st) return ''
+    return !isPredefined(st) ? st : ''
   })
 
   const [state, formAction, isPending] = useActionState(
@@ -165,9 +211,29 @@ export function CreateJobForm({
     })
   }
 
-  const handleCustomerChange = (customerId: string) => {
-    const found = customers.find((c) => c.id === customerId)
-    const isAssetStillValid = assets.some(
+  const handleCustomerChange = (customerId: string, fallbackCustomer?: CustomerOption) => {
+    if (!customerId) {
+      setFormValues((prev) => {
+        const updated: FormFields = {
+          ...prev,
+          customerId: '',
+          assetId: '',
+        }
+        try {
+          sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(updated))
+        } catch {
+          // Ignore
+        }
+        return updated
+      })
+      return
+    }
+
+    const found =
+      customerList.find((c) => c.id === customerId) ||
+      fallbackCustomer ||
+      customers.find((c) => c.id === customerId)
+    const isAssetStillValid = assetList.some(
       (a) => a.id === formValues.assetId && a.customerId === customerId
     )
     setFormValues((prev) => {
@@ -186,6 +252,33 @@ export function CreateJobForm({
     })
   }
 
+  const handleCustomerCreated = (newCustomer: CustomerOption) => {
+    const newOption: CustomerOption = {
+      id: newCustomer.id,
+      name: newCustomer.name,
+      address: newCustomer.address,
+      phone: newCustomer.phone,
+    }
+    setCustomerList((prev) => {
+      if (prev.some((c) => c.id === newOption.id)) return prev
+      return [newOption, ...prev].sort((a, b) => a.name.localeCompare(b.name))
+    })
+    handleCustomerChange(newOption.id, newOption)
+    toast.success(`Customer "${newOption.name}" berhasil dibuat dan otomatis dipilih`)
+  }
+
+  const handleAssetCreated = (newAsset: AssetOption) => {
+    setAssetList((prev) => {
+      if (prev.some((a) => a.id === newAsset.id)) return prev
+      return [newAsset, ...prev]
+    })
+    if (!formValues.customerId || formValues.customerId !== newAsset.customerId) {
+      handleCustomerChange(newAsset.customerId)
+    }
+    updateField('assetId', newAsset.id)
+    toast.success(`Unit aset "${newAsset.assetName}" berhasil didaftarkan dan dipilih`)
+  }
+
   const handleResetForm = () => {
     try {
       sessionStorage.removeItem(DRAFT_STORAGE_KEY)
@@ -195,8 +288,8 @@ export function CreateJobForm({
     setFormValues(getBlankValues())
   }
 
-  const availableAssets = assets.filter((a) => a.customerId === formValues.customerId)
-  const selectedAsset = assets.find((a) => a.id === formValues.assetId)
+  const availableAssets = assetList.filter((a) => a.customerId === formValues.customerId)
+  const selectedAsset = assetList.find((a) => a.id === formValues.assetId)
 
   return (
     <form action={formAction}>
@@ -233,24 +326,27 @@ export function CreateJobForm({
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="customerId" className="text-xs font-medium text-[#475569]">Pilih Pelanggan *</Label>
-                  <Link href="/admin/customers" className="text-xs text-primary hover:underline font-medium flex items-center gap-1">
-                    <Plus className="h-3 w-3" />
-                    Customer Baru
-                  </Link>
+                  <CreateCustomerDialog
+                    onCustomerCreated={handleCustomerCreated}
+                    trigger={
+                      <button
+                        type="button"
+                        className="text-xs text-primary hover:underline font-medium flex items-center gap-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-sm"
+                      >
+                        <Plus className="h-3 w-3" />
+                        Customer Baru
+                      </button>
+                    }
+                  />
                 </div>
                 <input type="hidden" name="customerId" value={formValues.customerId} />
-                <Select value={formValues.customerId} onValueChange={handleCustomerChange}>
-                  <SelectTrigger className="h-9 text-xs w-full">
-                    <SelectValue placeholder="Pilih pelanggan" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((c) => (
-                      <SelectItem key={c.id} value={c.id} className="text-xs">
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CustomerSearchSelect
+                  customers={customerList}
+                  selectedCustomerId={formValues.customerId}
+                  onSelectCustomer={(id, customer) => handleCustomerChange(id, customer)}
+                  onCustomerCreated={handleCustomerCreated}
+                  disabled={isPending}
+                />
               </div>
 
               {/* Pilihan Unit Aset Pelanggan */}
@@ -260,16 +356,20 @@ export function CreateJobForm({
                     <Wrench className="h-3.5 w-3.5 text-primary" />
                     Unit Aset Pelanggan
                   </Label>
-                  {formValues.customerId && (
-                    <Link
-                      href={`/admin/customers/${formValues.customerId}`}
-                      target="_blank"
-                      className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
-                    >
-                      <Plus className="h-3 w-3" />
-                      Tambah Unit Aset Baru
-                    </Link>
-                  )}
+                  <AssetDialog
+                    customerId={formValues.customerId}
+                    customers={customerList}
+                    onAssetCreated={handleAssetCreated}
+                    trigger={
+                      <button
+                        type="button"
+                        className="text-xs text-primary hover:underline font-medium flex items-center gap-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-sm"
+                      >
+                        <Plus className="h-3 w-3" />
+                        Tambah Unit Aset Baru
+                      </button>
+                    }
+                  />
                 </div>
                 <input type="hidden" name="assetId" value={formValues.assetId} />
                 <Select
@@ -322,17 +422,79 @@ export function CreateJobForm({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="serviceType" className="text-xs font-medium text-[#475569]">Jenis Servis / Layanan *</Label>
-                  <Input
-                    id="serviceType"
-                    name="serviceType"
-                    required
-                    value={formValues.serviceType}
-                    onChange={(e) => updateField('serviceType', e.target.value)}
-                    placeholder="Masukkan jenis servis atau layanan"
-                    disabled={isPending}
-                    className="h-9 text-xs"
-                  />
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="serviceType" className="text-xs font-medium text-[#475569]">
+                      Jenis Servis / Layanan *
+                    </Label>
+                    <Link
+                      href="/admin/profile"
+                      target="_blank"
+                      className="text-[11px] text-[#007ACC] hover:underline"
+                    >
+                      Kelola Layanan
+                    </Link>
+                  </div>
+                  <input type="hidden" name="serviceType" value={formValues.serviceType} />
+
+                  <div className="space-y-1.5">
+                    <Select
+                      value={isCustomService ? '__custom__' : formValues.serviceType || undefined}
+                      onValueChange={(val) => {
+                        if (val === '__custom__') {
+                          setIsCustomService(true)
+                          updateField('serviceType', customServiceText)
+                        } else {
+                          setIsCustomService(false)
+                          updateField('serviceType', val)
+                        }
+                      }}
+                      disabled={isPending}
+                    >
+                      <SelectTrigger className="h-9 text-xs w-full bg-background">
+                        <SelectValue placeholder="Pilih jenis layanan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {serviceList.length > 0 ? (
+                          serviceList.map((srv) => (
+                            <SelectItem key={srv.id} value={srv.name} className="text-xs">
+                              <div className="flex items-center justify-between w-full gap-2">
+                                <span>{srv.name}</span>
+                                {srv.default_price && srv.default_price > 0 ? (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    (Rp {Number(srv.default_price).toLocaleString('id-ID')})
+                                  </span>
+                                ) : null}
+                              </div>
+                            </SelectItem>
+                          ))
+                        ) : (
+                          DEFAULT_SERVICE_OPTIONS.map((name) => (
+                            <SelectItem key={name} value={name} className="text-xs">
+                              {name}
+                            </SelectItem>
+                          ))
+                        )}
+                        <SelectItem value="__custom__" className="text-xs text-[#007ACC] font-medium border-t mt-1 pt-1">
+                          + Ketik Layanan Lainnya...
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {isCustomService && (
+                      <Input
+                        type="text"
+                        required
+                        placeholder="Masukkan nama layanan"
+                        value={customServiceText}
+                        onChange={(e) => {
+                          setCustomServiceText(e.target.value)
+                          updateField('serviceType', e.target.value)
+                        }}
+                        className="h-8 text-xs bg-background"
+                        autoFocus
+                      />
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">

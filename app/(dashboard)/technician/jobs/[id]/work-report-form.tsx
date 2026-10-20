@@ -86,7 +86,7 @@ export function WorkReportForm({ jobId, existingReport, disabled }: WorkReportFo
               rows={3}
               value={result}
               onChange={(e) => setResult(e.target.value)}
-              placeholder="Contoh: Pembersihan filter selesai, freon ditambah 20 psi, kebocoran pipa diperbaiki..."
+              placeholder="Tuliskan tindakan teknis dan hasil pengerjaan di lapangan"
               disabled={disabled || isPending}
               className="rounded-[8px] border-[#E2E8F0] text-sm focus-visible:ring-[#007ACC]"
             />
@@ -99,7 +99,7 @@ export function WorkReportForm({ jobId, existingReport, disabled }: WorkReportFo
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Contoh: Disarankan servis rutin kembali 3 bulan mendatang..."
+              placeholder="Tuliskan rekomendasi perawatan atau catatan teknisi"
               disabled={disabled || isPending}
               className="rounded-[8px] border-[#E2E8F0] text-sm focus-visible:ring-[#007ACC]"
             />
