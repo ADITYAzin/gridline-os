@@ -43,7 +43,7 @@ export default function AuthLayout({
             className="flex items-center gap-2.5 transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#007ACC] rounded-md"
           >
             <Image
-              src="/images/gridlineos-logo.png"
+              src="/images/opilines-logo.png"
               alt="Opilines"
               width={130}
               height={24}
@@ -68,7 +68,7 @@ export default function AuthLayout({
       {/* Compact Footer */}
       <footer className="relative z-10 w-full shrink-0 border-t border-[#E2E8F0] bg-[#FFFFFF]/70 py-2.5 sm:py-3 text-center text-[11.5px] text-[#94A3B8]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-1.5">
-          <p>© 2026 Opilines Technologies. Seluruh hak cipta dilindungi.</p>
+          <p>© 2026 Opilines. Seluruh hak cipta dilindungi.</p>
           <div className="flex items-center gap-3 text-[#475569]">
             <Link href="/login" className="hover:text-[#007ACC] transition-colors">
               Pusat Bantuan

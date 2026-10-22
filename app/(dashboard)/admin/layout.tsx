@@ -28,19 +28,16 @@ export default async function AdminLayout({
       {/* Sidebar Desktop with Fixed Height */}
       <aside className="hidden md:flex w-64 h-screen flex-col border-r border-[#E2E8F0] bg-[#FFFFFF] shrink-0">
         {/* Brand Header */}
-        <div className="flex h-16 items-center border-b border-[#E2E8F0] px-4 shrink-0">
+        <div className="flex h-auto items-center border-b border-[#E2E8F0] p-4 shrink-0">
           <div className="flex flex-col">
             <Image
-              src="/images/gridlineos-logo.png"
+              src="/images/opilines-logo.png"
               alt="Opilines"
               width={120}
               height={22}
-              className="h-auto w-[120px] object-contain"
+              className="h-auto w-[112px] object-contain"
               priority
             />
-            <span className="text-[10px] text-[#94A3B8] uppercase font-semibold tracking-wider mt-2">
-              Panel Operasional
-            </span>
           </div>
         </div>
 
@@ -78,7 +75,7 @@ export default async function AdminLayout({
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <header className="md:hidden flex h-14 items-center justify-between border-b border-[#E2E8F0] p-4 bg-[#FFFFFF] shrink-0">
           <Image
-            src="/images/gridlineos-logo.png"
+            src="/images/opilines-logo.png"
             alt="Opilines"
             width={110}
             height={20}

@@ -10,7 +10,7 @@ export function MarketingFooter() {
           <div className="md:col-span-2 space-y-4">
             <Link href="/" className="inline-block">
               <Image
-                src="/images/gridlineos-logo.png"
+                src="/images/opilines-logo.png"
                 alt="Opilines"
                 width={130}
                 height={24}

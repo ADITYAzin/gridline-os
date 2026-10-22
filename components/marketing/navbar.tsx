@@ -23,12 +23,12 @@ export function MarketingNavbar() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src="/images/gridlineos-logo.png"
+            src="/images/opilines-logo.png"
             alt="Opilines"
             width={120}
             height={22}
             priority
-            className="h-auto w-[120px] object-contain"
+            className="h-auto w-[112px] object-contain"
           />
         </Link>
 

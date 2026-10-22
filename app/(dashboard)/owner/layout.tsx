@@ -31,11 +31,11 @@ export default async function OwnerLayout({
         <div className="flex h-16 items-center gap-2.5 border-b px-6">
           <div className="flex flex-col">
             <Image
-              src="/images/gridlineos-logo.png"
+              src="/images/opilines-logo.png"
               alt="Opilines"
               width={120}
               height={22}
-              className="h-auto w-[120px] object-contain"
+              className="h-auto w-[112px] object-contain"
               priority
             />
             <span className="text-micro text-emerald-600 uppercase font-semibold tracking-wider flex items-center gap-1">
@@ -73,7 +73,7 @@ export default async function OwnerLayout({
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex h-14 items-center justify-between border-b px-4 bg-card">
           <Image
-            src="/images/gridlineos-logo.png"
+            src="/images/opilines-logo.png"
             alt="Opilines"
             width={110}
             height={20}
