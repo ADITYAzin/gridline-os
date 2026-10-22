@@ -28,7 +28,7 @@ interface ExportJobsButtonProps {
 
 export function ExportJobsButton({
   jobs,
-  filenamePrefix = 'Laporan-Jobs-GridlineOS',
+  filenamePrefix = 'Laporan-Jobs-Opilines',
   label = 'Export CSV / Excel',
 }: ExportJobsButtonProps) {
   const [isExporting, setIsExporting] = useState(false)

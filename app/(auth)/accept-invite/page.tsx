@@ -6,8 +6,8 @@ import { AcceptInviteForm } from './accept-invite-form'
 import { AlertTriangle, ArrowLeft } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Aktivasi Undangan — Gridline OS',
-  description: 'Terima undangan tim dan aktifkan akun Gridline OS Anda',
+  title: 'Aktivasi Undangan — Opilines',
+  description: 'Terima undangan tim dan aktifkan akun Opilines Anda',
 }
 
 interface PageProps {

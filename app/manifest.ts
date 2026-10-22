@@ -2,12 +2,12 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Gridline OS — Field Service Management',
-    short_name: 'Gridline OS',
+    name: 'Opilines — Field Service Management',
+    short_name: 'Opilines',
     description: 'Aplikasi Operasional & Pelaporan Tugas Teknisi Lapangan',
     start_url: '/technician',
     scope: '/',
-    id: 'gridline-os-technician',
+    id: 'opilines-technician',
     display: 'standalone',
     background_color: '#0f172a',
     theme_color: '#0f172a',

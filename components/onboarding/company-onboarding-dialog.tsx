@@ -148,44 +148,44 @@ export function CompanyOnboardingDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
         showCloseButton={false}
-        className="sm:max-w-xl w-[94vw] p-0 gap-0 overflow-hidden rounded-[14px] border border-[#E2E8F0] shadow-2xl bg-white max-h-[92vh] flex flex-col"
+        className="sm:max-w-xl w-[94vw] p-0 gap-0 overflow-hidden rounded-2xl border shadow-xl bg-background max-h-[90vh] flex flex-col"
       >
-        {/* Header: Clean, white with Primary Blue accents */}
-        <div className="px-6 pt-6 pb-4 border-b border-[#E2E8F0] bg-white shrink-0">
+        {/* Header: Clean with Primary Blue accents */}
+        <div className="px-6 pt-6 pb-4 border-b bg-card shrink-0">
           <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-[10px] bg-[#EBF5FC] text-[#007ACC] border border-[#D0E8F8] flex items-center justify-center shrink-0">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
               <Building2 className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <DialogTitle className="font-heading text-base font-semibold text-[#0F172A] leading-tight">
+                <DialogTitle className="font-heading text-base font-semibold leading-tight">
                   Lengkapi Profil Perusahaan
                 </DialogTitle>
                 <Badge
                   variant="outline"
-                  className="bg-[#EBF5FC] text-[#007ACC] border-[#007ACC]/30 text-[10px] font-semibold px-2 py-0.5"
+                  className="bg-primary/10 text-primary border-primary/30 text-[10px] font-semibold px-2 py-0.5"
                 >
                   {companyName || 'Organisasi Baru'}
                 </Badge>
               </div>
-              <p className="text-xs text-[#475569] mt-1 leading-relaxed">
-                Tambahkan alamat dan layanan agar sistem siap menerbitkan tiket servis serta Berita Acara Pekerjaan (BAP).
+              <p className="text-xs text-muted-foreground mt-1">
+                Lengkapi lokasi operasional dan katalog layanan utama Anda.
               </p>
             </div>
           </div>
 
           {/* Stepper Tabs */}
-          <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-[#F1F5F9]">
+          <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t">
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-[8px] text-xs font-medium border transition-colors ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                 step === 1
-                  ? 'bg-[#EBF5FC] text-[#007ACC] border-[#007ACC]/40'
-                  : 'bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0]'
+                  ? 'bg-primary/10 text-primary border-primary/30'
+                  : 'bg-muted/40 text-muted-foreground border-transparent'
               }`}
             >
               <span
                 className={`h-4 w-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  step === 1 ? 'bg-[#007ACC] text-white' : 'bg-[#E2E8F0] text-[#64748B]'
+                  step === 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                 }`}
               >
                 1
@@ -194,15 +194,15 @@ export function CompanyOnboardingDialog({
             </div>
 
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-[8px] text-xs font-medium border transition-colors ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                 step === 2
-                  ? 'bg-[#EBF5FC] text-[#007ACC] border-[#007ACC]/40'
-                  : 'bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0]'
+                  ? 'bg-primary/10 text-primary border-primary/30'
+                  : 'bg-muted/40 text-muted-foreground border-transparent'
               }`}
             >
               <span
                 className={`h-4 w-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  step === 2 ? 'bg-[#007ACC] text-white' : 'bg-[#E2E8F0] text-[#64748B]'
+                  step === 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                 }`}
               >
                 2
@@ -212,11 +212,11 @@ export function CompanyOnboardingDialog({
           </div>
         </div>
 
-        {/* Scrollable Body: Breathing room, no cutoffs */}
+        {/* Scrollable Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
           {errorMessage && (
-            <div className="flex items-center gap-2.5 p-3 rounded-[8px] bg-[#FEF2F2] border border-[#EF4444]/30 text-[#B91C1C] text-xs font-medium">
-              <AlertCircle className="h-4 w-4 shrink-0 text-[#EF4444]" />
+            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium">
+              <AlertCircle className="h-4 w-4 shrink-0" />
               <span className="leading-snug">{errorMessage}</span>
             </div>
           )}
@@ -225,9 +225,9 @@ export function CompanyOnboardingDialog({
             /* STEP 1: Lokasi & Kontak */
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="onboarding-address" className="text-xs font-medium text-[#475569] flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-[#007ACC]" />
-                  <span>Alamat Lengkap Workshop / Kantor Utama <span className="text-[#EF4444]">*</span></span>
+                <Label htmlFor="onboarding-address" className="text-xs font-medium flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                  <span>Alamat Workshop / Kantor Utama <span className="text-destructive">*</span></span>
                 </Label>
                 <Textarea
                   id="onboarding-address"
@@ -235,32 +235,32 @@ export function CompanyOnboardingDialog({
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="Masukkan alamat lengkap workshop atau kantor operasional"
-                  className="text-xs bg-white border-[#E2E8F0] rounded-[8px] focus:border-[#007ACC] focus:ring-2 focus:ring-[#007ACC]/15 resize-none leading-relaxed"
+                  className="text-xs rounded-lg resize-none leading-relaxed"
                   autoFocus
                 />
-                <p className="text-[11px] text-[#94A3B8]">
-                  Digunakan sebagai titik dispatch teknisi dan tertera pada dokumen BAP pelanggan.
+                <p className="text-[11px] text-muted-foreground">
+                  Digunakan untuk titik dispatch dan dokumen BAP pelanggan.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div className="space-y-1.5">
-                  <Label htmlFor="onboarding-city" className="text-xs font-medium text-[#475569]">
-                    Kota / Kabupaten <span className="text-[#EF4444]">*</span>
+                  <Label htmlFor="onboarding-city" className="text-xs font-medium">
+                    Kota / Kabupaten <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="onboarding-city"
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    placeholder="Masukkan kota operasional"
-                    className="h-9 text-xs bg-white border-[#E2E8F0] rounded-[8px] focus:border-[#007ACC] focus:ring-2 focus:ring-[#007ACC]/15"
+                    placeholder="Contoh: Jakarta Selatan"
+                    className="h-9 text-xs rounded-lg"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="onboarding-phone" className="text-xs font-medium text-[#475569] flex items-center gap-1.5">
-                    <Phone className="h-3.5 w-3.5 text-[#94A3B8]" />
+                  <Label htmlFor="onboarding-phone" className="text-xs font-medium flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                     <span>WhatsApp / Telepon Kantor</span>
                   </Label>
                   <Input
@@ -268,8 +268,8 @@ export function CompanyOnboardingDialog({
                     type="text"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Nomor kontak kantor atau WhatsApp (opsional)"
-                    className="h-9 text-xs bg-white border-[#E2E8F0] rounded-[8px] focus:border-[#007ACC] focus:ring-2 focus:ring-[#007ACC]/15"
+                    placeholder="Contoh: 08123456789 (opsional)"
+                    className="h-9 text-xs rounded-lg"
                   />
                 </div>
               </div>
@@ -279,26 +279,26 @@ export function CompanyOnboardingDialog({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-xs font-semibold text-[#0F172A] flex items-center gap-1.5">
-                    <Briefcase className="h-3.5 w-3.5 text-[#007ACC]" />
-                    <span>Katalog Layanan Perusahaan <span className="text-[#EF4444]">*</span></span>
+                  <Label className="text-xs font-semibold flex items-center gap-1.5">
+                    <Briefcase className="h-3.5 w-3.5 text-primary" />
+                    <span>Katalog Layanan Perusahaan <span className="text-destructive">*</span></span>
                   </Label>
-                  <p className="text-[11px] text-[#64748B] mt-0.5">
-                    Pilih kategori layanan umum di bawah, atau tambahkan layanan mandiri.
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Pilih layanan yang Anda sediakan atau tambahkan baru.
                   </p>
                 </div>
                 <Badge
                   variant="secondary"
-                  className="text-[10px] font-semibold bg-[#EBF5FC] text-[#007ACC] border border-[#007ACC]/20 shrink-0"
+                  className="text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20 shrink-0"
                 >
                   {selectedServices.length} Dipilih
                 </Badge>
               </div>
 
-              {/* Rekomendasi Layanan Umum (General) */}
+              {/* Rekomendasi Layanan Umum */}
               <div className="space-y-2">
-                <span className="text-[11px] font-medium text-[#475569] block">
-                  Rekomendasi Layanan Umum:
+                <span className="text-[11px] font-medium text-muted-foreground block">
+                  Pilihan Layanan Umum:
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {GENERAL_SERVICE_RECOMMENDATIONS.map((srv) => {
@@ -308,16 +308,16 @@ export function CompanyOnboardingDialog({
                         key={srv}
                         type="button"
                         onClick={() => toggleService(srv)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-medium border transition-all cursor-pointer ${
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-[#EBF5FC] text-[#007ACC] border-[#007ACC] shadow-xs'
-                            : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-[#007ACC]/40 hover:bg-[#F8FAFC]'
+                            ? 'bg-primary/10 text-primary border-primary shadow-xs'
+                            : 'bg-background text-muted-foreground border-border hover:border-primary/40 hover:bg-muted/40'
                         }`}
                       >
                         {isSelected ? (
-                          <Check className="h-3.5 w-3.5 text-[#007ACC]" />
+                          <Check className="h-3.5 w-3.5 text-primary" />
                         ) : (
-                          <Plus className="h-3.5 w-3.5 text-[#94A3B8]" />
+                          <Plus className="h-3.5 w-3.5 text-muted-foreground" />
                         )}
                         <span>{srv}</span>
                       </button>
@@ -327,9 +327,9 @@ export function CompanyOnboardingDialog({
               </div>
 
               {/* Opsi Mandiri: Tambah Layanan Kustom */}
-              <div className="space-y-2 pt-3 border-t border-[#F1F5F9]">
-                <Label htmlFor="custom-service-input" className="text-[11px] font-medium text-[#475569] block">
-                  Opsi Mandiri: Tambahkan Layanan Khusus / Kustom
+              <div className="space-y-2 pt-3 border-t">
+                <Label htmlFor="custom-service-input" className="text-[11px] font-medium text-muted-foreground block">
+                  Tambah Layanan Kustom
                 </Label>
                 <div className="flex items-center gap-2">
                   <Input
@@ -338,26 +338,26 @@ export function CompanyOnboardingDialog({
                     value={customServiceInput}
                     onChange={(e) => setCustomServiceInput(e.target.value)}
                     onKeyDown={handleAddCustomService}
-                    placeholder="Ketik nama layanan kustom lalu tekan Enter atau Tambah"
-                    className="h-9 text-xs bg-white border-[#E2E8F0] rounded-[8px] focus:border-[#007ACC] focus:ring-2 focus:ring-[#007ACC]/15 flex-1"
+                    placeholder="Nama layanan baru..."
+                    className="h-9 text-xs rounded-lg flex-1"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleAddCustomService}
                     disabled={!customServiceInput.trim()}
-                    className="h-9 px-3 text-xs border-[#E2E8F0] rounded-[8px] hover:bg-[#EBF5FC] hover:text-[#007ACC] hover:border-[#007ACC]/40 shrink-0 cursor-pointer"
+                    className="h-9 px-3 text-xs rounded-lg shrink-0 cursor-pointer"
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" />
                     Tambah
                   </Button>
                 </div>
 
-                {/* Display any custom services with easy delete (x) button */}
+                {/* Display custom services */}
                 {selectedServices.some((s) => !GENERAL_SERVICE_RECOMMENDATIONS.includes(s)) && (
                   <div className="pt-1.5 space-y-1.5">
-                    <span className="text-[10px] font-medium text-[#94A3B8] block uppercase tracking-wider">
-                      Layanan Mandiri Ditambahkan:
+                    <span className="text-[10px] font-medium text-muted-foreground block uppercase tracking-wider">
+                      Layanan Mandiri:
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {selectedServices
@@ -365,13 +365,13 @@ export function CompanyOnboardingDialog({
                         .map((srv) => (
                           <div
                             key={srv}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-medium bg-[#EBF5FC] text-[#007ACC] border border-[#007ACC]/30"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/30"
                           >
                             <span>{srv}</span>
                             <button
                               type="button"
                               onClick={() => removeService(srv)}
-                              className="hover:bg-[#007ACC]/15 rounded p-0.5 text-[#007ACC] cursor-pointer"
+                              className="hover:bg-primary/20 rounded p-0.5 text-primary cursor-pointer"
                               title="Hapus layanan ini"
                             >
                               <X className="h-3 w-3" />
@@ -386,8 +386,8 @@ export function CompanyOnboardingDialog({
           )}
         </div>
 
-        {/* Footer: Fixed at bottom, clean spacing */}
-        <div className="px-6 py-3.5 bg-[#F8FAFC] border-t border-[#E2E8F0] flex items-center justify-between shrink-0">
+        {/* Footer */}
+        <div className="px-6 py-3.5 bg-muted/30 border-t flex items-center justify-between shrink-0">
           <div>
             {step === 1 ? (
               <Button
@@ -395,7 +395,7 @@ export function CompanyOnboardingDialog({
                 variant="ghost"
                 onClick={handleDismiss}
                 disabled={isPending}
-                className="h-9 px-3 text-xs text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-[8px] cursor-pointer"
+                className="h-9 px-3 text-xs text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
               >
                 Lewati Dulu
               </Button>
@@ -405,7 +405,7 @@ export function CompanyOnboardingDialog({
                 variant="ghost"
                 onClick={() => setStep(1)}
                 disabled={isPending}
-                className="h-9 px-3 text-xs text-[#475569] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-[8px] gap-1.5 cursor-pointer"
+                className="h-9 px-3 text-xs rounded-lg gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Kembali
@@ -418,9 +418,9 @@ export function CompanyOnboardingDialog({
               <Button
                 type="button"
                 onClick={handleNext}
-                className="h-9 px-4 text-xs font-medium bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white rounded-[8px] gap-1.5 cursor-pointer shadow-[0_1px_2px_0_rgba(0,122,204,0.15)] transition-all"
+                className="h-9 px-4 text-xs font-medium rounded-lg gap-1.5 cursor-pointer"
               >
-                <span>Lanjut ke Layanan</span>
+                <span>Lanjut</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             ) : (
@@ -428,7 +428,7 @@ export function CompanyOnboardingDialog({
                 type="button"
                 onClick={handleSubmit}
                 disabled={isPending}
-                className="h-9 px-4 text-xs font-medium bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white rounded-[8px] gap-2 cursor-pointer shadow-[0_1px_2px_0_rgba(0,122,204,0.15)] transition-all"
+                className="h-9 px-4 text-xs font-medium rounded-lg gap-1.5 cursor-pointer"
               >
                 {isPending ? (
                   <>
@@ -438,7 +438,7 @@ export function CompanyOnboardingDialog({
                 ) : (
                   <>
                     <Check className="h-3.5 w-3.5" />
-                    Simpan & Mulai Gunakan
+                    Simpan Profil
                   </>
                 )}
               </Button>

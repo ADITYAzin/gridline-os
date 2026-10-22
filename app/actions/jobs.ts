@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { requireRole } from '@/lib/auth'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import type { SopItem } from '@/app/actions/organization'
 
 // Postgres accepts any 32-hex-digit UUID separated by hyphens (8-4-4-4-12 format),
 // including RFC 4122 v4 UUIDs and predictable demo seed UUIDs (e.g. 00000000-0000-0000-0000-000000000103).
@@ -35,47 +36,12 @@ export type JobActionState = {
   fields?: Record<string, string>
 }
 
-const DEFAULT_SOP_TEMPLATES: Record<string, string[]> = {
-  ac: [
-    'Pemeriksaan filter udara dan evaporator',
-    'Pengukuran tekanan tekanan freon / refrigeran',
-    'Pembersihan unit outdoor kondensor dan blower',
-    'Pengujian suhu hembusan dingin',
-    'Pemeriksaan kelancaran pipa drainase air',
-  ],
-  cctv: [
-    'Pemasangan kabel UTP & konektor kamera',
-    'Konfigurasi IP kamera dan NVR',
-    'Penyesuaian sudut pandang (viewing angle)',
-    'Uji kualitas rekaman siang dan malam (Infrared)',
-  ],
-  electrical: [
-    'Pemeriksaan tegangan & arus listrik (Voltage/Ampere)',
-    'Inspeksi kekencangan baut terminal kabel',
-    'Pengujian MCB / proteksi arus bocor (ELCB)',
-    'Uji beban operasional sistem listrik',
-  ],
-  default: [
-    'Inspeksi awal kondisi fisik dan fungsi peralatan',
-    'Pelaksanaan perbaikan / servis sesuai SOP',
-    'Pembersihan area kerja dan peralatan pendukung',
-    'Uji fungsi operasional akhir',
-  ],
-}
-
-function getSopChecklist(serviceType: string): string[] {
-  const lower = serviceType.toLowerCase()
-  if (lower.includes('ac') || lower.includes('hvac') || lower.includes('pendingin')) {
-    return DEFAULT_SOP_TEMPLATES.ac
-  }
-  if (lower.includes('cctv') || lower.includes('kamera') || lower.includes('nvr')) {
-    return DEFAULT_SOP_TEMPLATES.cctv
-  }
-  if (lower.includes('listrik') || lower.includes('electrical') || lower.includes('panel')) {
-    return DEFAULT_SOP_TEMPLATES.electrical
-  }
-  return DEFAULT_SOP_TEMPLATES.default
-}
+const DEFAULT_SOP_FALLBACK: string[] = [
+  'Inspeksi awal kondisi fisik dan fungsi peralatan',
+  'Pelaksanaan perbaikan / servis sesuai SOP',
+  'Pembersihan area kerja dan peralatan pendukung',
+  'Uji fungsi operasional akhir',
+]
 
 export async function createJobAction(prevState: JobActionState, formData: FormData): Promise<JobActionState> {
   const profile = await requireRole('admin')
@@ -160,16 +126,50 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
     }
   }
 
-  // 3. Pre-populate SOP Checklist Items
-  const checklist = getSopChecklist(parsed.data.serviceType)
-  const checklistRows = checklist.map((item) => ({
-    org_id: profile.orgId,
-    job_id: job.id,
-    item,
-    is_completed: false,
-  }))
+  // 3. Pre-populate SOP Checklist Items — from company_services config (admin-defined)
+  // Fetch the service's SOP config by name match within this org
+  const { data: serviceData } = await admin
+    .from('company_services')
+    .select('sop_mode, sop_items')
+    .eq('org_id', profile.orgId)
+    .eq('name', parsed.data.serviceType.trim())
+    .eq('is_active', true)
+    .maybeSingle()
 
-  await admin.from('checklist_items').insert(checklistRows)
+  const sopMode = (serviceData?.sop_mode as 'strict' | 'reference' | 'none' | undefined) ?? 'strict'
+  const sopItems = (serviceData?.sop_items as SopItem[] | null) ?? []
+
+  if (sopItems.length > 0) {
+    // Admin has configured SOP items: snapshot them into checklist_items
+    const checklistRows = sopItems
+      .sort((a, b) => a.order - b.order)
+      .map((s) => ({
+        org_id: profile.orgId,
+        job_id: job.id,
+        item: s.item,
+        is_completed: false,
+        is_na: false,
+        sop_mode: sopMode,
+        requires_photo: s.requires_photo ?? false,
+        is_critical: s.is_critical ?? false,
+        hint: s.hint || null,
+      }))
+    await admin.from('checklist_items').insert(checklistRows)
+  } else if (sopMode === 'strict' || !serviceData) {
+    // No admin SOP configured yet, or service not found in catalog: use legacy fallback
+    const fallbackRows = DEFAULT_SOP_FALLBACK.map((item) => ({
+      org_id: profile.orgId,
+      job_id: job.id,
+      item,
+      is_completed: false,
+      is_na: false,
+      sop_mode: 'strict',
+      requires_photo: false,
+      is_critical: false,
+    }))
+    await admin.from('checklist_items').insert(fallbackRows)
+  }
+  // If sopMode is 'reference' or 'none' and no items, no checklist rows are created
 
   // 4. Handle Schedule if assigned
   if (hasAssignment) {

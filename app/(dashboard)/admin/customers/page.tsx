@@ -23,11 +23,11 @@ export default async function CustomersPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-heading text-[24px] font-semibold text-[#0F172A] tracking-[-0.015em]">
-            Manajemen Customer
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-heading">
+            Pelanggan
           </h1>
-          <p className="text-[14px] text-[#475569] font-normal mt-2 leading-relaxed">
-            Daftar klien dan lokasi pekerjaan servis untuk penugasan job lapangan.
+          <p className="text-xs text-slate-500 mt-1">
+            Kelola data pelanggan, kontak, dan alamat lokasi servis untuk penugasan tiket.
           </p>
         </div>
         <CreateCustomerDialog />
@@ -39,9 +39,9 @@ export default async function CustomersPage() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[8px] bg-[#EBF5FC] border border-[#D0E8F8] text-[#007ACC] mb-4">
             <Building2 className="h-6 w-6" />
           </div>
-          <h3 className="font-heading text-[16px] font-semibold text-[#0F172A]">Belum Ada Data Customer</h3>
+          <h3 className="font-heading text-[16px] font-semibold text-[#0F172A]">Belum Ada Data Pelanggan</h3>
           <p className="text-[13px] text-[#475569] max-w-sm mx-auto mt-2 mb-6 leading-relaxed">
-            Tambahkan customer pertama Anda agar dapat mulai menjadwalkan pekerjaan servis teknisi.
+            Tambahkan pelanggan pertama Anda agar dapat mulai menjadwalkan pekerjaan servis teknisi.
           </p>
           <CreateCustomerDialog />
         </div>
@@ -53,7 +53,7 @@ export default async function CustomersPage() {
               <TableHeader>
                 <TableRow className="border-b border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#F8FAFC]">
                   <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] w-[30%] min-w-[220px]">
-                    Customer
+                    Pelanggan
                   </TableHead>
                   <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] w-[24%] min-w-[180px]">
                     Kontak

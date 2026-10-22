@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireRole } from '@/lib/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { STORAGE } from '@/lib/constants'
 import { CheckInButton } from './check-in-button'
 import { ChecklistSection } from './checklist-section'
 import { PhotoUploadSection } from './photo-upload-section'
@@ -10,10 +12,11 @@ import { WorkReportForm } from './work-report-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, MapPin, AlertCircle, Printer, Wrench, ShieldAlert, Sparkles } from 'lucide-react'
+import { ArrowLeft, MapPin, AlertCircle, Printer, Wrench, ShieldAlert, ShieldCheck, Sparkles } from 'lucide-react'
 import { TechnicianStatusBadge } from '@/components/technician/status-badge'
 import { FiveGateProgress } from '@/components/technician/five-gate-progress'
 import { QuickActionTray } from '@/components/technician/quick-action-tray'
+import { SopOperationalBanner } from '@/components/technician/sop-operational-banner'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -46,22 +49,34 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
         status,
         technician_id,
         customers(name, phone),
-        customer_assets(id, asset_name, brand, model_number, serial_number, location_tag, notes)
+        customer_assets(id, asset_name, brand, model_number, serial_number, location_tag, notes, warranty_expires_at, status)
       `)
       .eq('id', id)
       .eq('org_id', profile.orgId)
       .eq('technician_id', profile.id)
       .maybeSingle(),
     supabase.from('job_attendance').select('check_in_at, check_out_at').eq('job_id', id).maybeSingle(),
-    supabase.from('checklist_items').select('id, item, is_completed').eq('job_id', id).order('created_at', { ascending: true }),
+    supabase
+      .from('checklist_items')
+      .select('id, item, is_completed, is_na, na_reason, sop_mode, requires_photo, is_critical, hint')
+      .eq('job_id', id)
+      .order('created_at', { ascending: true }),
     supabase.from('job_photos').select('id, type, file_url, created_at').eq('job_id', id),
-    supabase.from('signatures').select('customer_name, signed_at').eq('job_id', id).maybeSingle(),
+    supabase.from('signatures').select('customer_name, signature_url, signed_at').eq('job_id', id).maybeSingle(),
     supabase.from('work_reports').select('result, notes, submitted_at').eq('job_id', id).maybeSingle(),
   ])
 
   if (!job) {
     notFound()
   }
+
+  // Fetch Service SOP Configuration & Risk Guidelines
+  const { data: serviceConfig } = await supabase
+    .from('company_services')
+    .select('sop_mode, sop_notes, estimated_duration_minutes, risk_level')
+    .eq('org_id', profile.orgId)
+    .eq('name', job.service_type)
+    .maybeSingle()
 
   const customer = job.customers as unknown as { name: string; phone: string | null } | null
   const custName = Array.isArray(customer) ? customer[0]?.name : customer?.name
@@ -75,18 +90,84 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
     serial_number: string | null
     location_tag: string | null
     notes: string | null
+    warranty_expires_at: string | null
+    status: string | null
   } | null
   const asset = (Array.isArray(job.customer_assets) ? job.customer_assets[0] : job.customer_assets) as AssetType
   const isLocked = job.status === 'completed' || job.status === 'cancelled'
 
-  // Calculate 5-Gate Completion State
+  const admin = getSupabaseAdmin()
+
+  // Generate signed URLs for before/after photos (valid 2 hours)
+  const photosWithSignedUrls = await Promise.all(
+    (photos || []).map(async (photo) => {
+      let displayUrl = photo.file_url
+      if (
+        !photo.file_url.startsWith('http://') &&
+        !photo.file_url.startsWith('https://') &&
+        !photo.file_url.startsWith('data:image')
+      ) {
+        try {
+          const { data } = await admin.storage
+            .from(STORAGE.jobFilesBucket)
+            .createSignedUrl(photo.file_url, 7200)
+          if (data?.signedUrl) {
+            displayUrl = data.signedUrl
+          }
+        } catch {
+          // fallback
+        }
+      }
+      return {
+        ...photo,
+        display_url: displayUrl,
+      }
+    })
+  )
+
+  // Generate signed URL for customer signature
+  let signatureWithSignedUrl: { customer_name: string; display_url?: string; signed_at: string } | null = null
+  if (signature) {
+    let displayUrl = signature.signature_url
+    if (
+      signature.signature_url &&
+      !signature.signature_url.startsWith('http://') &&
+      !signature.signature_url.startsWith('https://') &&
+      !signature.signature_url.startsWith('data:image')
+    ) {
+      try {
+        const { data: sigData } = await admin.storage
+          .from(STORAGE.jobFilesBucket)
+          .createSignedUrl(signature.signature_url, 7200)
+        if (sigData?.signedUrl) {
+          displayUrl = sigData.signedUrl
+        }
+      } catch {
+        // fallback
+      }
+    }
+    signatureWithSignedUrl = {
+      customer_name: signature.customer_name,
+      display_url: displayUrl,
+      signed_at: signature.signed_at,
+    }
+  }
+
+  // Calculate 5-Gate Completion State (supports Tri-Mode SOP and N/A)
   const hasCheckIn = Boolean(attendance?.check_in_at)
-  const hasChecklistCompleted = (checklist || []).length > 0 && (checklist || []).every((c) => c.is_completed)
+  const checklistList = checklist || []
+  const isReferenceSop = checklistList.length > 0 && checklistList[0]?.sop_mode === 'reference'
+  const hasChecklistCompleted =
+    checklistList.length === 0 ||
+    isReferenceSop ||
+    checklistList.every((c) => c.is_completed || (c.is_na && !c.is_critical))
   const hasPhotosCompleted =
     (photos || []).some((p) => p.type === 'before') &&
     (photos || []).some((p) => p.type === 'after')
   const hasSignature = Boolean(signature?.signed_at)
   const hasReport = Boolean(report?.submitted_at)
+  const allOtherGatesMet = hasCheckIn && hasChecklistCompleted && hasPhotosCompleted && hasSignature
+  const isAllGatesMet = allOtherGatesMet && hasReport
 
   return (
     <div className="space-y-4 pb-14">
@@ -137,7 +218,7 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
       <Card className="shadow-xs rounded-[12px] bg-white border-[#E2E8F0]">
         <CardHeader className="p-4 pb-2">
           <CardTitle className="text-xs text-[#475569] uppercase tracking-wider font-semibold">
-            Informasi Pelanggan & Lokasi
+            Pelanggan & Lokasi
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-1 space-y-3 text-xs">
@@ -166,7 +247,7 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
               <div className="flex items-center justify-between">
                 <span className="font-bold text-[#0F172A] flex items-center gap-1.5">
                   <Wrench className="h-4 w-4 text-[#007ACC]" />
-                  Unit Target: {asset.asset_name}
+                  Aset Unit: {asset.asset_name}
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-[6px] bg-[#007ACC] text-white">
                   {asset.brand}
@@ -174,7 +255,7 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
               </div>
               <div className="grid grid-cols-2 gap-2 text-[11px] text-[#475569] bg-white/80 p-2 rounded-[6px] border border-[#E2E8F0]">
                 <div>Model: <span className="font-mono font-semibold text-[#0F172A]">{asset.model_number || '-'}</span></div>
-                <div>S/N: <span className="font-mono font-semibold text-[#0F172A]">{asset.serial_number || '-'}</span></div>
+                <div>No. Seri: <span className="font-mono font-semibold text-[#0F172A]">{asset.serial_number || '-'}</span></div>
                 {asset.location_tag && (
                   <div className="col-span-2">Lokasi: <span className="font-medium text-[#0F172A]">{asset.location_tag}</span></div>
                 )}
@@ -184,18 +265,31 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
                   Catatan: {asset.notes}
                 </p>
               )}
+              {asset.warranty_expires_at && (
+                <div className="pt-2 border-t border-[#D0E8F8] flex items-center gap-1.5 text-[11px]">
+                  {new Date(asset.warranty_expires_at) >= new Date() ? (
+                    <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                      <ShieldCheck className="h-3.5 w-3.5" /> Garansi Aktif (s/d {new Date(asset.warranty_expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })})
+                    </span>
+                  ) : (
+                    <span className="text-rose-600 font-medium flex items-center gap-1">
+                      <ShieldAlert className="h-3.5 w-3.5" /> Garansi Habis ({new Date(asset.warranty_expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })})
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
           <div className="rounded-md bg-muted/50 p-2.5 space-y-1">
-            <span className="font-semibold text-foreground block">Keluhan Pelanggan:</span>
+            <span className="font-semibold text-foreground block">Keluhan:</span>
             <p className="text-muted-foreground">{job.issue}</p>
           </div>
 
           {job.instructions && (
             <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-2.5 space-y-1 text-amber-900 dark:text-amber-200">
               <span className="font-semibold block flex items-center gap-1">
-                <AlertCircle className="h-3.5 w-3.5" /> Instruksi Khusus:
+                <AlertCircle className="h-3.5 w-3.5" /> Instruksi:
               </span>
               <p>{job.instructions}</p>
             </div>
@@ -203,17 +297,31 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
         </CardContent>
       </Card>
 
+      {/* SOP Operational Guidelines & Safety Risk */}
+      <SopOperationalBanner
+        estimatedDuration={serviceConfig?.estimated_duration_minutes}
+        riskLevel={serviceConfig?.risk_level as 'low' | 'medium' | 'high' | null}
+        sopNotes={serviceConfig?.sop_notes}
+        sopMode={serviceConfig?.sop_mode as 'strict' | 'reference' | 'none' | null}
+      />
+
       {/* SOP Checklist Section */}
       <ChecklistSection items={checklist || []} disabled={isLocked} />
 
       {/* Photo Evidence Section (Before / After) */}
-      <PhotoUploadSection jobId={job.id} photos={photos || []} disabled={isLocked} />
+      <PhotoUploadSection jobId={job.id} photos={photosWithSignedUrls} disabled={isLocked} />
 
       {/* Customer E-Signature Section */}
-      <SignaturePadModal jobId={job.id} existingSignature={signature} disabled={isLocked} />
+      <SignaturePadModal jobId={job.id} existingSignature={signatureWithSignedUrl} disabled={isLocked} />
 
       {/* Work Report Section */}
-      <WorkReportForm jobId={job.id} existingReport={report} disabled={isLocked} />
+      <WorkReportForm
+        jobId={job.id}
+        existingReport={report}
+        disabled={isLocked}
+        allOtherGatesMet={allOtherGatesMet}
+        isAllGatesMet={isAllGatesMet}
+      />
     </div>
   )
 }

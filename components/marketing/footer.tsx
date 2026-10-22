@@ -11,7 +11,7 @@ export function MarketingFooter() {
             <Link href="/" className="inline-block">
               <Image
                 src="/images/gridlineos-logo.png"
-                alt="GridlineOS"
+                alt="Opilines"
                 width={130}
                 height={24}
                 className="h-auto w-[130px] object-contain"
@@ -111,7 +111,7 @@ export function MarketingFooter() {
         {/* Bottom Bar */}
         <div className="mt-16 pt-8 border-t border-[#E2E8F0] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[12px] text-[#94A3B8]">
-            © {new Date().getFullYear()} GridlineOS. All rights reserved. Dirancang untuk operasional teknisi Indonesia.
+            © {new Date().getFullYear()} Opilines. All rights reserved. Dirancang untuk operasional teknisi Indonesia.
           </p>
           <div className="flex items-center gap-6 text-[12px] text-[#64748B]">
             <span>Standar Keamanan Enkripsi End-to-End</span>

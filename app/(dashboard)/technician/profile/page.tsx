@@ -136,7 +136,7 @@ export default async function TechnicianProfilePage() {
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1.5 font-medium text-slate-700">
             <Smartphone className="h-3.5 w-3.5 text-slate-500" />
-            Gridline OS Mobile Field
+            Opilines Mobile Field
           </span>
           <span className="font-mono text-[10px] bg-slate-200/70 text-slate-700 px-1.5 py-0.5 rounded">v1.2.0-pwa</span>
         </div>

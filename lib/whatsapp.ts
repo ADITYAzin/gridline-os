@@ -87,14 +87,14 @@ Mohon kesediaannya di tempat. Terima kasih!`
 
 Pemberitahuan bahwa pekerjaan servis untuk tiket ${jobNumber} (${serviceType}) telah selesai dilaksanakan oleh teknisi kami (${technicianName}).
 
-Dokumen Berita Acara Pekerjaan (BAP) dan bukti dokumentasi servis telah tercatat di sistem Gridline OS.
+Dokumen Berita Acara Pekerjaan (BAP) dan bukti dokumentasi servis telah tercatat di sistem Opilines.
 
 Terima kasih atas kepercayaan Anda menggunakan layanan kami!`
 
     case 'technician_dispatch':
       return `Halo ${technicianName},
 
-Ada penugasan pekerjaan servis baru untuk Anda di sistem Gridline OS:
+Ada penugasan pekerjaan servis baru untuk Anda di sistem Opilines:
 
 • No. Tiket: ${jobNumber}
 • Customer: ${customerName}
@@ -102,7 +102,7 @@ Ada penugasan pekerjaan servis baru untuk Anda di sistem Gridline OS:
 ${issue ? `• Kendala/Catatan: ${issue}\n` : ''}• Lokasi: ${address}
 • Jadwal: ${scheduleDate}${timeStr}
 
-Silakan buka aplikasi Gridline OS untuk memeriksa checklist SOP dan lakukan check-in GPS saat tiba di lokasi.`
+Silakan buka aplikasi Opilines untuk memeriksa checklist SOP dan lakukan check-in GPS saat tiba di lokasi.`
 
     case 'custom':
     default:

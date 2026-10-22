@@ -26,7 +26,7 @@ export function generateInviteEmailHtml({
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Undangan Bergabung - Gridline OS</title>
+  <title>Undangan Bergabung - Opilines</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b;">
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 16px;">
@@ -40,7 +40,7 @@ export function generateInviteEmailHtml({
                 <tr>
                   <td>
                     <div style="display: inline-block; padding: 8px 12px; background: rgba(59, 130, 246, 0.2); border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;">
-                      Gridline OS
+                      Opilines
                     </div>
                     <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; line-height: 28px;">
                       Undangan Bergabung ke Tim Lapangan
@@ -58,7 +58,7 @@ export function generateInviteEmailHtml({
                 Halo,
               </p>
               <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 24px; color: #334155;">
-                <strong>${inviterName}</strong> telah mengundang Anda untuk bergabung ke dalam organisasi <strong>${organizationName}</strong> di sistem Gridline OS sebagai <strong>${roleName}</strong>.
+                <strong>${inviterName}</strong> telah mengundang Anda untuk bergabung ke dalam organisasi <strong>${organizationName}</strong> di sistem Opilines sebagai <strong>${roleName}</strong>.
               </p>
 
               <!-- Role Info Box -->
@@ -102,7 +102,7 @@ export function generateInviteEmailHtml({
           <tr>
             <td style="padding: 24px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
               <p style="margin: 0 0 6px 0; font-size: 12px; color: #94a3b8;">
-                Email ini dikirim otomatis oleh sistem Gridline OS untuk ${organizationName}.
+                Email ini dikirim otomatis oleh sistem Opilines untuk ${organizationName}.
               </p>
               <p style="margin: 0; font-size: 11px; color: #cbd5e1;">
                 Jika Anda merasa tidak mengenali pengundang ini, abaikan pesan ini.

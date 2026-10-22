@@ -30,11 +30,11 @@ export function FiveGateProgress({
   isCompleted,
 }: FiveGateProgressProps) {
   const gates = [
-    { label: 'GPS Check-in', done: hasCheckIn, icon: Navigation },
-    { label: 'SOP Checklist', done: hasChecklistCompleted, icon: ListChecks },
+    { label: 'Check-in', done: hasCheckIn, icon: Navigation },
+    { label: 'Checklist SOP', done: hasChecklistCompleted, icon: ListChecks },
     { label: 'Foto Bukti', done: hasPhotosCompleted, icon: Camera },
     { label: 'Tanda Tangan', done: hasSignature, icon: PenTool },
-    { label: 'Laporan Kerja', done: hasReport, icon: FileText },
+    { label: 'Laporan', done: hasReport, icon: FileText },
   ]
 
   const completedCount = gates.filter((g) => g.done).length
@@ -46,14 +46,14 @@ export function FiveGateProgress({
         {/* Header summary */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-foreground">Progres Syarat Tiket (5-Gate)</span>
+            <span className="text-xs font-bold text-foreground">Syarat Penyelesaian</span>
             {isCompleted ? (
               <span className="text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                <CheckCircle2 className="h-3 w-3" /> Tuntas
+                <CheckCircle2 className="h-3 w-3" /> Selesai
               </span>
             ) : (
               <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-0.5">
-                <Clock className="h-3 w-3 text-amber-500" /> {completedCount}/5 Selesai
+                <Clock className="h-3 w-3 text-amber-500" /> {completedCount}/5 Lengkap
               </span>
             )}
           </div>

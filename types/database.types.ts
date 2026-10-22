@@ -18,31 +18,49 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string
+          hint: string | null
           id: string
           is_completed: boolean
+          is_critical: boolean
+          is_na: boolean
           item: string
           job_id: string
+          na_reason: string | null
           org_id: string
+          requires_photo: boolean
+          sop_mode: string
           updated_at: string
         }
         Insert: {
           completed_at?: string | null
           created_at?: string
+          hint?: string | null
           id?: string
           is_completed?: boolean
+          is_critical?: boolean
+          is_na?: boolean
           item: string
           job_id: string
+          na_reason?: string | null
           org_id: string
+          requires_photo?: boolean
+          sop_mode?: string
           updated_at?: string
         }
         Update: {
           completed_at?: string | null
           created_at?: string
+          hint?: string | null
           id?: string
           is_completed?: boolean
+          is_critical?: boolean
+          is_na?: boolean
           item?: string
           job_id?: string
+          na_reason?: string | null
           org_id?: string
+          requires_photo?: boolean
+          sop_mode?: string
           updated_at?: string
         }
         Relationships: [
@@ -67,30 +85,45 @@ export type Database = {
           created_at: string
           default_price: number | null
           description: string | null
+          estimated_duration_minutes: number | null
           id: string
           is_active: boolean
           name: string
           org_id: string
+          risk_level: string
+          sop_items: Json
+          sop_mode: string
+          sop_notes: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           default_price?: number | null
           description?: string | null
+          estimated_duration_minutes?: number | null
           id?: string
           is_active?: boolean
           name: string
           org_id: string
+          risk_level?: string
+          sop_items?: Json
+          sop_mode?: string
+          sop_notes?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           default_price?: number | null
           description?: string | null
+          estimated_duration_minutes?: number | null
           id?: string
           is_active?: boolean
           name?: string
           org_id?: string
+          risk_level?: string
+          sop_items?: Json
+          sop_mode?: string
+          sop_notes?: string | null
           updated_at?: string
         }
         Relationships: [

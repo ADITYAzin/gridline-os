@@ -16,11 +16,28 @@ const updateOrgSchema = z.object({
   email: z.string().trim().email('Format email tidak valid').optional().or(z.literal('')),
 })
 
+const sopItemSchema = z.object({
+  id: z.string().min(1),
+  item: z.string().trim().min(1, 'Item SOP tidak boleh kosong').max(300, 'Item SOP maksimal 300 karakter'),
+  order: z.number().int().min(1),
+  requires_photo: z.boolean().default(false),
+  is_critical: z.boolean().default(false),
+  hint: z.string().trim().max(500, 'Hint maksimal 500 karakter').optional().or(z.literal('')),
+})
+
+const sopFieldsSchema = z.object({
+  sopMode: z.enum(['strict', 'reference', 'none']).default('none'),
+  sopItems: z.array(sopItemSchema).default([]),
+  sopNotes: z.string().trim().max(1000, 'Catatan SOP maksimal 1000 karakter').optional().or(z.literal('')),
+  estimatedDurationMinutes: z.coerce.number().int().min(1).max(1440).optional().nullable(),
+  riskLevel: z.enum(['low', 'medium', 'high']).default('low'),
+})
+
 const createServiceSchema = z.object({
   name: z.string().trim().min(2, 'Nama layanan minimal 2 karakter').max(100, 'Nama layanan maksimal 100 karakter'),
   description: z.string().trim().nullable().optional().or(z.literal('')),
   defaultPrice: z.coerce.number().min(0, 'Harga default tidak boleh negatif').optional().nullable(),
-})
+}).merge(sopFieldsSchema)
 
 const updateServiceSchema = z.object({
   id: z.string().uuid('ID Layanan tidak valid'),
@@ -28,7 +45,7 @@ const updateServiceSchema = z.object({
   description: z.string().trim().nullable().optional().or(z.literal('')),
   defaultPrice: z.coerce.number().min(0, 'Harga default tidak boleh negatif').optional().nullable(),
   isActive: z.boolean().optional(),
-})
+}).merge(sopFieldsSchema)
 
 const onboardingSchema = z.object({
   address: z.string().trim().min(3, 'Alamat perusahaan minimal 3 karakter'),
@@ -37,6 +54,15 @@ const onboardingSchema = z.object({
   phone: z.string().trim().optional().or(z.literal('')),
   services: z.array(z.string().trim().min(1)).optional(),
 })
+
+export type SopItem = {
+  id: string
+  item: string
+  order: number
+  requires_photo: boolean
+  is_critical: boolean
+  hint?: string | null
+}
 
 export type OrgActionState = {
   error?: string
@@ -50,6 +76,11 @@ export type OrgActionState = {
     default_price?: number | null
     is_active: boolean
     created_at: string
+    sop_mode: 'strict' | 'reference' | 'none'
+    sop_items: SopItem[]
+    sop_notes?: string | null
+    estimated_duration_minutes?: number | null
+    risk_level: 'low' | 'medium' | 'high'
   }
 }
 
@@ -124,7 +155,7 @@ export async function getCompanyServicesAction() {
 
   const { data, error } = await supabase
     .from('company_services')
-    .select('id, name, description, default_price, is_active, created_at')
+    .select('id, name, description, default_price, is_active, created_at, sop_mode, sop_items, sop_notes, estimated_duration_minutes, risk_level')
     .eq('org_id', profile.orgId)
     .order('name', { ascending: true })
 
@@ -151,10 +182,30 @@ export async function createCompanyServiceAction(
   const rawPrice = formData.get('defaultPrice') as string | null
   const defaultPrice = rawPrice ? Number(rawPrice) : 0
 
+  // Parse SOP fields
+  const sopMode = (formData.get('sopMode') as string) || 'none'
+  const sopNotesRaw = formData.get('sopNotes') as string | null
+  const sopNotes = sopNotesRaw ? sopNotesRaw.trim() : null
+  const rawDuration = formData.get('estimatedDurationMinutes') as string | null
+  const estimatedDurationMinutes = rawDuration ? Number(rawDuration) : null
+  const riskLevel = (formData.get('riskLevel') as string) || 'low'
+  const rawSopItems = formData.get('sopItems') as string | null
+  let sopItems: SopItem[] = []
+  try {
+    sopItems = rawSopItems ? JSON.parse(rawSopItems) : []
+  } catch {
+    return { error: 'Format item SOP tidak valid.' }
+  }
+
   const parsed = createServiceSchema.safeParse({
     name,
     description: description || null,
     defaultPrice,
+    sopMode,
+    sopItems,
+    sopNotes,
+    estimatedDurationMinutes,
+    riskLevel,
   })
 
   if (!parsed.success) {
@@ -174,8 +225,13 @@ export async function createCompanyServiceAction(
       description: parsed.data.description || null,
       default_price: parsed.data.defaultPrice ?? 0,
       is_active: true,
+      sop_mode: parsed.data.sopMode,
+      sop_items: parsed.data.sopItems,
+      sop_notes: parsed.data.sopNotes || null,
+      estimated_duration_minutes: parsed.data.estimatedDurationMinutes ?? null,
+      risk_level: parsed.data.riskLevel,
     })
-    .select('id, name, description, default_price, is_active, created_at')
+    .select('id, name, description, default_price, is_active, created_at, sop_mode, sop_items, sop_notes, estimated_duration_minutes, risk_level')
     .single()
 
   if (error) {
@@ -197,7 +253,12 @@ export async function createCompanyServiceAction(
   return {
     success: true,
     message: 'Layanan baru berhasil ditambahkan.',
-    service: newService,
+    service: {
+      ...newService,
+      sop_mode: newService.sop_mode as 'strict' | 'reference' | 'none',
+      sop_items: (newService.sop_items as SopItem[]) ?? [],
+      risk_level: (newService.risk_level as 'low' | 'medium' | 'high') ?? 'low',
+    },
   }
 }
 
@@ -218,12 +279,32 @@ export async function updateCompanyServiceAction(
   const defaultPrice = rawPrice ? Number(rawPrice) : 0
   const isActive = formData.get('isActive') !== null ? formData.get('isActive') === 'true' : undefined
 
+  // Parse SOP fields
+  const sopMode = (formData.get('sopMode') as string) || 'none'
+  const sopNotesRaw = formData.get('sopNotes') as string | null
+  const sopNotes = sopNotesRaw ? sopNotesRaw.trim() : null
+  const rawDuration = formData.get('estimatedDurationMinutes') as string | null
+  const estimatedDurationMinutes = rawDuration ? Number(rawDuration) : null
+  const riskLevel = (formData.get('riskLevel') as string) || 'low'
+  const rawSopItems = formData.get('sopItems') as string | null
+  let sopItems: SopItem[] = []
+  try {
+    sopItems = rawSopItems ? JSON.parse(rawSopItems) : []
+  } catch {
+    return { error: 'Format item SOP tidak valid.' }
+  }
+
   const parsed = updateServiceSchema.safeParse({
     id,
     name,
     description: description || null,
     defaultPrice,
     isActive,
+    sopMode,
+    sopItems,
+    sopNotes,
+    estimatedDurationMinutes,
+    riskLevel,
   })
 
   if (!parsed.success) {
@@ -234,10 +315,15 @@ export async function updateCompanyServiceAction(
 
   const admin = getSupabaseAdmin()
 
-  const updatePayload: Record<string, any> = {
+  const updatePayload: Record<string, unknown> = {
     name: parsed.data.name,
     description: parsed.data.description || null,
     default_price: parsed.data.defaultPrice ?? 0,
+    sop_mode: parsed.data.sopMode,
+    sop_items: parsed.data.sopItems,
+    sop_notes: parsed.data.sopNotes || null,
+    estimated_duration_minutes: parsed.data.estimatedDurationMinutes ?? null,
+    risk_level: parsed.data.riskLevel,
     updated_at: new Date().toISOString(),
   }
 

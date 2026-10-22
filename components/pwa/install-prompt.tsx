@@ -101,7 +101,7 @@ export function InstallPrompt() {
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-xs sm:text-sm">Install Aplikasi Gridline OS</span>
+                <span className="font-bold text-xs sm:text-sm">Install Aplikasi Opilines</span>
                 <span className="flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary">
                   <Sparkles className="h-2.5 w-2.5" /> Native App
                 </span>

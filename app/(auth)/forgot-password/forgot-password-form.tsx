@@ -34,7 +34,7 @@ export function ForgotPasswordForm() {
             </div>
             <p className="text-[12px] text-[#475569] leading-relaxed">
               {state.message ||
-                'Jika email Anda terdaftar dalam sistem Gridline OS, tautan pemulihan kata sandi telah dikirimkan ke kotak masuk Anda.'}
+                'Jika email Anda terdaftar dalam sistem Opilines, tautan pemulihan kata sandi telah dikirimkan ke kotak masuk Anda.'}
             </p>
           </div>
 

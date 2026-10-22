@@ -32,7 +32,7 @@ export default async function OwnerLayout({
           <div className="flex flex-col">
             <Image
               src="/images/gridlineos-logo.png"
-              alt="Gridline OS"
+              alt="Opilines"
               width={120}
               height={22}
               className="h-auto w-[120px] object-contain"
@@ -74,7 +74,7 @@ export default async function OwnerLayout({
         <header className="md:hidden flex h-14 items-center justify-between border-b px-4 bg-card">
           <Image
             src="/images/gridlineos-logo.png"
-            alt="Gridline OS"
+            alt="Opilines"
             width={110}
             height={20}
             className="h-auto w-[110px] object-contain"

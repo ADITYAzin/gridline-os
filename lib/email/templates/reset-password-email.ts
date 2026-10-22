@@ -17,7 +17,7 @@ export function generateResetPasswordEmailHtml({
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reset Password - Gridline OS</title>
+  <title>Reset Password - Opilines</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b;">
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 16px;">
@@ -28,7 +28,7 @@ export function generateResetPasswordEmailHtml({
           <tr>
             <td style="padding: 32px 32px 24px 32px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); text-align: left;">
               <div style="display: inline-block; padding: 8px 12px; background: rgba(59, 130, 246, 0.2); border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;">
-                Gridline OS
+                Opilines
               </div>
               <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; line-height: 28px;">
                 Permintaan Reset Password
@@ -43,7 +43,7 @@ export function generateResetPasswordEmailHtml({
                 ${greeting}
               </p>
               <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 24px; color: #334155;">
-                Kami menerima permintaan untuk mereset kata sandi akun Gridline OS Anda. Klik tombol di bawah ini untuk membuat kata sandi baru:
+                Kami menerima permintaan untuk mereset kata sandi akun Opilines Anda. Klik tombol di bawah ini untuk membuat kata sandi baru:
               </p>
 
               <!-- CTA Button -->
@@ -80,7 +80,7 @@ export function generateResetPasswordEmailHtml({
                 Jika Anda tidak merasa meminta reset kata sandi, abaikan email ini dengan aman.
               </p>
               <p style="margin: 0; font-size: 11px; color: #cbd5e1;">
-                &copy; Gridline OS — Field Service Management
+                &copy; Opilines — Field Service Management
               </p>
             </td>
           </tr>

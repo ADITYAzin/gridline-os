@@ -28,13 +28,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Gridline OS",
+  title: "Opilines",
   description: "B2B SaaS Field Service Management",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Gridline OS",
+    title: "Opilines",
   },
   icons: {
     icon: [

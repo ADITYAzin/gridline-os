@@ -18,7 +18,7 @@ interface SendEmailResult {
 
 function getResendClient(): { resend: Resend | null; fromEmail: string } {
   const apiKey = process.env.RESEND_API_KEY
-  const fromEmail = process.env.EMAIL_FROM || 'Gridline OS <noreply@sublims.id>'
+  const fromEmail = process.env.EMAIL_FROM || 'Opilines <noreply@sublims.id>'
 
   if (!apiKey || apiKey === 're_your_api_key_here') {
     return { resend: null, fromEmail }

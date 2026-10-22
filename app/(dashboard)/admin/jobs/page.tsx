@@ -47,11 +47,11 @@ export default async function JobsListPage({ searchParams }: PageProps) {
 
   const tabs = [
     { label: 'Semua', value: 'all' },
-    { label: 'Pending', value: 'pending' },
-    { label: 'Assigned', value: 'assigned' },
-    { label: 'On Progress', value: 'on_progress' },
-    { label: 'Completed', value: 'completed' },
-    { label: 'Cancelled', value: 'cancelled' },
+    { label: 'Menunggu', value: 'pending' },
+    { label: 'Ditugaskan', value: 'assigned' },
+    { label: 'Dikerjakan', value: 'on_progress' },
+    { label: 'Selesai', value: 'completed' },
+    { label: 'Dibatalkan', value: 'cancelled' },
   ]
 
   const currentTab = activeStatus || 'all'
@@ -87,11 +87,11 @@ export default async function JobsListPage({ searchParams }: PageProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-heading-1 font-heading text-slate-900 tracking-tight">Daftar Pekerjaan (Jobs)</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-heading">Tiket Kerja</h1>
             <RealtimeJobsListener orgId={profile.orgId} />
           </div>
-          <p className="text-body-reg text-slate-500 mt-1">
-            Pantau dan kelola seluruh siklus penugasan teknisi dari awal hingga penyelesaian secara live.
+          <p className="text-xs text-slate-500 mt-1">
+            Kelola status tiket, jadwal pengerjaan, dan penugasan teknisi secara realtime.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -99,7 +99,7 @@ export default async function JobsListPage({ searchParams }: PageProps) {
           <Button asChild className="gap-2 font-medium bg-[#007ACC] hover:bg-primary hover:text-white rounded-[8px] h-8 text-xs shadow-[0_1px_2px_0_rgba(0,122,204,0.15)]">
             <Link href="/admin/jobs/new">
               <Plus className="h-4 w-4" />
-              Buat Job Baru
+              Buat Tiket Baru
             </Link>
           </Button>
         </div>
@@ -131,15 +131,15 @@ export default async function JobsListPage({ searchParams }: PageProps) {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground mb-3">
             <Briefcase className="h-6 w-6" />
           </div>
-          <CardTitle className="text-lg">Tidak Ada Job Pada Kategori Ini</CardTitle>
+          <CardTitle className="text-lg">Tidak Ada Tiket</CardTitle>
           <CardDescription className="text-sm max-w-sm mx-auto mt-1 mb-4">
             {currentTab === 'all'
-              ? 'Belum ada pekerjaan servis yang dibuat. Buat job pertama Anda sekarang.'
-              : `Tidak ada pekerjaan dengan status "${currentTab}".`}
+              ? 'Belum ada tiket pekerjaan yang dibuat. Buat tiket pertama sekarang.'
+              : `Tidak ada tiket dengan status ini.`}
           </CardDescription>
           {currentTab === 'all' && (
             <Button asChild>
-              <Link href="/admin/jobs/new">Buat Job Pertama</Link>
+              <Link href="/admin/jobs/new">Buat Tiket Pertama</Link>
             </Button>
           )}
         </Card>
@@ -150,16 +150,16 @@ export default async function JobsListPage({ searchParams }: PageProps) {
               <TableHeader>
                 <TableRow className="border-b border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#F8FAFC]">
                   <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] w-[110px]">
-                    No. Job
+                    No. Tiket
                   </TableHead>
                   <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
-                    Customer & Lokasi
+                    Pelanggan & Lokasi
                   </TableHead>
                   <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
-                    Layanan & Kendala
+                    Layanan & Masalah
                   </TableHead>
                   <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
-                    Jadwal Servis
+                    Jadwal
                   </TableHead>
                   <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em]">
                     Teknisi
@@ -280,14 +280,28 @@ export default async function JobsListPage({ searchParams }: PageProps) {
                         )}
                       </TableCell>
                       <TableCell className="px-4 py-2 align-middle">
-                        <Badge variant={priorityBadge} className="capitalize text-[10px] font-semibold">
-                          {j.priority}
+                        <Badge variant={priorityBadge} className="text-[10px] font-semibold">
+                          {j.priority === 'urgent'
+                            ? 'Mendesak'
+                            : j.priority === 'high'
+                            ? 'Tinggi'
+                            : j.priority === 'medium'
+                            ? 'Normal'
+                            : 'Rendah'}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-4 py-2 align-middle">
                         <div className="flex flex-col gap-1 items-start">
-                          <Badge variant="outline" className={`capitalize text-[10px] font-semibold ${statusBadge}`}>
-                            {j.status.replace('_', ' ')}
+                          <Badge variant="outline" className={`text-[10px] font-semibold ${statusBadge}`}>
+                            {j.status === 'on_progress'
+                              ? 'Dikerjakan'
+                              : j.status === 'assigned'
+                              ? 'Ditugaskan'
+                              : j.status === 'completed'
+                              ? 'Selesai'
+                              : j.status === 'cancelled'
+                              ? 'Dibatalkan'
+                              : 'Menunggu'}
                           </Badge>
                           <SlaBadge
                             status={j.status}
@@ -310,7 +324,7 @@ export default async function JobsListPage({ searchParams }: PageProps) {
                           )}
                           <Link
                             href={`/admin/jobs/${j.id}`}
-                            title="Lihat Detail"
+                            title="Buka Tiket"
                             className="h-8 w-8 rounded-[8px] border border-[#E2E8F0] hover:bg-primary hover:text-white text-[#64748B] transition-colors flex items-center justify-center shrink-0"
                           >
                             <Eye className="h-4 w-4" />

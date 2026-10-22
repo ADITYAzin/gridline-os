@@ -31,7 +31,7 @@ export default async function TechnicianJobBapPage({ params }: PageProps) {
       created_at,
       completed_at,
       customers(id, name, phone, email, address),
-      customer_assets(id, asset_name, brand, model_number, serial_number, location_tag),
+      customer_assets(id, asset_name, brand, model_number, serial_number, location_tag, warranty_expires_at, status),
       profiles!jobs_technician_id_fkey(id, name, phone, email)
     `)
     .eq('id', id)
@@ -48,16 +48,22 @@ export default async function TechnicianJobBapPage({ params }: PageProps) {
     redirect(`/technician/jobs/${id}`)
   }
 
-  // 2. Fetch Org Name, Attendance, Checklist, Photos, Signature, Report in parallel
+  // 2. Fetch Org Details, Schedule, Attendance, Checklist, Photos, Signature, Report in parallel
   const [
     { data: org },
+    { data: schedule },
     { data: attendance },
     { data: checklist },
     { data: rawPhotos },
     { data: signature },
     { data: report },
   ] = await Promise.all([
-    admin.from('organizations').select('id, name').eq('id', profile.orgId).single(),
+    admin
+      .from('organizations')
+      .select('id, name, address, city, province, postal_code, phone, email')
+      .eq('id', profile.orgId)
+      .single(),
+    supabase.from('schedules').select('start_at, end_at').eq('job_id', id).maybeSingle(),
     supabase.from('job_attendance').select('*').eq('job_id', id).maybeSingle(),
     supabase.from('checklist_items').select('*').eq('job_id', id).order('created_at', { ascending: true }),
     supabase.from('job_photos').select('*').eq('job_id', id).order('created_at', { ascending: true }),
@@ -118,17 +124,29 @@ export default async function TechnicianJobBapPage({ params }: PageProps) {
     model_number: string | null
     serial_number: string | null
     location_tag: string | null
+    warranty_expires_at?: string | null
+    status?: string | null
   } | null
 
   const asset = (Array.isArray(job.customer_assets) ? job.customer_assets[0] : job.customer_assets) as AssetType
 
   return (
     <BapDocument
-      organization={{ id: profile.orgId, name: org?.name || 'Gridline OS Partner' }}
+      organization={{
+        id: profile.orgId,
+        name: org?.name || 'Opilines Partner',
+        address: org?.address,
+        city: org?.city,
+        province: org?.province,
+        postal_code: org?.postal_code,
+        phone: org?.phone,
+        email: org?.email,
+      }}
       job={job}
       customer={customer}
       asset={asset}
       technician={technician}
+      schedule={schedule}
       attendance={attendance}
       checklist={checklist || []}
       beforePhotos={beforePhotos}

@@ -154,57 +154,57 @@ export function AssetDialog({
         </DialogTrigger>
       )}
 
-      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-[12px] border border-[#E2E8F0] shadow-lg p-6">
-        <DialogHeader className="space-y-1.5 pb-3 border-b border-[#F1F5F9]">
-          <DialogTitle className="flex items-center gap-2 text-base font-semibold text-[#0F172A]">
-            <div className="p-1.5 rounded-[6px] bg-[#007ACC]/10 text-[#007ACC]">
+      <DialogContent className="sm:max-w-xl max-h-[88vh] overflow-y-auto rounded-2xl p-6 space-y-4">
+        <DialogHeader className="space-y-1">
+          <DialogTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+            <div className="p-1.5 rounded-lg bg-[#007ACC]/10 text-[#007ACC]">
               <Wrench className="h-4 w-4" />
             </div>
-            <span>{isEditing ? 'Edit Unit Aset Pelanggan' : 'Registrasi Unit Aset Pelanggan'}</span>
+            <span>{isEditing ? 'Ubah Data Aset' : 'Tambah Aset Pelanggan'}</span>
           </DialogTitle>
-          <DialogDescription className="text-xs text-[#64748B]">
+          <DialogDescription className="text-xs text-muted-foreground">
             {isEditing
-              ? 'Perbarui data spesifikasi, lokasi penempatan, atau status unit aset pelanggan.'
-              : 'Daftarkan unit aset pelanggan baru untuk pelacakan riwayat pekerjaan, servis, dan garansi.'}
+              ? 'Perbarui spesifikasi teknis dan status operasional unit aset.'
+              : 'Daftarkan unit mesin atau peralatan pelanggan untuk riwayat servis.'}
           </DialogDescription>
         </DialogHeader>
 
         <form
           key={formKey}
           action={isEditing ? updateAction : createAction}
-          className="space-y-4 pt-3 text-xs"
+          className="space-y-4 pt-1 text-xs"
         >
           {/* Customer Selection or Preview */}
           {isEditing ? (
             <input type="hidden" name="customerId" value={asset?.customer_id} />
           ) : customerId ? (
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-[#475569]">Pelanggan Pemilik Unit</Label>
-              <div className="flex items-center justify-between p-2.5 rounded-[8px] border border-[#E2E8F0] bg-[#F8FAFC]">
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#0F172A]">
+              <Label className="text-xs font-medium text-foreground">Pelanggan</Label>
+              <div className="flex items-center justify-between p-3 rounded-xl border border-border/70 bg-muted/40">
+                <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
                   <Building2 className="h-3.5 w-3.5 text-[#007ACC]" />
                   <span>{activeCustomer?.name || 'Pelanggan Terpilih'}</span>
                 </div>
                 {activeCustomer?.phone && (
-                  <span className="text-[11px] font-mono text-[#64748B]">{activeCustomer.phone}</span>
+                  <span className="text-[11px] font-mono text-muted-foreground">{activeCustomer.phone}</span>
                 )}
               </div>
               <input type="hidden" name="customerId" value={customerId} />
             </div>
           ) : customers && customers.length > 0 ? (
             <div className="space-y-1.5">
-              <Label htmlFor="customerIdSelect" className="text-xs font-medium text-[#475569]">
-                Pilih Pelanggan Pemilik Unit <span className="text-[#EF4444]">*</span>
+              <Label htmlFor="customerIdSelect" className="text-xs font-medium text-foreground">
+                Pilih Pelanggan <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={selectedCustomerId}
                 onValueChange={setSelectedCustomerId}
                 required
               >
-                <SelectTrigger id="customerIdSelect" className="h-9 text-xs">
-                  <SelectValue placeholder="-- Pilih Pelanggan --" />
+                <SelectTrigger id="customerIdSelect" className="h-9 text-xs rounded-lg bg-background">
+                  <SelectValue placeholder="Pilih pelanggan pemilik unit" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="text-xs">
                   {customers.map((c) => (
                     <SelectItem key={c.id} value={c.id} className="text-xs">
                       {c.name} {c.phone ? `(${c.phone})` : ''}
@@ -215,39 +215,39 @@ export function AssetDialog({
               <input type="hidden" name="customerId" value={selectedCustomerId} />
             </div>
           ) : (
-            <div className="p-3 rounded-[8px] bg-amber-500/10 border border-amber-500/20 text-amber-700 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 text-xs flex items-start gap-2">
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>Harap pilih atau daftarkan pelanggan terlebih dahulu di formulir utama.</span>
+              <span>Harap pilih atau daftarkan pelanggan terlebih dahulu.</span>
             </div>
           )}
 
           {isEditing && <input type="hidden" name="assetId" value={asset?.id} />}
 
           {state.error && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-[8px] text-xs font-medium flex items-center gap-2">
+            <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl text-xs font-medium flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{state.error}</span>
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="assetName" className="text-xs font-medium text-[#475569]">
-                Nama Unit Aset Pelanggan <span className="text-[#EF4444]">*</span>
+              <Label htmlFor="assetName" className="text-xs font-medium text-foreground">
+                Nama Aset / Mesin <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="assetName"
                 name="assetName"
-                placeholder="Contoh: AC Split Daikin 1.5 PK / CCTV Lobby / Mesin Espresso"
+                placeholder="Contoh: AC Split Daikin 1.5 PK / CCTV Lobby"
                 defaultValue={asset?.asset_name || ''}
                 required
-                className="h-9 text-xs"
+                className="h-9 text-xs rounded-lg bg-background"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="brand" className="text-xs font-medium text-[#475569]">
-                Brand / Merk <span className="text-[#EF4444]">*</span>
+              <Label htmlFor="brand" className="text-xs font-medium text-foreground">
+                Merk / Brand <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="brand"
@@ -255,12 +255,12 @@ export function AssetDialog({
                 placeholder="Contoh: Daikin, Panasonic, Hikvision"
                 defaultValue={asset?.brand || ''}
                 required
-                className="h-9 text-xs"
+                className="h-9 text-xs rounded-lg bg-background"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="modelNumber" className="text-xs font-medium text-[#475569]">
+              <Label htmlFor="modelNumber" className="text-xs font-medium text-foreground">
                 Nomor Model
               </Label>
               <Input
@@ -268,12 +268,12 @@ export function AssetDialog({
                 name="modelNumber"
                 placeholder="Contoh: FTKC35TVM4"
                 defaultValue={asset?.model_number || ''}
-                className="h-9 text-xs font-mono"
+                className="h-9 text-xs font-mono rounded-lg bg-background"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="serialNumber" className="text-xs font-medium text-[#475569]">
+              <Label htmlFor="serialNumber" className="text-xs font-medium text-foreground">
                 Nomor Seri (S/N)
               </Label>
               <Input
@@ -281,95 +281,95 @@ export function AssetDialog({
                 name="serialNumber"
                 placeholder="Contoh: SN-92817364"
                 defaultValue={asset?.serial_number || ''}
-                className="h-9 text-xs font-mono"
+                className="h-9 text-xs font-mono rounded-lg bg-background"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="locationTag" className="text-xs font-medium text-[#475569]">
-                Lokasi Ruangan / Lantai
+              <Label htmlFor="locationTag" className="text-xs font-medium text-foreground">
+                Lokasi / Ruangan
               </Label>
               <Input
                 id="locationTag"
                 name="locationTag"
-                placeholder="Contoh: Lantai 2 - Ruang Rapat Direksi"
+                placeholder="Contoh: Lantai 2 - Ruang Rapat"
                 defaultValue={asset?.location_tag || ''}
-                className="h-9 text-xs"
+                className="h-9 text-xs rounded-lg bg-background"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="installationDate" className="text-xs font-medium text-[#475569]">
-                Tanggal Instalasi / Pembelian
+              <Label htmlFor="installationDate" className="text-xs font-medium text-foreground">
+                Tanggal Pasang / Beli
               </Label>
               <Input
                 id="installationDate"
                 name="installationDate"
                 type="date"
                 defaultValue={asset?.installation_date || ''}
-                className="h-9 text-xs"
+                className="h-9 text-xs rounded-lg bg-background"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="warrantyExpiresAt" className="text-xs font-medium text-[#475569]">
-                Masa Garansi Berakhir
+              <Label htmlFor="warrantyExpiresAt" className="text-xs font-medium text-foreground">
+                Batas Garansi
               </Label>
               <Input
                 id="warrantyExpiresAt"
                 name="warrantyExpiresAt"
                 type="date"
                 defaultValue={asset?.warranty_expires_at || ''}
-                className="h-9 text-xs"
+                className="h-9 text-xs rounded-lg bg-background"
               />
             </div>
 
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="status" className="text-xs font-medium text-[#475569]">
-                Status Operasional Aset
+              <Label htmlFor="status" className="text-xs font-medium text-foreground">
+                Status Operasional
               </Label>
               <Select name="status" defaultValue={asset?.status || 'operational'}>
-                <SelectTrigger id="status" className="h-9 text-xs">
+                <SelectTrigger id="status" className="h-9 text-xs rounded-lg bg-background">
                   <SelectValue placeholder="Pilih status" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="operational" className="text-xs">Operasional Normal</SelectItem>
-                  <SelectItem value="needs_service" className="text-xs">Perlu Servis / Maintenance</SelectItem>
+                <SelectContent className="text-xs">
+                  <SelectItem value="operational" className="text-xs">Normal / Beroperasi Baik</SelectItem>
+                  <SelectItem value="needs_service" className="text-xs">Perlu Servis / Perawatan</SelectItem>
                   <SelectItem value="broken" className="text-xs">Rusak / Tidak Berfungsi</SelectItem>
-                  <SelectItem value="decommissioned" className="text-xs">Nonaktif / Decommissioned</SelectItem>
+                  <SelectItem value="decommissioned" className="text-xs">Nonaktif / Tidak Digunakan</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="notes" className="text-xs font-medium text-[#475569]">
-                Catatan Tambahan (Opsional)
+              <Label htmlFor="notes" className="text-xs font-medium text-foreground">
+                Catatan Teknis (Opsional)
               </Label>
               <Textarea
                 id="notes"
                 name="notes"
                 rows={2}
-                placeholder="Catatan kondisi fisik, riwayat perbaikan sebelumnya, atau spesifikasi khusus unit..."
+                placeholder="Catatan riwayat perbaikan atau kondisi khusus unit..."
                 defaultValue={asset?.notes || ''}
-                className="text-xs resize-none"
+                className="text-xs resize-none rounded-lg bg-background"
               />
             </div>
           </div>
 
-          <DialogFooter className="pt-3 border-t border-[#F1F5F9] gap-2 sm:gap-2">
+          <DialogFooter className="pt-3 border-t border-border/50 gap-2 sm:gap-2 flex items-center justify-end">
             <Button
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={isPending}
-              className="h-9 text-xs rounded-[8px]"
+              className="h-9 px-4 text-xs font-medium rounded-lg cursor-pointer"
             >
               Batal
             </Button>
             <Button
               type="submit"
               disabled={isPending || (!selectedCustomerId && !isEditing)}
-              className="h-9 text-xs font-semibold bg-[#007ACC] hover:bg-[#0062A3] rounded-[8px] text-white flex items-center gap-1.5"
+              className="h-9 px-4 text-xs font-medium bg-[#007ACC] hover:bg-[#0062A3] rounded-lg text-white flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               {isPending ? (
                 <>
@@ -379,7 +379,7 @@ export function AssetDialog({
               ) : isEditing ? (
                 'Simpan Perubahan'
               ) : (
-                'Daftarkan Unit Aset'
+                'Simpan Aset'
               )}
             </Button>
           </DialogFooter>

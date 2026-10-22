@@ -70,12 +70,6 @@ export function RealtimeIndicator({
           <span className={cn('relative inline-flex h-2 w-2 rounded-full', statusConfig.dotColor)} />
         </span>
         <span className="text-[11px] font-semibold tracking-tight">{statusConfig.label}</span>
-
-        {!compact && lastUpdated && (
-          <span className="hidden sm:inline text-[10px] text-muted-foreground font-normal border-l border-border/50 pl-2">
-            Update: {lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </span>
-        )}
       </div>
 
       {onRefresh && (

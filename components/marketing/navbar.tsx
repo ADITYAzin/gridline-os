@@ -24,7 +24,7 @@ export function MarketingNavbar() {
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="/images/gridlineos-logo.png"
-            alt="GridlineOS"
+            alt="Opilines"
             width={120}
             height={22}
             priority

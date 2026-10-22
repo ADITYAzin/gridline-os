@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import { RegisterForm } from './register-form'
 
 export const metadata: Metadata = {
-  title: 'Daftar Organisasi Baru — Gridline OS',
+  title: 'Daftar Organisasi Baru — Opilines',
   description: 'Daftarkan perusahaan Anda dan dapatkan akses operating system teknisi lapangan',
 }
 

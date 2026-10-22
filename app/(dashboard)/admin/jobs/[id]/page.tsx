@@ -2,10 +2,12 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireRole } from '@/lib/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { STORAGE } from '@/lib/constants'
 import { AssignmentCard } from './assignment-card'
 import { CancellationDialog } from './cancellation-dialog'
 import { CompletionReviewCard } from './completion-review-card'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,6 +25,9 @@ import {
   ShieldCheck,
   UserCheck,
   Wrench,
+  ExternalLink,
+  Clock,
+  Sparkles,
 } from 'lucide-react'
 import { WhatsAppActionDialog } from '@/components/whatsapp/whatsapp-action-dialog'
 import { SlaBadge } from '@/components/jobs/sla-badge'
@@ -103,8 +108,65 @@ export default async function JobDetailPage({ params }: PageProps) {
     ? `${new Date(schedule.start_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} - ${new Date(schedule.end_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`
     : undefined
 
-  const beforePhotos = (photos || []).filter((p) => p.type === 'before')
-  const afterPhotos = (photos || []).filter((p) => p.type === 'after')
+  const admin = getSupabaseAdmin()
+
+  // Generate signed URLs for before/after photos (valid 2 hours)
+  const photosWithSignedUrls = await Promise.all(
+    (photos || []).map(async (photo) => {
+      let displayUrl = photo.file_url
+      if (
+        !photo.file_url.startsWith('http://') &&
+        !photo.file_url.startsWith('https://') &&
+        !photo.file_url.startsWith('data:image')
+      ) {
+        try {
+          const { data } = await admin.storage
+            .from(STORAGE.jobFilesBucket)
+            .createSignedUrl(photo.file_url, 7200)
+          if (data?.signedUrl) {
+            displayUrl = data.signedUrl
+          }
+        } catch {
+          // fallback to raw path
+        }
+      }
+      return {
+        ...photo,
+        display_url: displayUrl,
+      }
+    })
+  )
+
+  const beforePhotos = photosWithSignedUrls.filter((p) => p.type === 'before')
+  const afterPhotos = photosWithSignedUrls.filter((p) => p.type === 'after')
+
+  // Generate signed URL for customer signature
+  let signatureWithSignedUrl: { customer_name: string; display_url: string; signed_at: string } | null = null
+  if (signature) {
+    let displayUrl = signature.signature_url
+    if (
+      !signature.signature_url.startsWith('http://') &&
+      !signature.signature_url.startsWith('https://') &&
+      !signature.signature_url.startsWith('data:image')
+    ) {
+      try {
+        const { data: sigData } = await admin.storage
+          .from(STORAGE.jobFilesBucket)
+          .createSignedUrl(signature.signature_url, 7200)
+        if (sigData?.signedUrl) {
+          displayUrl = sigData.signedUrl
+        }
+      } catch {
+        // fallback to raw path
+      }
+    }
+    signatureWithSignedUrl = {
+      customer_name: signature.customer_name,
+      display_url: displayUrl,
+      signed_at: signature.signed_at,
+    }
+  }
+
   const completedChecklistCount = (checklist || []).filter((c) => c.is_completed).length
   const totalChecklistCount = (checklist || []).length
 
@@ -113,7 +175,7 @@ export default async function JobDetailPage({ params }: PageProps) {
       {/* Top Navigation & Status Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
         <div className="flex items-center gap-3">
-          <Button asChild variant="outline" size="sm" className="h-8 w-8 p-0">
+          <Button asChild variant="outline" size="sm" className="h-8 w-8 p-0 cursor-pointer">
             <Link href="/admin/jobs">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -134,7 +196,7 @@ export default async function JobDetailPage({ params }: PageProps) {
                 {job.status.replace('_', ' ')}
               </Badge>
               <Badge variant="outline" className="capitalize text-xs font-semibold">
-                Prioritas: {job.priority}
+                Prioritas {job.priority}
               </Badge>
               <SlaBadge
                 status={job.status}
@@ -143,17 +205,17 @@ export default async function JobDetailPage({ params }: PageProps) {
               />
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Dibuat pada {new Date(job.created_at).toLocaleDateString('id-ID', { dateStyle: 'long' })}
+              Dibuat {new Date(job.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {job.status === 'completed' && (
-            <Button asChild variant="outline" size="sm" className="gap-1.5 shadow-sm text-primary border-primary/30 hover:bg-primary/5">
+            <Button asChild variant="outline" size="sm" className="gap-1.5 shadow-2xs text-primary border-primary/30 hover:bg-primary/5 cursor-pointer">
               <Link href={`/admin/jobs/${job.id}/bap`} target="_blank">
                 <Printer className="h-4 w-4" />
-                Cetak / Unduh BAP
+                Cetak BAP
               </Link>
             </Button>
           )}
@@ -163,7 +225,7 @@ export default async function JobDetailPage({ params }: PageProps) {
 
       {/* Cancellation Notice if Cancelled */}
       {job.status === 'cancelled' && (
-        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4 space-y-1">
+        <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-4 space-y-1">
           <div className="flex items-center gap-2 text-destructive font-semibold text-sm">
             <ShieldAlert className="h-4 w-4" /> Pekerjaan Dibatalkan
           </div>
@@ -172,7 +234,7 @@ export default async function JobDetailPage({ params }: PageProps) {
           </p>
           {job.cancelled_at && (
             <p className="text-[11px] text-muted-foreground">
-              Waktu pembatalan: {new Date(job.cancelled_at).toLocaleString('id-ID')}
+              Waktu: {new Date(job.cancelled_at).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} WIB
             </p>
           )}
         </div>
@@ -182,61 +244,61 @@ export default async function JobDetailPage({ params }: PageProps) {
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-2 space-y-6">
           {/* Work Order Info */}
-          <Card className="shadow-sm">
+          <Card className="shadow-xs">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Briefcase className="h-4 w-4 text-primary" />
-                Work Order & Kendala Servis
+                Detail Pekerjaan
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div>
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Jenis Layanan
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider block mb-1">
+                  Layanan
                 </span>
                 <span className="font-semibold text-base">{job.service_type}</span>
               </div>
 
               {asset && (
-                <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                <div className="rounded-xl border bg-muted/30 p-3.5 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                       <Wrench className="h-3.5 w-3.5 text-primary" />
-                      Unit Aset Pelanggan
+                      Aset Unit
                     </span>
                     <Badge variant="outline" className="text-[10px] capitalize">
                       {asset.status.replace('_', ' ')}
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
                     <div>
-                      <span className="text-[10px] text-muted-foreground block">Peralatan</span>
+                      <span className="text-[10px] text-muted-foreground block">Unit</span>
                       <span className="font-semibold text-foreground">{asset.asset_name}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-muted-foreground block">Merk & Model</span>
+                      <span className="text-[10px] text-muted-foreground block">Model</span>
                       <span className="font-medium text-foreground">
                         {asset.brand} {asset.model_number ? `(${asset.model_number})` : ''}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-muted-foreground block">Serial Number</span>
+                      <span className="text-[10px] text-muted-foreground block">No. Seri</span>
                       <span className="font-mono text-foreground">{asset.serial_number || '-'}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-muted-foreground block">Lokasi Unit</span>
+                      <span className="text-[10px] text-muted-foreground block">Lokasi</span>
                       <span className="text-foreground">{asset.location_tag || '-'}</span>
                     </div>
                   </div>
                   {asset.warranty_expires_at && (
-                    <div className="pt-1.5 border-t flex items-center gap-1.5 text-[11px]">
+                    <div className="pt-2 border-t flex items-center gap-1.5 text-[11px]">
                       {new Date(asset.warranty_expires_at) >= new Date() ? (
                         <span className="text-emerald-600 flex items-center gap-1 font-medium">
-                          <ShieldCheck className="h-3.5 w-3.5" /> Garansi Aktif s/d {new Date(asset.warranty_expires_at).toLocaleDateString('id-ID')}
+                          <ShieldCheck className="h-3.5 w-3.5" /> Garansi aktif s/d {new Date(asset.warranty_expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       ) : (
                         <span className="text-rose-600 flex items-center gap-1">
-                          <ShieldAlert className="h-3.5 w-3.5" /> Garansi Habis ({new Date(asset.warranty_expires_at).toLocaleDateString('id-ID')})
+                          <ShieldAlert className="h-3.5 w-3.5" /> Garansi habis ({new Date(asset.warranty_expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })})
                         </span>
                       )}
                     </div>
@@ -245,18 +307,18 @@ export default async function JobDetailPage({ params }: PageProps) {
               )}
 
               <div>
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Deskripsi Keluhan
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider block mb-1">
+                  Keluhan
                 </span>
-                <p className="rounded-md bg-muted/40 p-3 text-sm leading-relaxed">{job.issue}</p>
+                <p className="rounded-xl bg-muted/40 p-3.5 text-sm leading-relaxed">{job.issue}</p>
               </div>
 
               {job.instructions && (
                 <div>
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-                    Instruksi Khusus
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider block mb-1">
+                    Instruksi
                   </span>
-                  <p className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3 text-xs leading-relaxed text-amber-900 dark:text-amber-200">
+                  <p className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-xs leading-relaxed text-amber-900 dark:text-amber-200">
                     {job.instructions}
                   </p>
                 </div>
@@ -265,24 +327,21 @@ export default async function JobDetailPage({ params }: PageProps) {
           </Card>
 
           {/* SOP Checklist Status */}
-          <Card className="shadow-sm">
+          <Card className="shadow-xs">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  SOP Checklist Lapangan
+                  Checklist SOP
                 </CardTitle>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-muted">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-muted">
                   {completedChecklistCount} / {totalChecklistCount} Selesai
                 </span>
               </div>
-              <CardDescription className="text-xs">
-                Checklist prosedur wajib diselesaikan teknisi sebelum status dapat menjadi Completed.
-              </CardDescription>
             </CardHeader>
             <CardContent>
               {totalChecklistCount === 0 ? (
-                <p className="text-xs text-muted-foreground italic">Belum ada item checklist.</p>
+                <p className="text-xs text-muted-foreground italic">Belum ada checklist.</p>
               ) : (
                 <ul className="space-y-2">
                   {(checklist || []).map((item) => (
@@ -306,65 +365,262 @@ export default async function JobDetailPage({ params }: PageProps) {
             </CardContent>
           </Card>
 
-          {/* Evidence & Report Summary */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="p-4 shadow-sm space-y-1">
-              <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold">
-                <span>Foto Evidence</span>
-                <ImageIcon className="h-4 w-4 text-primary" />
+          {/* Foto Pekerjaan (Before & After) */}
+          <Card className="shadow-xs rounded-2xl border overflow-hidden">
+            <CardHeader className="pb-3 border-b bg-muted/20">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4 text-primary" />
+                  Foto Pekerjaan
+                </CardTitle>
+                <div className="flex items-center gap-1.5">
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] font-semibold px-2 py-0.5 ${
+                      beforePhotos.length > 0
+                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+                        : 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                    }`}
+                  >
+                    {beforePhotos.length} Sebelum
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] font-semibold px-2 py-0.5 ${
+                      afterPhotos.length > 0
+                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+                        : 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                    }`}
+                  >
+                    {afterPhotos.length} Sesudah
+                  </Badge>
+                </div>
               </div>
-              <div className="text-lg font-bold">
-                {beforePhotos.length} Before / {afterPhotos.length} After
-              </div>
-              <p className="text-[11px] text-muted-foreground">Minimal 1 each untuk selesai</p>
-            </Card>
+            </CardHeader>
+            <CardContent className="p-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* BEFORE PHOTOS COLUMN */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-amber-500" />
+                      Sebelum
+                    </span>
+                    <span className="text-[11px] text-muted-foreground font-mono">
+                      {beforePhotos.length} Foto
+                    </span>
+                  </div>
 
-            <Card className="p-4 shadow-sm space-y-1">
-              <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold">
-                <span>E-Signature</span>
-                <PenTool className="h-4 w-4 text-primary" />
-              </div>
-              <div className="text-lg font-bold">
-                {signature ? 'Tersedia' : 'Belum Ada'}
-              </div>
-              <p className="text-[11px] text-muted-foreground">{signature ? signature.customer_name : 'Menunggu tanda tangan'}</p>
-            </Card>
+                  {beforePhotos.length === 0 ? (
+                    <div className="rounded-xl border border-dashed p-8 text-center bg-muted/20 text-xs text-muted-foreground flex flex-col items-center justify-center gap-2">
+                      <ImageIcon className="h-5 w-5 text-muted-foreground/40" />
+                      <span>Belum ada foto sebelum.</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {beforePhotos.map((p, idx) => (
+                        <a
+                          key={p.id}
+                          href={p.display_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group relative aspect-4/3 rounded-xl border border-border/80 overflow-hidden bg-muted/40 shadow-2xs block"
+                        >
+                          <img
+                            src={p.display_url}
+                            alt={`Foto Sebelum #${idx + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-medium">
+                            <ExternalLink className="h-4 w-4" />
+                            <span>Lihat Foto</span>
+                          </div>
+                          <span className="absolute bottom-1.5 left-1.5 text-[10px] font-mono bg-black/60 text-white px-1.5 py-0.5 rounded backdrop-blur-xs">
+                            Sebelum #{idx + 1}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-            <Card className="p-4 shadow-sm space-y-1">
-              <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold">
-                <span>Work Report</span>
-                <FileText className="h-4 w-4 text-primary" />
+                {/* AFTER PHOTOS COLUMN */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      Sesudah
+                    </span>
+                    <span className="text-[11px] text-muted-foreground font-mono">
+                      {afterPhotos.length} Foto
+                    </span>
+                  </div>
+
+                  {afterPhotos.length === 0 ? (
+                    <div className="rounded-xl border border-dashed p-8 text-center bg-muted/20 text-xs text-muted-foreground flex flex-col items-center justify-center gap-2">
+                      <ImageIcon className="h-5 w-5 text-muted-foreground/40" />
+                      <span>Belum ada foto sesudah.</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {afterPhotos.map((p, idx) => (
+                        <a
+                          key={p.id}
+                          href={p.display_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group relative aspect-4/3 rounded-xl border border-border/80 overflow-hidden bg-muted/40 shadow-2xs block"
+                        >
+                          <img
+                            src={p.display_url}
+                            alt={`Foto Sesudah #${idx + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-medium">
+                            <ExternalLink className="h-4 w-4" />
+                            <span>Lihat Foto</span>
+                          </div>
+                          <span className="absolute bottom-1.5 left-1.5 text-[10px] font-mono bg-black/60 text-white px-1.5 py-0.5 rounded backdrop-blur-xs">
+                            Sesudah #{idx + 1}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="text-lg font-bold">
-                {report ? 'Submitted' : 'Belum Ada'}
+            </CardContent>
+          </Card>
+
+          {/* Customer E-Signature Display */}
+          <Card className="shadow-xs rounded-2xl border overflow-hidden">
+            <CardHeader className="pb-3 border-b bg-muted/20">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <PenTool className="h-4 w-4 text-primary" />
+                  Tanda Tangan Pelanggan
+                </CardTitle>
+                {signatureWithSignedUrl ? (
+                  <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1 font-semibold">
+                    <CheckCircle2 className="h-3 w-3" /> Terverifikasi
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-xs text-amber-600 border-amber-500/30 bg-amber-500/10 font-semibold">
+                    Belum Ada
+                  </Badge>
+                )}
               </div>
-              <p className="text-[11px] text-muted-foreground">{report ? 'Laporan terkirim' : 'Menunggu teknisi'}</p>
+            </CardHeader>
+            <CardContent className="p-5">
+              {signatureWithSignedUrl ? (
+                <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-xl border bg-card/60">
+                  {/* Signature Visual Canvas Card */}
+                  <div className="w-full sm:w-60 h-28 rounded-xl border border-border bg-white dark:bg-slate-950 p-3 flex items-center justify-center shrink-0 shadow-2xs">
+                    <img
+                      src={signatureWithSignedUrl.display_url}
+                      alt={`Tanda tangan ${signatureWithSignedUrl.customer_name}`}
+                      className="h-full w-auto max-w-full object-contain filter contrast-125 select-none"
+                    />
+                  </div>
+
+                  {/* Signature Metadata */}
+                  <div className="space-y-2 flex-1 min-w-0 text-center sm:text-left">
+                    <div>
+                      <span className="text-[11px] text-muted-foreground block font-medium">Penandatangan</span>
+                      <span className="text-sm font-bold text-foreground block mt-0.5">
+                        {signatureWithSignedUrl.customer_name}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] text-muted-foreground block font-medium">Waktu</span>
+                      <span className="text-xs font-semibold text-muted-foreground block mt-0.5 font-mono">
+                        {new Date(signatureWithSignedUrl.signed_at).toLocaleString('id-ID', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}{' '}
+                        WIB
+                      </span>
+                    </div>
+
+                    <div className="pt-0.5">
+                      <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Tersimpan dalam Berita Acara Pekerjaan (BAP).
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed p-8 text-center bg-muted/20 text-xs text-muted-foreground flex flex-col items-center justify-center gap-2">
+                  <PenTool className="h-5 w-5 text-muted-foreground/40" />
+                  <span>Belum ada tanda tangan pelanggan.</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Work Report Section (if submitted) */}
+          {report && (
+            <Card className="shadow-xs rounded-2xl border overflow-hidden">
+              <CardHeader className="pb-3 border-b bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    Laporan Pekerjaan
+                  </CardTitle>
+                  <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30 font-semibold">
+                    Terkirim
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-5 space-y-3 text-xs">
+                {report.result && (
+                  <div>
+                    <span className="font-semibold text-muted-foreground block text-[11px]">Tindakan:</span>
+                    <p className="mt-1 p-3 rounded-lg bg-muted/30 border leading-relaxed text-foreground whitespace-pre-wrap">
+                      {report.result}
+                    </p>
+                  </div>
+                )}
+                {report.notes && (
+                  <div>
+                    <span className="font-semibold text-muted-foreground block text-[11px]">Catatan:</span>
+                    <p className="mt-1 p-3 rounded-lg bg-muted/30 border leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                      {report.notes}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
             </Card>
-          </div>
+          )}
         </div>
 
         {/* Right Sidebar: Customer & Scheduling */}
         <div className="space-y-6">
-          <Card className="shadow-sm">
+          <Card className="shadow-xs">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-primary" />
-                  Informasi Customer
+                  Pelanggan
                 </CardTitle>
                 {customer?.id && (
                   <Link
                     href={`/admin/customers/${customer.id}`}
                     className="text-[11px] text-primary hover:underline font-medium"
                   >
-                    Riwayat Servis →
+                    Riwayat →
                   </Link>
                 )}
               </div>
             </CardHeader>
             <CardContent className="space-y-3 text-xs">
               <div>
-                <span className="text-[11px] text-muted-foreground block font-medium">Nama Pelanggan</span>
+                <span className="text-[11px] text-muted-foreground block font-medium">Nama</span>
                 {customer?.id ? (
                   <Link
                     href={`/admin/customers/${customer.id}`}
@@ -393,7 +649,7 @@ export default async function JobDetailPage({ params }: PageProps) {
               )}
 
               <div>
-                <span className="text-[11px] text-muted-foreground block font-medium mb-1">Alamat Pengerjaan</span>
+                <span className="text-[11px] text-muted-foreground block font-medium mb-1">Alamat</span>
                 <div className="flex items-start gap-1.5 text-muted-foreground">
                   <MapPin className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" />
                   <span>{job.address}</span>
@@ -433,16 +689,16 @@ export default async function JobDetailPage({ params }: PageProps) {
 
           {/* Assigned Technician Card (if assigned) */}
           {assignedTech && (
-            <Card className="shadow-sm">
+            <Card className="shadow-xs">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <UserCheck className="h-4 w-4 text-primary" />
-                  Teknisi Bertugas
+                  Teknisi
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-xs">
                 <div>
-                  <span className="text-[11px] text-muted-foreground block font-medium">Nama Teknisi</span>
+                  <span className="text-[11px] text-muted-foreground block font-medium">Nama</span>
                   <span className="font-semibold text-sm">{assignedTech.name}</span>
                 </div>
                 {assignedTech.phone && (
@@ -468,7 +724,7 @@ export default async function JobDetailPage({ params }: PageProps) {
                         issue: job.issue,
                       }}
                       defaultScenario="technician_dispatch"
-                      triggerButtonText="Kirim Disposisi ke WhatsApp"
+                      triggerButtonText="WhatsApp Teknisi"
                       className="w-full justify-center"
                     />
                   </div>

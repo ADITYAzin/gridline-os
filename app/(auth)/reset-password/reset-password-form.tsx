@@ -23,7 +23,7 @@ export function ResetPasswordForm() {
           Atur Kata Sandi Baru
         </h1>
         <p className="text-[13.5px] text-[#475569] font-normal leading-[18px]">
-          Masukkan kata sandi baru untuk akun Gridline OS Anda
+          Masukkan kata sandi baru untuk akun Opilines Anda
         </p>
       </div>
 

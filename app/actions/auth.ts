@@ -296,7 +296,7 @@ export async function requestPasswordResetAction(
 
   await sendTransactionalEmail({
     to: parsed.data.email.toLowerCase().trim(),
-    subject: 'Instruksi Reset Password - Gridline OS',
+    subject: 'Instruksi Reset Password - Opilines',
     html,
   })
 

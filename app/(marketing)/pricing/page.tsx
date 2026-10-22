@@ -236,7 +236,7 @@ export default function PricingPage() {
           {[
             {
               q: 'Apakah ada biaya instalasi awal (setup fee)?',
-              a: 'Sama sekali tidak ada. GridlineOS adalah cloud SaaS yang langsung aktif saat Anda membuat akun. Anda bisa langsung menginput teknisi pertama dan membuat jadwal dalam hitungan menit.',
+              a: 'Sama sekali tidak ada. Opilines adalah cloud SaaS yang langsung aktif saat Anda membuat akun. Anda bisa langsung menginput teknisi pertama dan membuat jadwal dalam hitungan menit.',
             },
             {
               q: 'Bagaimana jika teknisi saya kurang mengerti teknologi?',
@@ -247,7 +247,7 @@ export default function PricingPage() {
               a: 'Tentu. Anda dapat meng-upgrade paket kapan saja seiring bertambahnya armada teknisi Anda tanpa kehilangan riwayat data pekerjaan sebelumnya.',
             },
             {
-              q: 'Apakah BAP digital GridlineOS sah diterima oleh klien perusahaan?',
+              q: 'Apakah BAP digital Opilines sah diterima oleh klien perusahaan?',
               a: 'Sangat sah. Format PDF kami memuat stempel waktu digital, rincian pekerjaan terverifikasi, lampiran foto before-after, serta tanda tangan digital perwakilan klien yang dapat diaudit.',
             },
             {
@@ -278,7 +278,7 @@ export default function PricingPage() {
             Butuh penawaran resmi atau presentasi untuk manajemen perusahaan?
           </h3>
           <p className="text-[13.5px] text-[#64748B] max-w-xl mx-auto">
-            Tim konsultan produk kami siap membantu simulasi implementasi alur kerja GridlineOS sesuai SOP perusahaan Anda.
+            Tim konsultan produk kami siap membantu simulasi implementasi alur kerja Opilines sesuai SOP perusahaan Anda.
           </p>
           <div className="pt-2">
             <Link

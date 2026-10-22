@@ -74,7 +74,7 @@ export default function MarketingHomePage() {
                 <span className="h-2.5 w-2.5 rounded-full bg-[#F59E0B]/60" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#10B981]/60" />
                 <span className="ml-2 text-[11px] font-mono text-[#94A3B8]">
-                  app.gridlineos.com/admin/dispatch
+                  app.opilines.com/admin/dispatch
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -345,11 +345,11 @@ export default function MarketingHomePage() {
             </ul>
           </div>
 
-          {/* Sisi GridlineOS */}
+          {/* Sisi Opilines */}
           <div className="rounded-[12px] border border-[#10B981]/30 bg-[#ECFDF5]/40 p-6 space-y-4">
             <div className="flex items-center gap-2 text-[#10B981] font-semibold text-[14px]">
               <CheckCircle2 className="h-5 w-5" />
-              <span>Dengan GridlineOS</span>
+              <span>Dengan Opilines</span>
             </div>
             <ul className="space-y-3 text-[13px] text-[#475569]">
               <li className="flex items-start gap-2.5">

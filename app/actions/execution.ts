@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireRole } from '@/lib/auth'
+import { requireRole, requireUser } from '@/lib/auth'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { STORAGE, PHOTO } from '@/lib/constants'
 
@@ -85,12 +85,84 @@ export async function toggleChecklistItemAction(itemId: string, isCompleted: boo
     .update({
       is_completed: isCompleted,
       completed_at: now,
+      // Reset N/A if technician now checks the item
+      ...(isCompleted ? { is_na: false, na_reason: null } : {}),
     })
     .eq('id', itemId)
     .eq('org_id', profile.orgId)
 
   if (error) {
     return { error: 'Gagal memperbarui checklist: ' + error.message }
+  }
+
+  return { success: true }
+}
+
+export async function markChecklistNaAction(
+  itemId: string,
+  naReason: string,
+): Promise<{ error?: string; success?: boolean }> {
+  const profile = await requireRole('technician')
+
+  if (!naReason || naReason.trim().length < 3) {
+    return { error: 'Alasan N/A wajib diisi (minimal 3 karakter).' }
+  }
+
+  const admin = getSupabaseAdmin()
+
+  // Verify the item is not critical — critical items cannot be marked N/A
+  const { data: item } = await admin
+    .from('checklist_items')
+    .select('is_critical')
+    .eq('id', itemId)
+    .eq('org_id', profile.orgId)
+    .single()
+
+  if (!item) {
+    return { error: 'Item checklist tidak ditemukan.' }
+  }
+
+  if (item.is_critical) {
+    return { error: 'Item keselamatan kritis tidak dapat ditandai N/A. Hubungi admin jika ada kendala.' }
+  }
+
+  const { error } = await admin
+    .from('checklist_items')
+    .update({
+      is_na: true,
+      na_reason: naReason.trim(),
+      is_completed: false,
+      completed_at: null,
+    })
+    .eq('id', itemId)
+    .eq('org_id', profile.orgId)
+
+  if (error) {
+    return { error: 'Gagal menandai item N/A: ' + error.message }
+  }
+
+  return { success: true }
+}
+
+export async function resetChecklistItemAction(
+  itemId: string,
+): Promise<{ error?: string; success?: boolean }> {
+  const profile = await requireRole('technician')
+  const admin = getSupabaseAdmin()
+
+  const { error } = await admin
+    .from('checklist_items')
+    .update({
+      is_completed: false,
+      is_na: false,
+      na_reason: null,
+      completed_at: null,
+    })
+    .eq('id', itemId)
+    .eq('org_id', profile.orgId)
+
+  if (error) {
+    return { error: 'Gagal mereset item checklist: ' + error.message }
   }
 
   return { success: true }
@@ -204,7 +276,12 @@ export async function submitSignatureAction(jobId: string, customerName: string,
   return { success: true }
 }
 
-export async function submitWorkReportAction(jobId: string, result: string, notes?: string) {
+export async function submitWorkReportAction(
+  jobId: string,
+  result: string,
+  notes?: string,
+  completeJobIfReady: boolean = true,
+) {
   const profile = await requireRole('technician')
 
   if (!result || result.trim().length < 5) {
@@ -213,37 +290,102 @@ export async function submitWorkReportAction(jobId: string, result: string, note
 
   const admin = getSupabaseAdmin()
 
-  const { error } = await admin.from('work_reports').upsert(
+  // 1. Verify job is assigned to this technician
+  const { data: job } = await admin
+    .from('jobs')
+    .select('id, org_id, status, technician_id')
+    .eq('id', jobId)
+    .eq('org_id', profile.orgId)
+    .eq('technician_id', profile.id)
+    .maybeSingle()
+
+  if (!job) {
+    return { error: 'Pekerjaan tidak ditemukan atau Anda tidak ditugaskan pada pekerjaan ini.' }
+  }
+
+  const now = new Date().toISOString()
+
+  // 2. Upsert work report
+  const { error: reportError } = await admin.from('work_reports').upsert(
     {
       org_id: profile.orgId,
       job_id: jobId,
       result: result.trim(),
       notes: notes?.trim() || null,
       submitted_by: profile.id,
-      submitted_at: new Date().toISOString(),
+      submitted_at: now,
     },
     { onConflict: 'job_id' },
   )
 
-  if (error) {
-    return { error: 'Gagal mengirim laporan: ' + error.message }
+  if (reportError) {
+    return { error: 'Gagal mengirim laporan: ' + reportError.message }
   }
 
+  // 3. Attempt to transition status to 'completed' if completeJobIfReady is true
+  let completed = false
+  if (completeJobIfReady && job.status !== 'completed') {
+    const { error: completeError } = await admin
+      .from('jobs')
+      .update({
+        status: 'completed',
+        completed_at: now,
+      })
+      .eq('id', jobId)
+      .eq('org_id', profile.orgId)
+
+    if (!completeError) {
+      completed = true
+      // Auto-record check-out if not done yet
+      await admin
+        .from('job_attendance')
+        .update({ check_out_at: now })
+        .eq('job_id', jobId)
+        .is('check_out_at', null)
+    }
+  }
+
+  // Revalidate both technician and admin view paths for instant synchronization
   revalidatePath(`/technician/jobs/${jobId}`)
-  return { success: true }
+  revalidatePath('/technician')
+  revalidatePath('/technician/commissions')
+  revalidatePath(`/admin/jobs/${jobId}`)
+  revalidatePath('/admin/jobs')
+  revalidatePath('/admin')
+  revalidatePath('/admin/dispatch')
+
+  return { success: true, completed }
 }
 
 export async function completeJobAction(jobId: string) {
-  const profile = await requireRole('admin')
+  const profile = await requireUser()
   const admin = getSupabaseAdmin()
 
-  // Attempt to transition job into 'completed'
+  // 1. Verify access & ownership
+  if (profile.role === 'technician') {
+    const { data: job } = await admin
+      .from('jobs')
+      .select('id, org_id, technician_id')
+      .eq('id', jobId)
+      .eq('org_id', profile.orgId)
+      .eq('technician_id', profile.id)
+      .maybeSingle()
+
+    if (!job) {
+      return { error: 'Anda tidak memiliki hak untuk menyelesaikan pekerjaan ini.' }
+    }
+  } else if (profile.role !== 'admin' && (profile.role as string) !== 'owner') {
+    return { error: 'Hak akses tidak memadai.' }
+  }
+
+  // 2. Attempt to transition job into 'completed'
   // Trigger trg_validate_job_lifecycle_transition will automatically validate all 5 conditions!
+  const now = new Date().toISOString()
   const { error } = await admin
     .from('jobs')
     .update({
       status: 'completed',
-      completed_at: new Date().toISOString(),
+      completed_at: now,
     })
     .eq('id', jobId)
     .eq('org_id', profile.orgId)
@@ -252,8 +394,21 @@ export async function completeJobAction(jobId: string) {
     return { error: error.message }
   }
 
+  // 3. Auto-record check-out if technician hasn't checked out yet
+  await admin
+    .from('job_attendance')
+    .update({ check_out_at: now })
+    .eq('job_id', jobId)
+    .is('check_out_at', null)
+
+  // 4. Invalidate both technician and admin view paths
+  revalidatePath(`/technician/jobs/${jobId}`)
+  revalidatePath('/technician')
+  revalidatePath('/technician/commissions')
   revalidatePath(`/admin/jobs/${jobId}`)
   revalidatePath('/admin/jobs')
   revalidatePath('/admin')
+  revalidatePath('/admin/dispatch')
+
   return { success: true }
 }

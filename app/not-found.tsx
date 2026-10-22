@@ -49,7 +49,7 @@ export default function NotFound() {
       </div>
 
       <p className="text-[11px] text-[#94A3B8] mt-6">
-        Gridline OS • Operasional Servis & Lapangan
+        Opilines • Operasional Servis & Lapangan
       </p>
     </div>
   )

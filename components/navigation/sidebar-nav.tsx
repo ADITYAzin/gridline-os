@@ -6,18 +6,20 @@ import {
   LayoutDashboard,
   Briefcase,
   CalendarDays,
+  MapPin,
   Users,
   Building2,
-  User,
+  Settings,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/jobs', label: 'Jobs', icon: Briefcase },
-  { href: '/admin/dispatch', label: 'Dispatch Board', icon: CalendarDays },
-  { href: '/admin/technicians', label: 'Technicians', icon: Users },
-  { href: '/admin/customers', label: 'Customers', icon: Building2 },
-  { href: '/admin/profile', label: 'Pengaturan', icon: User },
+  { href: '/admin/jobs', label: 'Tiket Kerja', icon: Briefcase },
+  { href: '/admin/dispatch', label: 'Jadwal & Dispatch', icon: CalendarDays },
+  { href: '/admin/map', label: 'Peta Lapangan', icon: MapPin },
+  { href: '/admin/technicians', label: 'Teknisi', icon: Users },
+  { href: '/admin/customers', label: 'Pelanggan', icon: Building2 },
+  { href: '/admin/profile', label: 'Pengaturan', icon: Settings },
 ]
 
 export function AdminSidebarNav() {

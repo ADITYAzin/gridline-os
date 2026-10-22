@@ -61,9 +61,9 @@ export default async function TechniciansPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-heading-1 font-heading text-slate-900 tracking-tight">Manajemen Tim & Performa</h1>
-          <p className="text-body-reg text-slate-500 mt-1">
-            Kelola pekerja lapangan, pantau ketepatan SLA kerja, dan evaluasi perhitungan komisi insentif.
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-heading">Teknisi</h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Kelola akses teknisi, pantau pencapaian SLA, dan evaluasi rekap komisi.
           </p>
         </div>
         <InviteMemberDialog />
@@ -132,8 +132,8 @@ export default async function TechniciansPage({ searchParams }: PageProps) {
                               </div>
                             </TableCell>
                             <TableCell className="px-4 py-2 align-middle">
-                              <Badge variant="outline" className="text-[11px] capitalize">
-                                {inv.role}
+                              <Badge variant="outline" className="text-[11px]">
+                                {inv.role === 'technician' ? 'Teknisi' : inv.role === 'admin' ? 'Admin' : 'Owner'}
                               </Badge>
                             </TableCell>
                             <TableCell className="px-4 py-2 align-middle">
@@ -203,9 +203,9 @@ export default async function TechniciansPage({ searchParams }: PageProps) {
                             ? 'secondary'
                             : 'outline'
                         }
-                        className="capitalize text-xs font-semibold px-2.5 py-0.5"
+                        className="text-xs font-semibold px-2.5 py-0.5"
                       >
-                        {m.role}
+                        {m.role === 'technician' ? 'Teknisi' : m.role === 'admin' ? 'Admin' : 'Owner'}
                       </Badge>
                     </TableCell>
                     <TableCell className="px-4 py-2 align-middle">

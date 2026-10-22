@@ -22,6 +22,7 @@ interface SignaturePadModalProps {
   existingSignature: {
     customer_name: string
     signed_at: string
+    display_url?: string
   } | null
   disabled: boolean
 }
@@ -148,12 +149,23 @@ export function SignaturePadModal({ jobId, existingSignature, disabled }: Signat
       </CardHeader>
       <CardContent className="p-4 pt-2">
         {existingSignature ? (
-          <div className="p-3 bg-muted/40 rounded-lg border text-xs space-y-1">
-            <span className="text-muted-foreground block text-[11px]">Nama Penandatangan:</span>
-            <span className="font-semibold text-sm text-foreground block">{existingSignature.customer_name}</span>
-            <span className="text-[10px] text-muted-foreground block">
-              Ditandatangani: {new Date(existingSignature.signed_at).toLocaleString('id-ID')}
-            </span>
+          <div className="p-3 bg-muted/40 rounded-lg border text-xs space-y-2.5">
+            {existingSignature.display_url && (
+              <div className="w-full h-24 rounded-lg bg-white dark:bg-slate-950 border p-2 flex items-center justify-center shadow-2xs">
+                <img
+                  src={existingSignature.display_url}
+                  alt={`Tanda tangan ${existingSignature.customer_name}`}
+                  className="h-full w-auto max-w-full object-contain filter contrast-125 select-none"
+                />
+              </div>
+            )}
+            <div className="space-y-0.5">
+              <span className="text-muted-foreground block text-[11px]">Nama Penandatangan:</span>
+              <span className="font-semibold text-sm text-foreground block">{existingSignature.customer_name}</span>
+              <span className="text-[10px] text-muted-foreground block">
+                Ditandatangani: {new Date(existingSignature.signed_at).toLocaleString('id-ID')}
+              </span>
+            </div>
           </div>
         ) : (
           <Dialog open={open} onOpenChange={setOpen}>
@@ -166,41 +178,51 @@ export function SignaturePadModal({ jobId, existingSignature, disabled }: Signat
                 <PenTool className="h-4 w-4" /> Buka Kanvas Tanda Tangan
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md rounded-[14px] p-5">
-              <DialogHeader>
-                <DialogTitle className="font-heading text-base font-bold text-[#0F172A]">Tanda Tangan Digital Customer</DialogTitle>
-                <DialogDescription className="text-xs text-[#475569]">
-                  Minta pelanggan untuk membubuhkan tanda tangan langsung di layar smartphone Anda.
+            <DialogContent className="sm:max-w-md rounded-2xl p-6 space-y-4">
+              <DialogHeader className="space-y-1">
+                <DialogTitle className="font-heading text-base font-bold text-foreground">
+                  Tanda Tangan Pelanggan
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  Bubuhkan tanda tangan persetujuan selesai kerja di layar.
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-3 pt-2">
+              <div className="space-y-4 pt-1">
                 {error && (
-                  <div className="rounded-[8px] bg-rose-50 border border-rose-200 p-2.5 text-xs text-rose-600 font-medium">
+                  <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive font-medium">
                     {error}
                   </div>
                 )}
 
-                <div className="space-y-1">
-                  <Label htmlFor="custName" className="text-xs font-medium text-[#475569]">Nama Lengkap Pelanggan *</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="custName" className="text-xs font-medium text-foreground">
+                    Nama Pelanggan <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="custName"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="Nama jelas yang menandatangani"
                     disabled={isPending}
-                    className="h-10 text-sm rounded-[8px] border-[#E2E8F0] focus-visible:ring-[#007ACC]"
+                    className="h-9 text-xs rounded-lg"
                   />
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium text-[#475569]">Goreskan Tanda Tangan di Kotak Ini</Label>
-                    <Button type="button" variant="ghost" size="sm" onClick={clearCanvas} className="h-8 text-xs px-2 text-rose-600 hover:bg-rose-50 rounded-[6px] touch-press">
-                      <RotateCcw className="h-3 w-3 mr-1" /> Hapus
+                    <Label className="text-xs font-medium text-foreground">Area Tanda Tangan</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearCanvas}
+                      className="h-7 text-xs px-2 text-rose-600 hover:bg-rose-50 rounded-md"
+                    >
+                      <RotateCcw className="h-3 w-3 mr-1" /> Bersihkan
                     </Button>
                   </div>
-                  <div className="border-2 border-dashed border-[#CBD5E1] rounded-[10px] bg-white overflow-hidden touch-none flex items-center justify-center">
+                  <div className="border-2 border-dashed border-border/80 rounded-xl bg-white overflow-hidden touch-none flex items-center justify-center">
                     <canvas
                       ref={canvasRef}
                       width={340}
@@ -218,14 +240,23 @@ export function SignaturePadModal({ jobId, existingSignature, disabled }: Signat
                 </div>
               </div>
 
-              <DialogFooter className="pt-3 flex flex-row gap-2 sm:justify-end">
-                <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending} className="flex-1 h-11 text-xs font-semibold rounded-[8px] touch-press">
+              <DialogFooter className="pt-2 flex flex-row gap-2.5 sm:justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  disabled={isPending}
+                  className="flex-1 h-9 text-xs font-medium rounded-lg"
+                >
                   Batal
                 </Button>
-                <Button onClick={handleSave} disabled={isPending} className="flex-1 h-11 text-xs font-semibold bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white rounded-[8px] shadow-xs touch-press">
+                <Button
+                  onClick={handleSave}
+                  disabled={isPending}
+                  className="flex-1 h-9 text-xs font-medium bg-[#007ACC] hover:bg-[#0062A3] text-white rounded-lg shadow-xs"
+                >
                   {isPending ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menyimpan...
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> Menyimpan...
                     </>
                   ) : (
                     'Simpan Tanda Tangan'

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { assignJobAction } from '@/app/actions/jobs'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -76,40 +76,37 @@ export function AssignmentCard({
   }
 
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-xs">
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <UserCheck className="h-4 w-4 text-primary" />
-          Jadwal & Teknisi Bertugas
+          Jadwal & Teknisi
         </CardTitle>
-        <CardDescription className="text-xs">
-          Sistem otomatis mencegah bentrok jadwal teknisi di jam yang sama.
-        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3.5 text-sm">
+      <CardContent className="space-y-3.5 text-xs">
         {error && (
-          <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-xs font-medium text-destructive flex items-start gap-2">
+          <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-2.5 text-xs font-medium text-destructive flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-xs font-medium text-emerald-600 flex items-center gap-2">
+          <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-xs font-medium text-emerald-600 flex items-center gap-2">
             <Check className="h-4 w-4" />
-            <span>Jadwal dan teknisi berhasil disimpan!</span>
+            <span>Jadwal berhasil diperbarui.</span>
           </div>
         )}
 
         <div className="space-y-1.5">
-          <Label htmlFor="tech">Pilih Teknisi</Label>
+          <Label htmlFor="tech" className="text-xs font-medium">Teknisi</Label>
           <Select value={techId} onValueChange={setTechId} disabled={isLocked || isPending}>
-            <SelectTrigger>
+            <SelectTrigger className="h-9 text-xs">
               <SelectValue placeholder="Pilih teknisi" />
             </SelectTrigger>
             <SelectContent>
               {technicians.map((t) => (
-                <SelectItem key={t.id} value={t.id}>
+                <SelectItem key={t.id} value={t.id} className="text-xs">
                   {t.name}
                 </SelectItem>
               ))}
@@ -118,7 +115,7 @@ export function AssignmentCard({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="date" className="flex items-center gap-1.5">
+          <Label htmlFor="date" className="text-xs font-medium flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5" /> Tanggal
           </Label>
           <Input
@@ -127,13 +124,14 @@ export function AssignmentCard({
             value={date}
             onChange={(e) => setDate(e.target.value)}
             disabled={isLocked || isPending}
+            className="h-9 text-xs"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
-            <Label htmlFor="start" className="text-xs flex items-center gap-1">
-              <Clock className="h-3 w-3" /> Jam Mulai
+            <Label htmlFor="start" className="text-xs font-medium flex items-center gap-1">
+              <Clock className="h-3 w-3" /> Mulai
             </Label>
             <Input
               id="start"
@@ -141,11 +139,12 @@ export function AssignmentCard({
               value={start}
               onChange={(e) => setStart(e.target.value)}
               disabled={isLocked || isPending}
+              className="h-9 text-xs"
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="end" className="text-xs flex items-center gap-1">
-              <Clock className="h-3 w-3" /> Jam Selesai
+            <Label htmlFor="end" className="text-xs font-medium flex items-center gap-1">
+              <Clock className="h-3 w-3" /> Selesai
             </Label>
             <Input
               id="end"
@@ -153,20 +152,21 @@ export function AssignmentCard({
               value={end}
               onChange={(e) => setEnd(e.target.value)}
               disabled={isLocked || isPending}
+              className="h-9 text-xs"
             />
           </div>
         </div>
       </CardContent>
       {!isLocked && (
         <CardFooter className="pt-1">
-          <Button onClick={handleSave} className="w-full" disabled={isPending}>
+          <Button onClick={handleSave} className="w-full text-xs h-9 font-medium cursor-pointer" disabled={isPending}>
             {isPending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                 Menyimpan...
               </>
             ) : (
-              'Perbarui Jadwal & Teknisi'
+              'Simpan Jadwal'
             )}
           </Button>
         </CardFooter>

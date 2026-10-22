@@ -28,7 +28,7 @@ export function DemoForm() {
 
   if (isSubmitted) {
     const waText = encodeURIComponent(
-      `Halo GridlineOS, saya ${formData.name} dari ${formData.company} (${formData.industry}, ~${formData.technicians} teknisi). Saya ingin menjadwalkan demo online GridlineOS.`
+      `Halo Opilines, saya ${formData.name} dari ${formData.company} (${formData.industry}, ~${formData.technicians} teknisi). Saya ingin menjadwalkan demo online Opilines.`
     )
     const waUrl = `https://wa.me/6281234567890?text=${waText}`
 
@@ -42,7 +42,7 @@ export function DemoForm() {
             Permintaan Demo Berhasil Dikirim!
           </h3>
           <p className="text-[13.5px] text-[#475569] max-w-md mx-auto leading-relaxed">
-            Terima kasih, <strong>{formData.name}</strong>. Tim konsultan GridlineOS akan menghubungi Anda melalui WhatsApp di nomor <strong>{formData.phone}</strong> dalam 1×24 jam kerja untuk menyepakati jadwal demo.
+            Terima kasih, <strong>{formData.name}</strong>. Tim konsultan Opilines akan menghubungi Anda melalui WhatsApp di nomor <strong>{formData.phone}</strong> dalam 1×24 jam kerja untuk menyepakati jadwal demo.
           </p>
         </div>
 

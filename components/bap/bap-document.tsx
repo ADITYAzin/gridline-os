@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BapPrintButton } from './bap-print-button'
 
@@ -7,6 +7,12 @@ export interface BapDocumentProps {
   organization: {
     id: string
     name: string
+    address?: string | null
+    city?: string | null
+    province?: string | null
+    postal_code?: string | null
+    phone?: string | null
+    email?: string | null
   }
   job: {
     id: string
@@ -33,11 +39,17 @@ export interface BapDocumentProps {
     model_number: string | null
     serial_number: string | null
     location_tag: string | null
+    warranty_expires_at?: string | null
+    status?: string | null
   } | null
   technician: {
     name: string
     phone: string | null
     email: string | null
+  } | null
+  schedule?: {
+    start_at: string
+    end_at: string
   } | null
   attendance: {
     check_in_at: string | null
@@ -51,6 +63,8 @@ export interface BapDocumentProps {
     id: string
     item: string
     is_completed: boolean
+    is_na?: boolean | null
+    na_reason?: string | null
     completed_at: string | null
   }>
   beforePhotos: Array<{
@@ -82,6 +96,7 @@ export function BapDocument({
   customer,
   asset,
   technician,
+  schedule,
   attendance,
   checklist,
   beforePhotos,
@@ -91,6 +106,10 @@ export function BapDocument({
   backHref,
 }: BapDocumentProps) {
   const completedDate = job.completed_at ? new Date(job.completed_at) : new Date()
+
+  // Format Hari & Tanggal Resmi Indonesia
+  const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+  const dayName = dayNames[completedDate.getDay()]
   const formattedDateStr = completedDate.toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'long',
@@ -99,334 +118,472 @@ export function BapDocument({
   const dateCode = completedDate.toISOString().slice(0, 10).replace(/-/g, '')
   const bapDocNumber = `BAP/${job.job_number}/${dateCode}`
 
+  // Alamat & Kontak Perusahaan Pelaksana
+  const orgAddressParts = [
+    organization.address,
+    organization.city,
+    organization.province ? `${organization.province} ${organization.postal_code || ''}`.trim() : null,
+  ].filter(Boolean)
+  const orgFullAddress = orgAddressParts.join(', ')
+
+  // Status Garansi Aset
+  let warrantyText = 'Non-Garansi / Reguler'
+  if (asset?.warranty_expires_at) {
+    const wDate = new Date(asset.warranty_expires_at)
+    const formattedWarrantyDate = wDate.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+    if (wDate >= new Date()) {
+      warrantyText = `Garansi Aktif (s/d ${formattedWarrantyDate})`
+    } else {
+      warrantyText = `Masa Garansi Berakhir (${formattedWarrantyDate})`
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-muted/30 py-8 px-4 sm:px-6 print:bg-white print:p-0">
-      {/* Top Action Bar (Screen only, hidden on print) */}
-      <div className="max-w-4xl mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 no-print bg-background p-4 rounded-xl border shadow-sm">
+    <div className="min-h-screen bg-muted/40 py-8 px-4 sm:px-6 print:bg-white print:p-0 print:min-h-0">
+      {/* Print CSS Configuration for F4 (Folio) Paper Size */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @page {
+              size: 215mm 330mm; /* Ukuran standar kertas F4 / Folio */
+              margin: 14mm 16mm 14mm 16mm;
+            }
+            @media print {
+              body {
+                background: #ffffff !important;
+                color: #0f172a !important;
+                font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .no-print {
+                display: none !important;
+              }
+              .page-break-inside-avoid {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+              }
+            }
+          `,
+        }}
+      />
+
+      {/* Top Screen Action Bar (Hidden on Print) */}
+      <div className="max-w-[215mm] mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 no-print bg-background p-4 rounded-xl border shadow-xs">
         <div className="flex items-center gap-3">
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline" size="sm" className="cursor-pointer">
             <Link href={backHref} className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Kembali ke Detail Job
+              Kembali ke Detail Pekerjaan
             </Link>
           </Button>
           <div>
-            <h1 className="text-sm font-semibold">Pratinjau Berita Acara Pekerjaan (BAP)</h1>
-            <p className="text-xs text-muted-foreground">Siap cetak atau simpan ke file PDF</p>
+            <h1 className="text-sm font-semibold text-foreground">Dokumen Berita Acara Pekerjaan (BAP)</h1>
+            <p className="text-xs text-muted-foreground">Format Cetak Resmi F4 (Folio: 215 × 330 mm)</p>
           </div>
         </div>
         <BapPrintButton />
       </div>
 
-      {/* Official BAP Printable Sheet (A4 Dimensions) */}
-      <div className="max-w-4xl mx-auto bg-white text-slate-900 p-8 sm:p-12 rounded-xl border border-slate-200 shadow-md print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none">
-        {/* Letterhead Header */}
-        <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-6">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-black tracking-tight text-slate-950 uppercase">
+      {/* Official BAP Sheet (F4 Dimensions: 215mm x 330mm) - Tanpa Outline Box Luar */}
+      <div className="w-full max-w-[215mm] mx-auto bg-white text-slate-900 p-8 sm:p-12 shadow-sm print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none print:w-full">
+        {/* KOP SURAT (Letterhead Pelaksana Jasa) */}
+        <div className="border-b-2 border-slate-900 pb-4 mb-5 flex justify-between items-start gap-4">
+          <div className="space-y-1 max-w-[70%]">
+            <h2 className="text-xl font-bold tracking-tight text-slate-950 uppercase leading-snug">
               {organization.name}
             </h2>
-            <p className="text-xs font-semibold text-slate-600 uppercase tracking-widest">
-              Field Service & Operations Management Report
-            </p>
-            <p className="text-xs text-slate-500">
-              Dokumen Resmi Bukti Penyelesaian Pekerjaan Lapangan (BAP)
-            </p>
+            {orgFullAddress && (
+              <p className="text-xs text-slate-700 leading-relaxed">{orgFullAddress}</p>
+            )}
+            <div className="text-[11px] text-slate-600 flex flex-wrap gap-x-4 gap-y-0.5">
+              {organization.phone && <span>Telepon: {organization.phone}</span>}
+              {organization.email && <span>Email: {organization.email}</span>}
+            </div>
           </div>
-          <div className="text-right space-y-1">
-            <span className="inline-block bg-emerald-100 text-emerald-800 text-[11px] font-bold px-3 py-1 rounded-full border border-emerald-300">
-              STATUS: COMPLETED
-            </span>
-            <p className="text-xs font-mono font-bold text-slate-800">{bapDocNumber}</p>
-            <p className="text-xs text-slate-500">{formattedDateStr}</p>
+          <div className="text-right space-y-1 shrink-0">
+            <p className="text-xs font-semibold text-slate-800">DOKUMEN RESMI</p>
+            <p className="text-xs font-mono font-bold text-slate-900">{bapDocNumber}</p>
+            <p className="text-xs text-slate-600">{formattedDateStr}</p>
           </div>
         </div>
 
-        {/* Title */}
-        <div className="text-center my-6">
-          <h3 className="text-lg font-bold uppercase tracking-wider text-slate-900">
+        {/* JUDUL DOKUMEN */}
+        <div className="text-center my-5">
+          <h3 className="text-base font-bold uppercase tracking-wide text-slate-950">
             BERITA ACARA PENYELESAIAN PEKERJAAN
           </h3>
-          <p className="text-xs text-slate-600 mt-0.5">
-            Nomor Work Order: <span className="font-mono font-bold text-slate-900">{job.job_number}</span>
+          <p className="text-xs text-slate-600 mt-1">
+            Nomor: <span className="font-mono font-semibold text-slate-900">{bapDocNumber}</span>
           </p>
         </div>
 
-        {/* Info Grid (Pelanggan & Pekerjaan) */}
-        <div className="grid grid-cols-2 gap-6 mb-6 text-xs bg-slate-50 p-4 rounded-lg border border-slate-200">
-          <div className="space-y-2">
-            <h4 className="font-bold text-slate-900 uppercase tracking-wider border-b border-slate-300 pb-1">
-              Informasi Pelanggan
-            </h4>
-            <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">Nama Klien</span>
-              <span className="col-span-2 font-semibold text-slate-900">{customer?.name || '-'}</span>
+        {/* KLAUSUL PEMBUKA */}
+        <p className="text-xs text-slate-800 leading-relaxed mb-4 text-justify">
+          Pada hari ini, <strong className="font-semibold">{dayName}</strong>, tanggal{' '}
+          <strong className="font-semibold">{formattedDateStr}</strong>, telah selesai dilaksanakan pekerjaan
+          layanan teknis lapangan dengan rincian kesepakatan antara pihak-pihak di bawah ini:
+        </p>
 
-              <span className="text-slate-500">Alamat Lokasi</span>
-              <span className="col-span-2 text-slate-800">{customer?.address || job.address || '-'}</span>
-
-              <span className="text-slate-500">Telepon</span>
-              <span className="col-span-2 text-slate-800">{customer?.phone || '-'}</span>
-
-              <span className="text-slate-500">Email</span>
-              <span className="col-span-2 text-slate-800">{customer?.email || '-'}</span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="font-bold text-slate-900 uppercase tracking-wider border-b border-slate-300 pb-1">
-              Detail Pelaksanaan
-            </h4>
-            <div className="grid grid-cols-3 gap-1">
-              <span className="text-slate-500">Jenis Layanan</span>
-              <span className="col-span-2 font-semibold text-slate-900">{job.service_type}</span>
-
-              {asset && (
-                <>
-                  <span className="text-slate-500">Unit Aset Pelanggan</span>
-                  <span className="col-span-2 font-semibold text-slate-900">
-                    [{asset.brand}] {asset.asset_name}
-                  </span>
-
-                  <span className="text-slate-500">Model & S/N</span>
-                  <span className="col-span-2 text-slate-800 font-mono text-[11px]">
-                    {asset.model_number || '-'} / SN: {asset.serial_number || '-'}
-                  </span>
-
-                  {asset.location_tag && (
-                    <>
-                      <span className="text-slate-500">Lokasi Unit</span>
-                      <span className="col-span-2 text-slate-800">{asset.location_tag}</span>
-                    </>
-                  )}
-                </>
-              )}
-
-              <span className="text-slate-500">Prioritas</span>
-              <span className="col-span-2 capitalize font-semibold text-slate-900">{job.priority}</span>
-
-              <span className="text-slate-500">Teknisi</span>
-              <span className="col-span-2 font-semibold text-slate-900">{technician?.name || '-'}</span>
-
-              <span className="text-slate-500">Waktu Selesai</span>
-              <span className="col-span-2 text-slate-800">
-                {job.completed_at ? new Date(job.completed_at).toLocaleString('id-ID') : '-'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Attendance Log (Check-in & Check-out) */}
-        {attendance && (
-          <div className="mb-6 bg-slate-50/70 p-3 rounded-md border border-slate-200 text-xs">
-            <div className="flex justify-between items-center text-slate-700">
-              <div>
-                <span className="font-bold text-slate-900">Check-in: </span>
-                {attendance.check_in_at ? new Date(attendance.check_in_at).toLocaleTimeString('id-ID') : '-'}
-                {attendance.check_in_latitude && (
-                  <span className="text-slate-500 ml-1">
-                    ({attendance.check_in_latitude.toFixed(4)}, {attendance.check_in_longitude?.toFixed(4)})
-                  </span>
-                )}
-              </div>
-              <div>
-                <span className="font-bold text-slate-900">Check-out: </span>
-                {attendance.check_out_at ? new Date(attendance.check_out_at).toLocaleTimeString('id-ID') : '-'}
-                {attendance.check_out_latitude && (
-                  <span className="text-slate-500 ml-1">
-                    ({attendance.check_out_latitude.toFixed(4)}, {attendance.check_out_longitude?.toFixed(4)})
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Section: Uraian Kendala & Instruksi */}
-        <div className="mb-6 space-y-2 text-xs">
-          <h4 className="font-bold text-slate-900 uppercase tracking-wider">
-            1. Deskripsi Keluhan / Uraian Masalah
-          </h4>
-          <p className="bg-white border border-slate-200 p-3 rounded-md text-slate-800 leading-relaxed">
-            {job.issue}
-          </p>
-          {job.instructions && (
-            <p className="text-[11px] text-slate-600 italic">
-              Instruksi Khusus: {job.instructions}
+        {/* DATA PARA PIHAK (Pelaksana Jasa & Pelanggan) */}
+        <div className="grid grid-cols-2 gap-8 mb-5 text-xs">
+          {/* Pihak Pertama */}
+          <div className="space-y-1.5">
+            <p className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
+              PIHAK PERTAMA (Pelaksana Jasa)
             </p>
-          )}
+            <div className="space-y-1 text-slate-800">
+              <div className="grid grid-cols-3 gap-1">
+                <span className="text-slate-600">Perusahaan</span>
+                <span className="col-span-2 font-medium text-slate-950">{organization.name}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                <span className="text-slate-600">Teknisi</span>
+                <span className="col-span-2 font-medium text-slate-950">{technician?.name || '-'}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                <span className="text-slate-600">Kontak</span>
+                <span className="col-span-2 text-slate-900">{technician?.phone || organization.phone || '-'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Pihak Kedua */}
+          <div className="space-y-1.5">
+            <p className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
+              PIHAK KEDUA (Pelanggan / Penerima Jasa)
+            </p>
+            <div className="space-y-1 text-slate-800">
+              <div className="grid grid-cols-3 gap-1">
+                <span className="text-slate-600">Nama Klien</span>
+                <span className="col-span-2 font-medium text-slate-950">{customer?.name || '-'}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                <span className="text-slate-600">No. Telepon</span>
+                <span className="col-span-2 text-slate-900">{customer?.phone || '-'}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                <span className="text-slate-600">Alamat Lokasi</span>
+                <span className="col-span-2 text-slate-900 leading-snug">{job.address || customer?.address || '-'}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Section: SOP Checklist */}
-        <div className="mb-6 space-y-2 text-xs">
-          <h4 className="font-bold text-slate-900 uppercase tracking-wider">
-            2. Prosedur Kerja Standar (SOP Checklist)
-          </h4>
-          <table className="w-full border-collapse border border-slate-300 text-left">
-            <thead>
-              <tr className="bg-slate-100 text-slate-800">
-                <th className="border border-slate-300 px-3 py-2 w-10 text-center">No</th>
-                <th className="border border-slate-300 px-3 py-2">Item Pekerjaan SOP</th>
-                <th className="border border-slate-300 px-3 py-2 w-28 text-center">Status</th>
-                <th className="border border-slate-300 px-3 py-2 w-36 text-center">Waktu Verifikasi</th>
-              </tr>
-            </thead>
+        {/* 1. DATA PEKERJAAN & ASET UNIT (TABEL) */}
+        <div className="mb-5 space-y-1.5 text-xs">
+          <p className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
+            1. RINCIAN PEKERJAAN & ASET UNIT
+          </p>
+          <table className="w-full border-collapse border border-slate-300 text-xs">
             <tbody>
-              {checklist.length === 0 ? (
+              <tr className="border-b border-slate-300">
+                <td className="bg-slate-100/70 p-2 font-medium text-slate-700 w-1/4 border-r border-slate-300">
+                  Jenis Layanan
+                </td>
+                <td className="p-2 font-semibold text-slate-950 w-1/4 border-r border-slate-300">
+                  {job.service_type}
+                </td>
+                <td className="bg-slate-100/70 p-2 font-medium text-slate-700 w-1/4 border-r border-slate-300">
+                  Nomor Work Order
+                </td>
+                <td className="p-2 font-mono font-semibold text-slate-950 w-1/4">
+                  {job.job_number}
+                </td>
+              </tr>
+              <tr className="border-b border-slate-300">
+                <td className="bg-slate-100/70 p-2 font-medium text-slate-700 border-r border-slate-300">
+                  Unit Aset
+                </td>
+                <td className="p-2 font-medium text-slate-950 border-r border-slate-300">
+                  {asset ? `${asset.asset_name} (${asset.brand})` : '-'}
+                </td>
+                <td className="bg-slate-100/70 p-2 font-medium text-slate-700 border-r border-slate-300">
+                  Model & No. Seri
+                </td>
+                <td className="p-2 text-slate-900 font-mono text-[11px]">
+                  {asset?.model_number || '-'} / SN: {asset?.serial_number || '-'}
+                </td>
+              </tr>
+              <tr className="border-b border-slate-300">
+                <td className="bg-slate-100/70 p-2 font-medium text-slate-700 border-r border-slate-300">
+                  Lokasi Unit
+                </td>
+                <td className="p-2 text-slate-900 border-r border-slate-300">
+                  {asset?.location_tag || '-'}
+                </td>
+                <td className="bg-slate-100/70 p-2 font-medium text-slate-700 border-r border-slate-300">
+                  Status Garansi
+                </td>
+                <td className="p-2 text-slate-900 font-medium">
+                  {warrantyText}
+                </td>
+              </tr>
+              <tr>
+                <td className="bg-slate-100/70 p-2 font-medium text-slate-700 border-r border-slate-300">
+                  Waktu Pengerjaan
+                </td>
+                <td colSpan={3} className="p-2 text-slate-900">
+                  {attendance?.check_in_at
+                    ? `Mulai: ${new Date(attendance.check_in_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`
+                    : schedule?.start_at
+                    ? `Jadwal: ${new Date(schedule.start_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`
+                    : '-'}{' '}
+                  •{' '}
+                  {job.completed_at
+                    ? `Selesai: ${new Date(job.completed_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`
+                    : '-'}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* 2. URAIAN KELUHAN & TINDAKAN PEKERJAAN (TABEL RESMI) */}
+        <div className="mb-5 space-y-1.5 text-xs">
+          <p className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
+            2. URAIAN KELUHAN & TINDAKAN PERBAIKAN
+          </p>
+          <table className="w-full border-collapse border border-slate-300 text-xs">
+            <tbody>
+              <tr className="border-b border-slate-300">
+                <td className="bg-slate-100/70 p-2 font-medium text-slate-700 w-1/4 border-r border-slate-300 align-top">
+                  Keluhan / Kendala Awal
+                </td>
+                <td className="p-2 text-slate-900 leading-relaxed">
+                  {job.issue}
+                </td>
+              </tr>
+              <tr className={report?.notes ? 'border-b border-slate-300' : ''}>
+                <td className="bg-slate-100/70 p-2 font-medium text-slate-700 w-1/4 border-r border-slate-300 align-top">
+                  Tindakan & Hasil
+                </td>
+                <td className="p-2 text-slate-900 leading-relaxed">
+                  {report?.result || 'Pekerjaan perbaikan dan pemeriksaan teknis telah diselesaikan sesuai standar teknis operasional.'}
+                </td>
+              </tr>
+              {report?.notes && (
                 <tr>
-                  <td colSpan={4} className="border border-slate-300 px-3 py-2 text-center text-slate-500">
-                    Tidak ada checklist spesifik.
+                  <td className="bg-slate-100/70 p-2 font-medium text-slate-700 w-1/4 border-r border-slate-300 align-top">
+                    Catatan / Saran Teknisi
+                  </td>
+                  <td className="p-2 text-slate-800 italic leading-relaxed">
+                    {report.notes}
                   </td>
                 </tr>
-              ) : (
-                checklist.map((item, idx) => (
-                  <tr key={item.id} className="even:bg-slate-50/50">
-                    <td className="border border-slate-300 px-3 py-1.5 text-center font-mono">{idx + 1}</td>
-                    <td className="border border-slate-300 px-3 py-1.5 text-slate-900">{item.item}</td>
-                    <td className="border border-slate-300 px-3 py-1.5 text-center">
-                      <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 text-[11px]">
-                        <CheckCircle2 className="h-3 w-3 inline" /> Selesai
-                      </span>
-                    </td>
-                    <td className="border border-slate-300 px-3 py-1.5 text-center text-slate-600 font-mono text-[11px]">
-                      {item.completed_at ? new Date(item.completed_at).toLocaleTimeString('id-ID') : '-'}
-                    </td>
-                  </tr>
-                ))
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Section: Laporan Hasil Kerja */}
-        <div className="mb-6 space-y-2 text-xs">
-          <h4 className="font-bold text-slate-900 uppercase tracking-wider">
-            3. Laporan Hasil Pengerjaan & Rekomendasi
-          </h4>
-          <div className="bg-slate-50 border border-slate-200 p-3 rounded-md space-y-2">
-            <div>
-              <span className="font-semibold text-slate-900 block">Hasil Tindakan:</span>
-              <p className="text-slate-800 mt-0.5 leading-relaxed">{report?.result || 'Pekerjaan telah diselesaikan sesuai standar operasional prosedur.'}</p>
-            </div>
-            {report?.notes && (
-              <div>
-                <span className="font-semibold text-slate-900 block">Catatan Tambahan:</span>
-                <p className="text-slate-700 mt-0.5 leading-relaxed">{report.notes}</p>
-              </div>
-            )}
-          </div>
+        {/* 3. PROSEDUR STANDAR OPERASIONAL (SOP CHECKLIST - TABEL) */}
+        <div className="mb-5 space-y-1.5 text-xs page-break-inside-avoid">
+          <p className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
+            3. PEMERIKSAAN PROSEDUR KERJA (SOP)
+          </p>
+          <table className="w-full border-collapse border border-slate-300 text-left text-xs">
+            <thead>
+              <tr className="bg-slate-100 text-slate-800 font-semibold border-b border-slate-300">
+                <th className="border-r border-slate-300 px-3 py-1.5 w-10 text-center">No</th>
+                <th className="border-r border-slate-300 px-3 py-1.5">Item Prosedur Kerja</th>
+                <th className="border-r border-slate-300 px-3 py-1.5 w-32 text-center">Hasil</th>
+                <th className="px-3 py-1.5 w-36 text-center">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              {checklist.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="p-3 text-center text-slate-500 italic">
+                    Seluruh prosedur operasional telah disesuaikan dengan instruksi kerja.
+                  </td>
+                </tr>
+              ) : (
+                checklist.map((item, idx) => {
+                  let statusLabel = 'Selesai'
+                  let notesLabel = item.completed_at
+                    ? `${new Date(item.completed_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`
+                    : 'Terverifikasi'
+
+                  if (item.is_na) {
+                    statusLabel = 'Tidak Berlaku (N/A)'
+                    notesLabel = item.na_reason || 'Tidak relevan dengan unit'
+                  }
+
+                  return (
+                    <tr key={item.id} className="border-b border-slate-200 even:bg-slate-50/40">
+                      <td className="border-r border-slate-300 px-3 py-1.5 text-center font-mono text-[11px]">
+                        {idx + 1}
+                      </td>
+                      <td className="border-r border-slate-300 px-3 py-1.5 text-slate-900">
+                        {item.item}
+                      </td>
+                      <td className="border-r border-slate-300 px-3 py-1.5 text-center font-medium text-slate-900">
+                        {statusLabel}
+                      </td>
+                      <td className="px-3 py-1.5 text-center text-slate-600 text-[11px]">
+                        {notesLabel}
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {/* Section: Dokumentasi Foto Bukti (Before / After) */}
+        {/* 4. DOKUMENTASI FOTO PEKERJAAN (TABEL RESMI) */}
         {(beforePhotos.length > 0 || afterPhotos.length > 0) && (
-          <div className="mb-8 space-y-3 text-xs page-break-inside-avoid">
-            <h4 className="font-bold text-slate-900 uppercase tracking-wider">
-              4. Dokumentasi Visual Bukti Lapangan
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              {/* Before Photos */}
-              <div className="border border-slate-200 rounded-md p-3 bg-slate-50">
-                <span className="font-bold text-slate-800 block mb-2 text-center text-[11px] uppercase tracking-wider">
-                  Foto Sebelum (Before)
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  {beforePhotos.map((photo) => (
-                    <div key={photo.id} className="relative aspect-video bg-slate-200 rounded overflow-hidden border border-slate-300">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={photo.signed_url}
-                        alt="Before Evidence"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
-                  {beforePhotos.length === 0 && (
-                    <p className="col-span-2 text-center text-slate-400 py-4 italic text-[11px]">
-                      Tidak ada foto sebelum.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* After Photos */}
-              <div className="border border-slate-200 rounded-md p-3 bg-slate-50">
-                <span className="font-bold text-slate-800 block mb-2 text-center text-[11px] uppercase tracking-wider">
-                  Foto Sesudah (After)
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  {afterPhotos.map((photo) => (
-                    <div key={photo.id} className="relative aspect-video bg-slate-200 rounded overflow-hidden border border-slate-300">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={photo.signed_url}
-                        alt="After Evidence"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
-                  {afterPhotos.length === 0 && (
-                    <p className="col-span-2 text-center text-slate-400 py-4 italic text-[11px]">
-                      Tidak ada foto sesudah.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
+          <div className="mb-6 space-y-1.5 text-xs page-break-inside-avoid">
+            <p className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
+              4. DOKUMENTASI FOTO PEKERJAAN
+            </p>
+            <table className="w-full border-collapse border border-slate-300 text-xs">
+              <thead>
+                <tr className="bg-slate-100 text-slate-900 font-semibold border-b border-slate-300 text-center">
+                  <th className="p-2 border-r border-slate-300 w-1/2">Kondisi Sebelum Pengerjaan (Before)</th>
+                  <th className="p-2 w-1/2">Kondisi Sesudah Pengerjaan (After)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="align-top">
+                  <td className="p-3 border-r border-slate-300">
+                    {beforePhotos.length === 0 ? (
+                      <p className="text-center text-slate-400 py-6 italic text-[11px]">
+                        Tidak ada foto sebelum pengerjaan.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {beforePhotos.map((p, idx) => (
+                          <div key={p.id} className="aspect-4/3 overflow-hidden bg-slate-100 flex flex-col">
+                            <img
+                              src={p.signed_url}
+                              alt={`Sebelum #${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <span className="text-[10px] text-center font-mono text-slate-600 bg-slate-100 py-0.5">
+                              Foto #{idx + 1}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-3">
+                    {afterPhotos.length === 0 ? (
+                      <p className="text-center text-slate-400 py-6 italic text-[11px]">
+                        Tidak ada foto sesudah pengerjaan.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {afterPhotos.map((p, idx) => (
+                          <div key={p.id} className="aspect-4/3 overflow-hidden bg-slate-100 flex flex-col">
+                            <img
+                              src={p.signed_url}
+                              alt={`Sesudah #${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <span className="text-[10px] text-center font-mono text-slate-600 bg-slate-100 py-0.5">
+                              Foto #{idx + 1}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         )}
 
-        {/* Section: Pengesahan & Tanda Tangan */}
-        <div className="mt-8 pt-4 border-t border-slate-300 page-break-inside-avoid">
-          <p className="text-[11px] text-slate-600 mb-6 leading-relaxed text-justify">
-            Demikian Berita Acara Penyelesaian Pekerjaan ini dibuat dengan sebenar-benarnya atas persetujuan kedua belah pihak bahwa pekerjaan yang tertera di atas telah diselesaikan dengan baik dan diterima oleh pihak pelanggan.
+        {/* PENGESAHAN & TANDA TANGAN (KEDUA BELAH PIHAK) - Tanpa Outline Box */}
+        <div className="mt-6 page-break-inside-avoid text-xs">
+          <p className="text-slate-800 mb-4 leading-relaxed text-justify">
+            Demikian Berita Acara Penyelesaian Pekerjaan ini dibuat dengan sebenar-benarnya dan ditandatangani
+            oleh kedua belah pihak sebagai bukti sah bahwa pekerjaan teknis di atas telah selesai dilaksanakan
+            dengan baik dan telah diterima serta diuji bersama oleh pihak pelanggan.
           </p>
 
-          <div className="grid grid-cols-2 gap-12 text-center text-xs">
-            {/* Customer Signature */}
-            <div className="flex flex-col items-center justify-between h-44">
-              <span className="font-semibold text-slate-900">Pemberi Tugas / Pelanggan</span>
-              <div className="h-24 w-44 flex items-center justify-center border-b border-slate-400">
+          <div className="grid grid-cols-2 gap-8 text-center pt-2">
+            {/* PIHAK KEDUA: Pelanggan (Dengan Goresan E-Signature Asli) */}
+            <div className="flex flex-col items-center justify-between min-h-[160px]">
+              <div>
+                <p className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
+                  PIHAK KEDUA
+                </p>
+                <p className="text-[11px] text-slate-600">Pelanggan / Penerima Jasa</p>
+              </div>
+
+              {/* Render Gambar Tanda Tangan Digital */}
+              <div className="h-20 w-48 flex items-center justify-center my-2">
                 {signature?.signed_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={signature.signed_url}
-                    alt="Customer Signature"
-                    className="max-h-20 max-w-full object-contain"
+                    alt={`Tanda tangan ${signature.customer_name}`}
+                    className="max-h-20 max-w-full object-contain filter contrast-125 select-none"
                   />
                 ) : (
-                  <span className="text-[11px] text-slate-400 italic">(Tanda tangan digital)</span>
+                  <span className="text-[11px] text-slate-400 italic">
+                    (Belum ditandatangani)
+                  </span>
                 )}
               </div>
-              <div>
-                <p className="font-bold text-slate-950 uppercase">{signature?.customer_name || customer?.name || 'Pelanggan'}</p>
-                <p className="text-[11px] text-slate-500">
-                  {signature?.signed_at ? new Date(signature.signed_at).toLocaleDateString('id-ID') : formattedDateStr}
+
+              <div className="border-t border-slate-400 pt-1 w-48">
+                <p className="font-bold text-slate-950 uppercase">
+                  {signature?.customer_name || customer?.name || 'Pelanggan'}
+                </p>
+                <p className="text-[10px] text-slate-500">
+                  {signature?.signed_at
+                    ? `${new Date(signature.signed_at).toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })} • ${new Date(signature.signed_at).toLocaleTimeString('id-ID', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })} WIB`
+                    : formattedDateStr}
                 </p>
               </div>
             </div>
 
-            {/* Technician Signature */}
-            <div className="flex flex-col items-center justify-between h-44">
-              <span className="font-semibold text-slate-900">Pelaksana Pekerjaan / Teknisi</span>
-              <div className="h-24 w-44 flex items-center justify-center border-b border-slate-400">
-                <div className="text-center">
-                  <span className="inline-block px-2 py-0.5 text-[10px] font-bold text-emerald-800 bg-emerald-100 rounded border border-emerald-300 mb-1">
-                    VERIFIKASI SISTEM
-                  </span>
-                  <p className="text-[11px] font-mono text-slate-500">GL-VERIFIED-SIGN</p>
-                </div>
-              </div>
+            {/* PIHAK PERTAMA: Pelaksana Jasa / Teknisi */}
+            <div className="flex flex-col items-center justify-between min-h-[160px]">
               <div>
-                <p className="font-bold text-slate-950 uppercase">{technician?.name || 'Teknisi Lapangan'}</p>
-                <p className="text-[11px] text-slate-500">{organization.name}</p>
+                <p className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
+                  PIHAK PERTAMA
+                </p>
+                <p className="text-[11px] text-slate-600">Pelaksana Jasa / Teknisi</p>
+              </div>
+
+              {/* Verifikasi Identitas Teknisi & Sistem */}
+              <div className="h-20 w-48 flex flex-col items-center justify-center my-2 text-center">
+                <p className="text-[10px] font-bold text-slate-800 tracking-wider">
+                  TERVALIDASI SISTEM
+                </p>
+                <p className="text-[9px] font-mono text-slate-500 mt-0.5">
+                  WO: {job.job_number}
+                </p>
+              </div>
+
+              <div className="border-t border-slate-400 pt-1 w-48">
+                <p className="font-bold text-slate-950 uppercase">
+                  {technician?.name || 'Teknisi Bertugas'}
+                </p>
+                <p className="text-[10px] text-slate-500">{organization.name}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Document Footer */}
-        <div className="mt-10 pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400">
-          Dokumen ini diterbitkan secara elektronik oleh Gridline OS (Field Service Management System). Hak cipta dilindungi undang-undang.
+        {/* CATATAN KAKI RESMI DOKUMEN */}
+        <div className="mt-8 pt-3 border-t border-slate-200 text-center text-[10px] text-slate-500">
+          Dokumen Berita Acara ini diterbitkan secara elektronik dan sah sebagai bukti pemenuhan layanan jasa operasional lapangan.
         </div>
       </div>
     </div>

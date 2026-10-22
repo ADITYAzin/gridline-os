@@ -82,7 +82,7 @@ export async function createInviteAction(prevState: InviteActionState, formData:
   // Send automated transactional invite email
   const emailHtml = generateInviteEmailHtml({
     inviterName: profile.name,
-    organizationName: org?.name || 'Gridline OS',
+    organizationName: org?.name || 'Opilines',
     role: parsed.data.role,
     inviteLink,
     expiresInHours: INVITE.expiresInHours,
@@ -90,7 +90,7 @@ export async function createInviteAction(prevState: InviteActionState, formData:
 
   const emailResult = await sendTransactionalEmail({
     to: parsed.data.email.toLowerCase().trim(),
-    subject: `Undangan Bergabung ke Tim ${org?.name || 'Gridline OS'}`,
+    subject: `Undangan Bergabung ke Tim ${org?.name || 'Opilines'}`,
     html: emailHtml,
   })
 
@@ -153,7 +153,7 @@ export async function resendInviteAction(inviteId: string): Promise<{ success: b
 
   const emailHtml = generateInviteEmailHtml({
     inviterName: profile.name,
-    organizationName: org?.name || 'Gridline OS',
+    organizationName: org?.name || 'Opilines',
     role: invite.role,
     inviteLink,
     expiresInHours: INVITE.expiresInHours,
@@ -161,7 +161,7 @@ export async function resendInviteAction(inviteId: string): Promise<{ success: b
 
   const emailResult = await sendTransactionalEmail({
     to: invite.email,
-    subject: `[Kirim Ulang] Undangan Bergabung ke Tim ${org?.name || 'Gridline OS'}`,
+    subject: `[Kirim Ulang] Undangan Bergabung ke Tim ${org?.name || 'Opilines'}`,
     html: emailHtml,
   })
 

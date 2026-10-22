@@ -68,7 +68,7 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-heading-1 font-heading text-slate-900 tracking-tight">Visual Dispatch Board</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-heading">Jadwal & Dispatch</h1>
             <RealtimeIndicator
               status={status}
               lastUpdated={lastUpdated}
@@ -76,8 +76,8 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
               isRefreshing={isRefreshing}
             />
           </div>
-          <p className="text-body-reg text-slate-500 mt-1">
-            Visualisasi distribusi jadwal pekerjaan dan ketersediaan teknisi secara live dan terpusat.
+          <p className="text-xs text-slate-500 mt-1">
+            Pantau jadwal kerja dan alokasi tiket teknisi secara realtime.
           </p>
         </div>
 
@@ -85,7 +85,7 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
           <Button asChild className="gap-2 font-medium bg-[#007ACC] hover:bg-primary hover:text-white rounded-[8px] h-8 text-xs shadow-[0_1px_2px_0_rgba(0,122,204,0.15)]">
             <Link href="/admin/jobs/new">
               <Plus className="h-4 w-4" />
-              Buat Job Baru
+              Buat Tiket Baru
             </Link>
           </Button>
         </div>
@@ -101,7 +101,7 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
           <span className="text-border">|</span>
           <div className="flex items-center gap-1.5">
             <span className="font-semibold text-primary">{activeSchedulesCount}</span>
-            <span className="text-muted-foreground">Pekerjaan Aktif Lapangan</span>
+            <span className="text-muted-foreground">Tiket Aktif Lapangan</span>
           </div>
         </div>
 
@@ -262,13 +262,21 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
                                       ? 'outline'
                                       : 'secondary'
                                   }
-                                  className={`capitalize text-[10px] ${
+                                  className={`text-[10px] ${
                                     isCancelled
                                       ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 hover:bg-rose-500/20'
                                       : ''
                                   }`}
                                 >
-                                  {isCancelled ? 'Dibatalkan' : job.status.replace('_', ' ')}
+                                  {isCancelled
+                                    ? 'Dibatalkan'
+                                    : job.status === 'on_progress'
+                                    ? 'Dikerjakan'
+                                    : job.status === 'assigned'
+                                    ? 'Ditugaskan'
+                                    : job.status === 'completed'
+                                    ? 'Selesai'
+                                    : 'Menunggu'}
                                 </Badge>
                                 {!isCancelled && (
                                   <SlaBadge
@@ -313,7 +321,7 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
                               className="w-full h-8 text-xs gap-1.5 mt-1 bg-[#F1F5F9] dark:bg-slate-800 text-[#475569] dark:text-slate-300 border-[#E2E8F0] dark:border-slate-700 hover:bg-[#007ACC] hover:text-white hover:border-[#007ACC] dark:hover:bg-[#007ACC] dark:hover:text-white font-medium rounded-[8px] transition-colors"
                             >
                               <Link href={`/admin/jobs/${job.id}`}>
-                                Lihat Detail <ArrowRight className="h-3 w-3" />
+                                Buka Tiket <ArrowRight className="h-3 w-3" />
                               </Link>
                             </Button>
                           </div>

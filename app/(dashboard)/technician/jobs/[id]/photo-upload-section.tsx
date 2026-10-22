@@ -12,6 +12,7 @@ interface JobPhoto {
   id: string
   type: 'before' | 'after'
   file_url: string
+  display_url?: string
   created_at: string
 }
 
@@ -71,17 +72,14 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
   }
 
   return (
-    <Card className="shadow-sm">
+    <Card id="photo-evidence-section" className="shadow-xs rounded-[12px] bg-white border-[#E2E8F0] scroll-mt-14">
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Camera className="h-4 w-4 text-primary" /> Foto Bukti Evidence
+          <CardTitle className="text-xs text-[#475569] uppercase tracking-wider font-semibold flex items-center gap-2">
+            <Camera className="h-4 w-4 text-[#007ACC]" /> Foto Bukti Pekerjaan
           </CardTitle>
-          <span className="text-[11px] text-muted-foreground">Maks 10 per tipe</span>
+          <span className="text-[11px] text-muted-foreground">Maks 10 foto</span>
         </div>
-        <CardDescription className="text-xs">
-          Wajib melampirkan minimal 1 foto Before dan 1 foto After.
-        </CardDescription>
       </CardHeader>
       <CardContent className="p-4 pt-2 space-y-4">
         <input
@@ -131,9 +129,19 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
 
           <div className="grid grid-cols-3 gap-2">
             {beforePhotos.map((p, idx) => (
-              <div key={p.id} className="aspect-square rounded-[8px] border border-[#E2E8F0] bg-muted/40 flex items-center justify-center relative overflow-hidden">
-                <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                <span className="absolute bottom-1 right-1 text-[9px] font-mono bg-background/80 px-1 rounded">#{idx + 1}</span>
+              <div key={p.id} className="aspect-square rounded-[8px] border border-[#E2E8F0] bg-muted/40 relative overflow-hidden group shadow-2xs">
+                {p.display_url ? (
+                  <img
+                    src={p.display_url}
+                    alt={`Before #${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+                <span className="absolute bottom-1 right-1 text-[9px] font-mono bg-black/60 text-white px-1 rounded backdrop-blur-xs">#{idx + 1}</span>
               </div>
             ))}
             {isUploading && activeType === 'before' && (
@@ -177,9 +185,19 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
 
           <div className="grid grid-cols-3 gap-2">
             {afterPhotos.map((p, idx) => (
-              <div key={p.id} className="aspect-square rounded border bg-muted/40 flex items-center justify-center relative overflow-hidden">
-                <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                <span className="absolute bottom-1 right-1 text-[9px] font-mono bg-background/80 px-1 rounded">#{idx + 1}</span>
+              <div key={p.id} className="aspect-square rounded-[8px] border border-[#E2E8F0] bg-muted/40 relative overflow-hidden group shadow-2xs">
+                {p.display_url ? (
+                  <img
+                    src={p.display_url}
+                    alt={`After #${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+                <span className="absolute bottom-1 right-1 text-[9px] font-mono bg-black/60 text-white px-1 rounded backdrop-blur-xs">#{idx + 1}</span>
               </div>
             ))}
             {isUploading && activeType === 'after' && (

@@ -22,7 +22,7 @@ export default function FiturPage() {
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#D0E8F8] bg-[#EBF5FC] px-3.5 py-1.5 text-[12px] font-medium text-[#007ACC]">
             <Zap className="h-3.5 w-3.5" />
-            <span>KAPABILITAS SISTEM GRIDLINEOS</span>
+            <span>KAPABILITAS SISTEM OPILINES</span>
           </div>
           <h1 className="font-heading text-[32px] sm:text-[44px] font-bold text-[#0F172A] tracking-[-0.02em] leading-tight">
             Fitur Praktis untuk <span className="text-[#007ACC]">Menghilangkan Masalah Harian</span> Teknisi
@@ -281,7 +281,7 @@ export default function FiturPage() {
               Siap Menerapkan Sistem Ini di Tim Anda?
             </h2>
             <p className="text-[14px] text-[#94A3B8]">
-              Coba seluruh modul operasional GridlineOS secara gratis selama 14 hari tanpa biaya komitmen.
+              Coba seluruh modul operasional Opilines secara gratis selama 14 hari tanpa biaya komitmen.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">

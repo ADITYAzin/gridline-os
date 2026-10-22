@@ -32,14 +32,14 @@ export default async function AdminLayout({
           <div className="flex flex-col">
             <Image
               src="/images/gridlineos-logo.png"
-              alt="Gridline OS"
+              alt="Opilines"
               width={120}
               height={22}
               className="h-auto w-[120px] object-contain"
               priority
             />
             <span className="text-[10px] text-[#94A3B8] uppercase font-semibold tracking-wider mt-2">
-              Admin Console
+              Panel Operasional
             </span>
           </div>
         </div>
@@ -52,7 +52,7 @@ export default async function AdminLayout({
           >
             <Link href="/admin/jobs/new">
               <Plus className="h-3.5 w-3.5" />
-              <span>Buat Job Baru</span>
+              <span>Buat Tiket Baru</span>
             </Link>
           </Button>
         </div>
@@ -79,7 +79,7 @@ export default async function AdminLayout({
         <header className="md:hidden flex h-14 items-center justify-between border-b border-[#E2E8F0] p-4 bg-[#FFFFFF] shrink-0">
           <Image
             src="/images/gridlineos-logo.png"
-            alt="Gridline OS"
+            alt="Opilines"
             width={110}
             height={20}
             className="h-auto w-[110px] object-contain"
@@ -87,7 +87,7 @@ export default async function AdminLayout({
           />
           <SignOutButton />
         </header>
-        <main className="flex-1 p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
         <CompanyOnboardingDialog

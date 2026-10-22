@@ -2,8 +2,8 @@ import { Metadata } from 'next'
 import { LoginForm } from './login-form'
 
 export const metadata: Metadata = {
-  title: 'Masuk — Gridline OS',
-  description: 'Masuk ke portal operasional teknisi dan manajemen Gridline OS',
+  title: 'Masuk — Opilines',
+  description: 'Masuk ke portal operasional teknisi dan manajemen Opilines',
 }
 
 interface LoginPageProps {

@@ -27,6 +27,14 @@ import {
   Power,
   Search,
   Check,
+  ListChecks,
+  GripVertical,
+  Camera,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  ShieldAlert,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -55,6 +63,7 @@ import {
   deleteCompanyServiceAction,
   toggleServiceActiveAction,
   type OrgActionState,
+  type SopItem,
 } from '@/app/actions/organization'
 
 export interface CompanyServiceItem {
@@ -64,6 +73,11 @@ export interface CompanyServiceItem {
   default_price?: number | null
   is_active: boolean
   created_at: string
+  sop_mode: 'strict' | 'reference' | 'none'
+  sop_items: SopItem[]
+  sop_notes?: string | null
+  estimated_duration_minutes?: number | null
+  risk_level: 'low' | 'medium' | 'high'
 }
 
 interface AdminProfileClientProps {
@@ -146,6 +160,49 @@ export function AdminProfileClient({
   const [serviceActionError, setServiceActionError] = React.useState<string | null>(null)
   const [isPendingService, startServiceTransition] = useTransition()
 
+  // --- SOP Builder State (shared between Add & Edit dialogs) ---
+  const [sopMode, setSopMode] = React.useState<'none' | 'strict' | 'reference'>('none')
+  const [sopItems, setSopItems] = React.useState<SopItem[]>([])
+  const [newSopItemText, setNewSopItemText] = React.useState('')
+  const [expandedHintId, setExpandedHintId] = React.useState<string | null>(null)
+
+  const resetSopBuilder = React.useCallback((service?: CompanyServiceItem | null) => {
+    setSopMode(service?.sop_mode ?? 'none')
+    setSopItems(Array.isArray(service?.sop_items) ? service.sop_items : [])
+    setNewSopItemText('')
+    setExpandedHintId(null)
+  }, [])
+
+  const handleAddSopItem = () => {
+    if (!newSopItemText.trim()) return
+    setSopItems((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        item: newSopItemText.trim(),
+        order: prev.length + 1,
+        requires_photo: false,
+        is_critical: false,
+        hint: '',
+      },
+    ])
+    setNewSopItemText('')
+  }
+
+  const handleRemoveSopItem = (id: string) => {
+    setSopItems((prev) =>
+      prev.filter((i) => i.id !== id).map((i, idx) => ({ ...i, order: idx + 1 }))
+    )
+  }
+
+  const handleToggleSopItemField = (id: string, field: 'requires_photo' | 'is_critical') => {
+    setSopItems((prev) => prev.map((i) => (i.id === id ? { ...i, [field]: !i[field] } : i)))
+  }
+
+  const handleSopItemHintChange = (id: string, hint: string) => {
+    setSopItems((prev) => prev.map((i) => (i.id === id ? { ...i, hint } : i)))
+  }
+
   // Google modal state
   const [isGoogleModalOpen, setIsGoogleModalOpen] = React.useState(false)
 
@@ -168,6 +225,9 @@ export function AdminProfileClient({
     setServiceActionError(null)
     const fd = new FormData(e.currentTarget)
     const newName = ((fd.get('name') as string) || '').trim()
+    // Inject SOP builder fields
+    fd.set('sopMode', sopMode)
+    fd.set('sopItems', JSON.stringify(sopItems))
     startServiceTransition(async () => {
       const res = await createCompanyServiceAction(initialOrgActionState, fd)
       if (res.error) {
@@ -175,6 +235,7 @@ export function AdminProfileClient({
         toast.error(res.error)
       } else {
         setIsAddServiceOpen(false)
+        resetSopBuilder()
         if (res.service) {
           setServices((prev) => [...prev, res.service!])
         } else {
@@ -189,6 +250,11 @@ export function AdminProfileClient({
               default_price: newPrice,
               is_active: true,
               created_at: new Date().toISOString(),
+              sop_mode: sopMode,
+              sop_items: sopItems,
+              sop_notes: null,
+              estimated_duration_minutes: null,
+              risk_level: 'low',
             },
           ])
         }
@@ -204,6 +270,9 @@ export function AdminProfileClient({
     setServiceActionError(null)
     const fd = new FormData(e.currentTarget)
     const updatedName = (fd.get('name') as string).trim()
+    // Inject SOP builder fields
+    fd.set('sopMode', sopMode)
+    fd.set('sopItems', JSON.stringify(sopItems))
     startServiceTransition(async () => {
       const res = await updateCompanyServiceAction(initialOrgActionState, fd)
       if (res.error) {
@@ -215,11 +284,19 @@ export function AdminProfileClient({
         setServices((prev) =>
           prev.map((s) =>
             s.id === editingService.id
-              ? { ...s, name: updatedName, description: updatedDesc, default_price: updatedPrice }
+              ? {
+                  ...s,
+                  name: updatedName,
+                  description: updatedDesc,
+                  default_price: updatedPrice,
+                  sop_mode: sopMode,
+                  sop_items: sopItems,
+                }
               : s
           )
         )
         setEditingService(null)
+        resetSopBuilder()
         toast.success(`Layanan "${updatedName}" berhasil diperbarui`)
       }
     })
@@ -277,6 +354,8 @@ export function AdminProfileClient({
       fd.append('name', presetName)
       fd.append('description', '')
       fd.append('defaultPrice', '0')
+      fd.append('sopMode', 'none')
+      fd.append('sopItems', '[]')
       const res = await createCompanyServiceAction(initialOrgActionState, fd)
       if (res.error) {
         setServiceActionError(res.error)
@@ -294,6 +373,11 @@ export function AdminProfileClient({
             default_price: 0,
             is_active: true,
             created_at: new Date().toISOString(),
+            sop_mode: 'none' as const,
+            sop_items: [],
+            sop_notes: null,
+            estimated_duration_minutes: null,
+            risk_level: 'low' as const,
           },
         ])
         toast.success(`Layanan "${presetName}" berhasil ditambahkan`)
@@ -305,11 +389,11 @@ export function AdminProfileClient({
     <div className="space-y-6 max-w-5xl">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground font-heading">
-          Pengaturan & Profil
+        <h1 className="text-2xl font-bold tracking-tight text-foreground font-heading">
+          Pengaturan
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Kelola informasi perusahaan, alamat lokasi operasional, katalog layanan, dan keamanan akun Anda.
+        <p className="text-xs text-muted-foreground mt-1">
+          Kelola profil perusahaan, katalog layanan & SOP, serta keamanan akun Anda.
         </p>
       </div>
 
@@ -317,22 +401,22 @@ export function AdminProfileClient({
         <TabsList className="bg-muted/80 p-0.5 rounded-lg h-9">
           <TabsTrigger value="company" className="gap-2 text-xs font-medium">
             <Building2 className="h-3.5 w-3.5 text-[#007ACC]" />
-            Perusahaan & Lokasi
+            Profil Perusahaan
           </TabsTrigger>
           <TabsTrigger value="services" className="gap-2 text-xs font-medium">
             <Briefcase className="h-3.5 w-3.5 text-[#007ACC]" />
-            Layanan Perusahaan
+            Layanan & SOP
             <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px] h-4">
               {services.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="profile" className="gap-2 text-xs font-medium">
             <User className="h-3.5 w-3.5 text-[#007ACC]" />
-            Profil Pengguna
+            Profil Admin
           </TabsTrigger>
           <TabsTrigger value="security" className="gap-2 text-xs font-medium">
             <KeyRound className="h-3.5 w-3.5 text-[#007ACC]" />
-            Keamanan & Akses
+            Keamanan Akun
           </TabsTrigger>
         </TabsList>
 
@@ -575,6 +659,7 @@ export function AdminProfileClient({
                   type="button"
                   onClick={() => {
                     setServiceActionError(null)
+                    resetSopBuilder()
                     setIsAddServiceOpen(true)
                   }}
                   className="h-8 text-xs font-medium bg-[#007ACC] hover:bg-[#0062A3] text-white gap-1.5 shrink-0 cursor-pointer"
@@ -686,6 +771,45 @@ export function AdminProfileClient({
                         ) : (
                           <p className="text-[11px] text-muted-foreground italic">Tidak ada deskripsi</p>
                         )}
+
+                        {/* Badges: SOP Mode, Durasi, Tingkat Risiko */}
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          {service.sop_mode === 'strict' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#007ACC]/10 text-[#007ACC] border border-[#007ACC]/20">
+                              <ListChecks className="h-2.5 w-2.5" />
+                              Strict ({Array.isArray(service.sop_items) ? service.sop_items.length : 0} langkah)
+                            </span>
+                          ) : service.sop_mode === 'reference' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                              <ListChecks className="h-2.5 w-2.5" />
+                              Panduan SOP ({Array.isArray(service.sop_items) ? service.sop_items.length : 0})
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                              Tanpa SOP
+                            </span>
+                          )}
+
+                          {service.estimated_duration_minutes ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/60">
+                              <Clock className="h-2.5 w-2.5" />
+                              {service.estimated_duration_minutes} mnt
+                            </span>
+                          ) : null}
+
+                          {service.risk_level && service.risk_level !== 'low' ? (
+                            <span
+                              className={`inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                                service.risk_level === 'high'
+                                  ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                                  : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                              }`}
+                            >
+                              <ShieldAlert className="h-2.5 w-2.5" />
+                              {service.risk_level === 'high' ? 'Risiko Tinggi' : 'Risiko Sedang'}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
 
                       <div className="pt-3 mt-2 border-t border-border/50 flex items-center justify-between">
@@ -720,6 +844,7 @@ export function AdminProfileClient({
                             title="Edit layanan"
                             onClick={() => {
                               setServiceActionError(null)
+                              resetSopBuilder(service)
                               setEditingService(service)
                             }}
                             className="h-7 w-7 text-muted-foreground hover:text-[#007ACC]"
@@ -985,7 +1110,7 @@ export function AdminProfileClient({
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Setelah terhubung, Anda dapat masuk ke Gridline OS langsung dengan satu klik tanpa perlu mengetik kata sandi.
+                      Setelah terhubung, Anda dapat masuk ke Opilines langsung dengan satu klik tanpa perlu mengetik kata sandi.
                     </p>
                   </div>
 
@@ -1042,81 +1167,322 @@ export function AdminProfileClient({
       {/* DIALOG: TAMBAH LAYANAN */}
       {/* ========================================================================= */}
       <Dialog open={isAddServiceOpen} onOpenChange={setIsAddServiceOpen}>
-        <DialogContent className="sm:max-w-md">
-          <form onSubmit={handleAddService}>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-base">
+        <DialogContent className="sm:max-w-xl max-h-[88vh] overflow-y-auto p-6">
+          <form onSubmit={handleAddService} className="space-y-5">
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
                 <Briefcase className="h-4 w-4 text-[#007ACC]" />
                 Tambah Layanan Baru
               </DialogTitle>
-              <DialogDescription className="text-xs pt-1">
-                Layanan ini akan langsung tersedia di opsi pembuatan tugas/tiket servis baru.
+              <DialogDescription className="text-xs text-muted-foreground">
+                Atur informasi katalog layanan dan prosedur SOP teknisi.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-3 py-3 text-xs">
-              {serviceActionError && (
-                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-destructive/10 text-destructive text-xs border border-destructive/20">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{serviceActionError}</span>
-                </div>
-              )}
+            {serviceActionError && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 text-destructive text-xs border border-destructive/20">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{serviceActionError}</span>
+              </div>
+            )}
 
+            {/* Bagian 1: Data Dasar Layanan */}
+            <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="service-name-add" className="text-xs font-medium text-foreground">
-                  Nama Layanan *
+                  Nama Layanan <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="service-name-add"
                   name="name"
                   required
-                  placeholder="Masukkan nama layanan"
-                  className="h-8 text-xs bg-background"
+                  placeholder="Contoh: Servis AC Split Berkala"
+                  className="h-9 text-xs bg-background"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="service-price-add" className="text-xs font-medium text-foreground">
-                  Estimasi Harga / Biaya Standar (Rp, Opsional)
-                </Label>
-                <Input
-                  id="service-price-add"
-                  name="defaultPrice"
-                  type="number"
-                  min="0"
-                  step="1000"
-                  placeholder="Masukkan estimasi harga standar"
-                  className="h-8 text-xs bg-background"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="service-price-add" className="text-xs font-medium text-foreground">
+                    Tarif Standar (Rp)
+                  </Label>
+                  <Input
+                    id="service-price-add"
+                    name="defaultPrice"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    placeholder="0"
+                    className="h-9 text-xs bg-background"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="service-duration-add" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    Durasi Kerja (Menit)
+                  </Label>
+                  <Input
+                    id="service-duration-add"
+                    name="estimatedDurationMinutes"
+                    type="number"
+                    min="5"
+                    max="1440"
+                    step="5"
+                    placeholder="60"
+                    className="h-9 text-xs bg-background"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="service-desc-add" className="text-xs font-medium text-foreground">
-                  Deskripsi / Keterangan Cakupan Pekerjaan (Opsional)
-                </Label>
-                <Textarea
-                  id="service-desc-add"
-                  name="description"
-                  rows={2}
-                  placeholder="Tuliskan rincian cakupan pekerjaan"
-                  className="text-xs bg-background resize-none"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="service-risk-add" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <ShieldAlert className="h-3.5 w-3.5 text-muted-foreground" />
+                    Tingkat Risiko
+                  </Label>
+                  <select
+                    id="service-risk-add"
+                    name="riskLevel"
+                    defaultValue="low"
+                    className="w-full h-9 px-3 text-xs rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="low">Rendah (Standar)</option>
+                    <option value="medium">Sedang (Alat Khusus)</option>
+                    <option value="high">Tinggi (K3 / Kelistrikan)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="service-desc-add" className="text-xs font-medium text-foreground">
+                    Deskripsi Layanan
+                  </Label>
+                  <Input
+                    id="service-desc-add"
+                    name="description"
+                    placeholder="Ringkasan cakupan pekerjaan"
+                    className="h-9 text-xs bg-background"
+                  />
+                </div>
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            {/* Pemisah Halus */}
+            <div className="border-t border-border/60 pt-1" />
+
+            {/* Bagian 2: Pengaturan SOP */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <ListChecks className="h-4 w-4 text-[#007ACC]" />
+                  Mode Prosedur Kerja (SOP)
+                </Label>
+
+                {/* Segmented Control Modern */}
+                <div className="grid grid-cols-3 p-1 rounded-xl bg-muted/60 border border-border/50 text-xs font-medium gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSopMode('none')}
+                    className={`py-2 px-3 rounded-lg text-center transition-all cursor-pointer ${
+                      sopMode === 'none'
+                        ? 'bg-background text-foreground shadow-xs font-semibold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Tanpa SOP
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSopMode('strict')}
+                    className={`py-2 px-3 rounded-lg text-center transition-all cursor-pointer ${
+                      sopMode === 'strict'
+                        ? 'bg-[#007ACC] text-white shadow-xs font-semibold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Wajib (Strict)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSopMode('reference')}
+                    className={`py-2 px-3 rounded-lg text-center transition-all cursor-pointer ${
+                      sopMode === 'reference'
+                        ? 'bg-amber-600 text-white shadow-xs font-semibold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Panduan Saja
+                  </button>
+                </div>
+              </div>
+
+              {/* Detail Langkah SOP */}
+              {sopMode !== 'none' && (
+                <div className="space-y-4 pt-1">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="service-sop-notes-add" className="text-xs font-medium text-foreground">
+                      Catatan Petunjuk Teknisi
+                    </Label>
+                    <Textarea
+                      id="service-sop-notes-add"
+                      name="sopNotes"
+                      rows={2}
+                      placeholder="Instruksi awal sebelum pekerjaan dimulai..."
+                      className="text-xs bg-background resize-none rounded-lg"
+                    />
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-foreground flex items-center gap-2">
+                        Langkah Prosedur
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                          {sopItems.length}
+                        </Badge>
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {sopMode === 'strict' ? 'Wajib dicentang atau di-N/A' : 'Referensi informatif'}
+                      </span>
+                    </div>
+
+                    {/* Daftar Langkah */}
+                    <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                      {sopItems.length === 0 ? (
+                        <div className="p-4 text-center rounded-xl border border-dashed border-border/80 text-muted-foreground text-xs bg-muted/20">
+                          Belum ada langkah SOP. Tambahkan langkah pertama di bawah.
+                        </div>
+                      ) : (
+                        sopItems.map((item, idx) => (
+                          <div
+                            key={item.id}
+                            className={`p-3 rounded-xl border transition-all space-y-2 ${
+                              item.is_critical
+                                ? 'border-rose-400/40 bg-rose-500/5'
+                                : 'border-border/60 bg-card/60 hover:border-border'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <span className="h-5 w-5 rounded-md bg-muted text-muted-foreground text-[10px] font-bold flex items-center justify-center shrink-0">
+                                {idx + 1}
+                              </span>
+                              <span className="flex-1 text-xs font-medium text-foreground leading-snug">
+                                {item.item}
+                              </span>
+
+                              {/* Action Toggles */}
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  title={item.requires_photo ? 'Wajib foto bukti: Aktif' : 'Wajibkan foto bukti'}
+                                  onClick={() => handleToggleSopItemField(item.id, 'requires_photo')}
+                                  className={`h-6 px-2 rounded-md text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer ${
+                                    item.requires_photo
+                                      ? 'bg-[#007ACC] text-white shadow-2xs'
+                                      : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                                  }`}
+                                >
+                                  <Camera className="h-3 w-3" />
+                                  <span>Foto</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  title={item.is_critical ? 'Kritis K3: Aktif (Tidak dapat di-N/A)' : 'Tandai Kritis K3'}
+                                  onClick={() => handleToggleSopItemField(item.id, 'is_critical')}
+                                  className={`h-6 px-2 rounded-md text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer ${
+                                    item.is_critical
+                                      ? 'bg-rose-600 text-white shadow-2xs'
+                                      : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                                  }`}
+                                >
+                                  <AlertTriangle className="h-3 w-3" />
+                                  <span>Kritis</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  title="Tambah catatan/acuan teknis"
+                                  onClick={() => setExpandedHintId(expandedHintId === item.id ? null : item.id)}
+                                  className={`h-6 px-2 rounded-md text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer ${
+                                    item.hint
+                                      ? 'bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30'
+                                      : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                                  }`}
+                                >
+                                  Hint
+                                </button>
+
+                                <button
+                                  type="button"
+                                  title="Hapus langkah"
+                                  onClick={() => handleRemoveSopItem(item.id)}
+                                  className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Hint Input */}
+                            {(expandedHintId === item.id || item.hint) && (
+                              <div className="pl-7 pr-1">
+                                <Input
+                                  value={item.hint || ''}
+                                  onChange={(e) => handleSopItemHintChange(item.id, e.target.value)}
+                                  placeholder="Acuan teknis (misal: tekanan 65–80 PSI / tegangan 220V)"
+                                  className="h-7 text-[11px] bg-background"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Input Tambah Langkah */}
+                    <div className="flex items-center gap-2 pt-1">
+                      <Input
+                        value={newSopItemText}
+                        onChange={(e) => setNewSopItemText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleAddSopItem()
+                          }
+                        }}
+                        placeholder="Tulis langkah SOP lalu tekan Enter..."
+                        className="h-9 text-xs bg-background flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddSopItem}
+                        disabled={!newSopItemText.trim()}
+                        className="h-9 px-3 text-xs shrink-0 gap-1.5 border-border hover:bg-muted cursor-pointer"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Tambah
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-2 pt-4 border-t border-border/50">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsAddServiceOpen(false)}
-                className="h-8 text-xs cursor-pointer"
+                className="h-9 text-xs cursor-pointer px-4"
               >
                 Batal
               </Button>
               <Button
                 type="submit"
                 disabled={isPendingService}
-                className="h-8 text-xs bg-[#007ACC] hover:bg-[#0062A3] text-white gap-2 cursor-pointer"
+                className="h-9 text-xs bg-[#007ACC] hover:bg-[#0062A3] text-white gap-2 cursor-pointer px-4 shadow-xs"
               >
                 {isPendingService ? (
                   <>
@@ -1136,86 +1502,329 @@ export function AdminProfileClient({
       {/* DIALOG: EDIT LAYANAN */}
       {/* ========================================================================= */}
       <Dialog open={!!editingService} onOpenChange={(open) => !open && setEditingService(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-xl max-h-[88vh] overflow-y-auto p-6">
           {editingService && (
-            <form onSubmit={handleUpdateService}>
+            <form onSubmit={handleUpdateService} className="space-y-5">
               <input type="hidden" name="id" value={editingService.id} />
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-base">
+              <DialogHeader className="space-y-1">
+                <DialogTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
                   <Pencil className="h-4 w-4 text-[#007ACC]" />
-                  Ubah Layanan Perusahaan
+                  Ubah Layanan & SOP
                 </DialogTitle>
-                <DialogDescription className="text-xs pt-1">
-                  Perubahan nama layanan akan berlaku untuk tiket-tiket servis yang dibuat ke depan.
+                <DialogDescription className="text-xs text-muted-foreground">
+                  Perbarui informasi layanan dan prosedur kerja teknisi.
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-3 py-3 text-xs">
-                {serviceActionError && (
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-destructive/10 text-destructive text-xs border border-destructive/20">
-                    <AlertCircle className="h-4 w-4 shrink-0" />
-                    <span>{serviceActionError}</span>
-                  </div>
-                )}
+              {serviceActionError && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 text-destructive text-xs border border-destructive/20">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{serviceActionError}</span>
+                </div>
+              )}
 
+              {/* Bagian 1: Data Dasar Layanan */}
+              <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="service-name-edit" className="text-xs font-medium text-foreground">
-                    Nama Layanan *
+                    Nama Layanan <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="service-name-edit"
                     name="name"
                     required
                     defaultValue={editingService.name}
-                    placeholder="Masukkan nama layanan"
-                    className="h-8 text-xs bg-background"
+                    placeholder="Contoh: Servis AC Split Berkala"
+                    className="h-9 text-xs bg-background"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="service-price-edit" className="text-xs font-medium text-foreground">
-                    Estimasi Harga / Biaya Standar (Rp, Opsional)
-                  </Label>
-                  <Input
-                    id="service-price-edit"
-                    name="defaultPrice"
-                    type="number"
-                    min="0"
-                    step="1000"
-                    defaultValue={editingService.default_price || 0}
-                    placeholder="Masukkan estimasi harga standar"
-                    className="h-8 text-xs bg-background"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="service-price-edit" className="text-xs font-medium text-foreground">
+                      Tarif Standar (Rp)
+                    </Label>
+                    <Input
+                      id="service-price-edit"
+                      name="defaultPrice"
+                      type="number"
+                      min="0"
+                      step="1000"
+                      defaultValue={editingService.default_price || 0}
+                      placeholder="0"
+                      className="h-9 text-xs bg-background"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="service-duration-edit" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      Durasi Kerja (Menit)
+                    </Label>
+                    <Input
+                      id="service-duration-edit"
+                      name="estimatedDurationMinutes"
+                      type="number"
+                      min="5"
+                      max="1440"
+                      step="5"
+                      defaultValue={editingService.estimated_duration_minutes || ''}
+                      placeholder="60"
+                      className="h-9 text-xs bg-background"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="service-desc-edit" className="text-xs font-medium text-foreground">
-                    Deskripsi / Keterangan Cakupan Pekerjaan (Opsional)
-                  </Label>
-                  <Textarea
-                    id="service-desc-edit"
-                    name="description"
-                    rows={2}
-                    defaultValue={editingService.description || ''}
-                    placeholder="Tuliskan rincian cakupan pekerjaan"
-                    className="text-xs bg-background resize-none"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="service-risk-edit" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                      <ShieldAlert className="h-3.5 w-3.5 text-muted-foreground" />
+                      Tingkat Risiko
+                    </Label>
+                    <select
+                      id="service-risk-edit"
+                      name="riskLevel"
+                      defaultValue={editingService.risk_level || 'low'}
+                      className="w-full h-9 px-3 text-xs rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="low">Rendah (Standar)</option>
+                      <option value="medium">Sedang (Alat Khusus)</option>
+                      <option value="high">Tinggi (K3 / Kelistrikan)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="service-desc-edit" className="text-xs font-medium text-foreground">
+                      Deskripsi Layanan
+                    </Label>
+                    <Input
+                      id="service-desc-edit"
+                      name="description"
+                      defaultValue={editingService.description || ''}
+                      placeholder="Ringkasan cakupan pekerjaan"
+                      className="h-9 text-xs bg-background"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <DialogFooter className="gap-2 sm:gap-0 pt-2">
+              {/* Pemisah Halus */}
+              <div className="border-t border-border/60 pt-1" />
+
+              {/* Bagian 2: Pengaturan SOP */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <ListChecks className="h-4 w-4 text-[#007ACC]" />
+                    Mode Prosedur Kerja (SOP)
+                  </Label>
+
+                  {/* Segmented Control Modern */}
+                  <div className="grid grid-cols-3 p-1 rounded-xl bg-muted/60 border border-border/50 text-xs font-medium gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setSopMode('none')}
+                      className={`py-2 px-3 rounded-lg text-center transition-all cursor-pointer ${
+                        sopMode === 'none'
+                          ? 'bg-background text-foreground shadow-xs font-semibold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Tanpa SOP
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSopMode('strict')}
+                      className={`py-2 px-3 rounded-lg text-center transition-all cursor-pointer ${
+                        sopMode === 'strict'
+                          ? 'bg-[#007ACC] text-white shadow-xs font-semibold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Wajib (Strict)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSopMode('reference')}
+                      className={`py-2 px-3 rounded-lg text-center transition-all cursor-pointer ${
+                        sopMode === 'reference'
+                          ? 'bg-amber-600 text-white shadow-xs font-semibold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Panduan Saja
+                    </button>
+                  </div>
+                </div>
+
+                {/* Detail Langkah SOP */}
+                {sopMode !== 'none' && (
+                  <div className="space-y-4 pt-1">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="service-sop-notes-edit" className="text-xs font-medium text-foreground">
+                        Catatan Petunjuk Teknisi
+                      </Label>
+                      <Textarea
+                        id="service-sop-notes-edit"
+                        name="sopNotes"
+                        rows={2}
+                        defaultValue={editingService.sop_notes || ''}
+                        placeholder="Instruksi awal sebelum pekerjaan dimulai..."
+                        className="text-xs bg-background resize-none rounded-lg"
+                      />
+                    </div>
+
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-foreground flex items-center gap-2">
+                          Langkah Prosedur
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                            {sopItems.length}
+                          </Badge>
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {sopMode === 'strict' ? 'Wajib dicentang atau di-N/A' : 'Referensi informatif'}
+                        </span>
+                      </div>
+
+                      {/* Daftar Langkah */}
+                      <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                        {sopItems.length === 0 ? (
+                          <div className="p-4 text-center rounded-xl border border-dashed border-border/80 text-muted-foreground text-xs bg-muted/20">
+                            Belum ada langkah SOP. Tambahkan langkah pertama di bawah.
+                          </div>
+                        ) : (
+                          sopItems.map((item, idx) => (
+                            <div
+                              key={item.id}
+                              className={`p-3 rounded-xl border transition-all space-y-2 ${
+                                item.is_critical
+                                ? 'border-rose-400/40 bg-rose-500/5'
+                                : 'border-border/60 bg-card/60 hover:border-border'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <span className="h-5 w-5 rounded-md bg-muted text-muted-foreground text-[10px] font-bold flex items-center justify-center shrink-0">
+                                  {idx + 1}
+                                </span>
+                                <span className="flex-1 text-xs font-medium text-foreground leading-snug">
+                                  {item.item}
+                                </span>
+
+                                {/* Action Toggles */}
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    title={item.requires_photo ? 'Wajib foto bukti: Aktif' : 'Wajibkan foto bukti'}
+                                    onClick={() => handleToggleSopItemField(item.id, 'requires_photo')}
+                                    className={`h-6 px-2 rounded-md text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer ${
+                                      item.requires_photo
+                                        ? 'bg-[#007ACC] text-white shadow-2xs'
+                                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                                    }`}
+                                  >
+                                    <Camera className="h-3 w-3" />
+                                    <span>Foto</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    title={item.is_critical ? 'Kritis K3: Aktif (Tidak dapat di-N/A)' : 'Tandai Kritis K3'}
+                                    onClick={() => handleToggleSopItemField(item.id, 'is_critical')}
+                                    className={`h-6 px-2 rounded-md text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer ${
+                                      item.is_critical
+                                        ? 'bg-rose-600 text-white shadow-2xs'
+                                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                                    }`}
+                                  >
+                                    <AlertTriangle className="h-3 w-3" />
+                                    <span>Kritis</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    title="Tambah catatan/acuan teknis"
+                                    onClick={() => setExpandedHintId(expandedHintId === item.id ? null : item.id)}
+                                    className={`h-6 px-2 rounded-md text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer ${
+                                      item.hint
+                                        ? 'bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30'
+                                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                                    }`}
+                                  >
+                                    Hint
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    title="Hapus langkah"
+                                    onClick={() => handleRemoveSopItem(item.id)}
+                                    className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Hint Input */}
+                              {(expandedHintId === item.id || item.hint) && (
+                                <div className="pl-7 pr-1">
+                                  <Input
+                                    value={item.hint || ''}
+                                    onChange={(e) => handleSopItemHintChange(item.id, e.target.value)}
+                                    placeholder="Acuan teknis (misal: tekanan 65–80 PSI / tegangan 220V)"
+                                    className="h-7 text-[11px] bg-background"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Input Tambah Langkah */}
+                      <div className="flex items-center gap-2 pt-1">
+                        <Input
+                          value={newSopItemText}
+                          onChange={(e) => setNewSopItemText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              handleAddSopItem()
+                            }
+                          }}
+                          placeholder="Tulis langkah SOP lalu tekan Enter..."
+                          className="h-9 text-xs bg-background flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleAddSopItem}
+                          disabled={!newSopItemText.trim()}
+                          className="h-9 px-3 text-xs shrink-0 gap-1.5 border-border hover:bg-muted cursor-pointer"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Tambah
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="gap-2 sm:gap-2 pt-4 border-t border-border/50">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setEditingService(null)}
-                  className="h-8 text-xs cursor-pointer"
+                  className="h-9 text-xs cursor-pointer px-4"
                 >
                   Batal
                 </Button>
                 <Button
                   type="submit"
                   disabled={isPendingService}
-                  className="h-8 text-xs bg-[#007ACC] hover:bg-[#0062A3] text-white gap-2 cursor-pointer"
+                  className="h-9 text-xs bg-[#007ACC] hover:bg-[#0062A3] text-white gap-2 cursor-pointer px-4 shadow-xs"
                 >
                   {isPendingService ? (
                     <>
@@ -1236,23 +1845,29 @@ export function AdminProfileClient({
       {/* DIALOG: KONFIRMASI HAPUS LAYANAN */}
       {/* ========================================================================= */}
       <Dialog open={!!deletingServiceId} onOpenChange={(open) => !open && setDeletingServiceId(null)}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base text-destructive">
+        <DialogContent className="sm:max-w-md p-6 space-y-4 rounded-2xl">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="flex items-center gap-2 text-base font-semibold text-destructive">
               <Trash2 className="h-4 w-4" />
               Hapus Layanan
             </DialogTitle>
-            <DialogDescription className="text-xs pt-1">
-              Apakah Anda yakin ingin menghapus layanan ini dari daftar katalog perusahaan? Riwayat tiket servis yang sudah selesai tidak akan terpengaruh.
+            <DialogDescription className="text-xs text-muted-foreground">
+              Layanan ini akan dihapus dari katalog. Riwayat tiket kerja sebelumnya tidak akan terpengaruh.
             </DialogDescription>
           </DialogHeader>
 
-          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+          {deletingServiceId && (
+            <div className="p-3.5 rounded-xl bg-destructive/5 border border-destructive/20 text-xs font-medium text-foreground">
+              {services.find((s) => s.id === deletingServiceId)?.name || 'Layanan Terpilih'}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-2 pt-2 flex items-center justify-end">
             <Button
               type="button"
               variant="outline"
               onClick={() => setDeletingServiceId(null)}
-              className="h-8 text-xs cursor-pointer"
+              className="h-9 text-xs px-4 rounded-lg cursor-pointer"
             >
               Batal
             </Button>
@@ -1261,15 +1876,15 @@ export function AdminProfileClient({
               variant="destructive"
               disabled={isPendingService}
               onClick={() => deletingServiceId && handleDeleteService(deletingServiceId)}
-              className="h-8 text-xs cursor-pointer"
+              className="h-9 text-xs px-4 rounded-lg cursor-pointer"
             >
               {isPendingService ? (
                 <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
                   Menghapus...
                 </>
               ) : (
-                'Ya, Hapus'
+                'Hapus Layanan'
               )}
             </Button>
           </DialogFooter>
@@ -1280,10 +1895,10 @@ export function AdminProfileClient({
       {/* GOOGLE SSO DIALOG */}
       {/* ========================================================================= */}
       <Dialog open={isGoogleModalOpen} onOpenChange={setIsGoogleModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
+        <DialogContent className="sm:max-w-md p-6 space-y-4 rounded-2xl">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <svg className="h-4 w-4" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -1301,46 +1916,35 @@ export function AdminProfileClient({
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                 />
               </svg>
-              Koneksi Akun Google
+              Login Akun Google
             </DialogTitle>
-            <DialogDescription className="text-xs pt-1">
-              Informasi fitur masuk praktis menggunakan akun Google.
+            <DialogDescription className="text-xs text-muted-foreground">
+              Integrasi masuk cepat dan aman menggunakan satu akun Google.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-2 text-xs">
-            <div className="p-3 rounded-lg bg-[#EBF5FC] border border-[#D0E8F8] text-[#004F82] flex items-start gap-2.5">
-              <Info className="h-4 w-4 text-[#007ACC] shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <p className="font-semibold text-xs text-[#0F172A]">Fitur Segera Tersedia</p>
-                <p className="text-[11px] text-[#475569] leading-relaxed">
-                  Fitur masuk dengan Google sedang dalam tahap persiapan. Setelah aktif, Anda dapat langsung menggunakannya untuk masuk dengan mudah dan aman.
+          <div className="space-y-3 py-1 text-xs">
+            <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/20 flex items-start gap-3">
+              <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <p className="font-semibold text-foreground text-xs">Segera Hadir</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Fitur Single Sign-On (SSO) Google sedang disiapkan untuk rilis versi mendatang.
                 </p>
               </div>
             </div>
 
-            <div className="space-y-1.5 p-3 rounded-lg bg-muted/40 border border-border/60">
-              <span className="font-medium text-foreground text-xs block">Email yang akan dihubungkan:</span>
-              <div className="flex items-center gap-2 text-muted-foreground text-xs">
-                <Mail className="h-3.5 w-3.5 text-primary" />
-                <span className="font-mono text-[11px] text-foreground">{initialProfile.email}</span>
-              </div>
+            <div className="p-3 rounded-xl bg-muted/40 border border-border/60 flex items-center justify-between">
+              <span className="text-muted-foreground text-xs">Email Terdaftar:</span>
+              <span className="font-mono text-xs font-semibold text-foreground">{initialProfile.email}</span>
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsGoogleModalOpen(false)}
-              className="h-8 text-xs cursor-pointer"
-            >
-              Tutup
-            </Button>
+          <DialogFooter className="pt-2">
             <Button
               type="button"
               onClick={() => setIsGoogleModalOpen(false)}
-              className="h-8 text-xs bg-[#007ACC] hover:bg-[#0062A3] text-white cursor-pointer"
+              className="h-9 text-xs px-5 bg-[#007ACC] hover:bg-[#0062A3] text-white rounded-lg cursor-pointer"
             >
               Mengerti
             </Button>

@@ -22,7 +22,7 @@ export default function DemoPage() {
                 <span>SESI DEMO INTERAKTIF 20 MENIT</span>
               </div>
               <h1 className="font-heading text-[32px] sm:text-[40px] font-bold text-[#0F172A] tracking-[-0.02em] leading-tight">
-                Lihat Bagaimana GridlineOS <span className="text-[#007ACC]">Merapikan Operasional</span> Tim Anda
+                Lihat Bagaimana Opilines <span className="text-[#007ACC]">Merapikan Operasional</span> Tim Anda
               </h1>
               <p className="text-[15px] text-[#475569] leading-relaxed">
                 Jadwalkan sesi demo online privat bersama tim spesialis kami. Kami akan mensimulasikan alur kerja penugasan teknisi dan pembuatan BAP sesuai proses bisnis Anda.
@@ -65,7 +65,7 @@ export default function DemoPage() {
               </p>
               <div className="pt-1">
                 <a
-                  href="https://wa.me/6281234567890?text=Halo%20GridlineOS,%20saya%20ingin%20konsultasi%20mengenai%20kebutuhan%20manajemen%20teknisi%20lapangan."
+                  href="https://wa.me/6281234567890?text=Halo%20Opilines,%20saya%20ingin%20konsultasi%20mengenai%20kebutuhan%20manajemen%20teknisi%20lapangan."
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex h-9 px-4 rounded-[8px] bg-[#10B981] hover:bg-[#059669] text-white font-medium text-[13px] items-center gap-2 shadow-sm transition-colors"
