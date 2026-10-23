@@ -74,3 +74,152 @@ export async function createCustomerAction(prevState: CustomerActionState, formD
     },
   }
 }
+
+export type ImportCustomerItem = {
+  name: string
+  phone?: string | null
+  email?: string | null
+  address: string
+  dateRegistered?: string | null
+}
+
+export type ImportCustomersResult = {
+  success: boolean
+  error?: string
+  totalCount?: number
+  importedCount?: number
+  failedCount?: number
+  errors?: string[]
+}
+
+function parseRegisteredDate(dateStr?: string | null): string {
+  if (!dateStr || !dateStr.trim()) {
+    return new Date().toISOString()
+  }
+
+  const raw = dateStr.trim()
+
+  // 1. Direct ISO parse
+  const direct = new Date(raw)
+  if (!isNaN(direct.getTime()) && direct.getFullYear() > 1990 && direct.getFullYear() < 2100) {
+    return direct.toISOString()
+  }
+
+  // 2. Try common formats (DD/MM/YYYY, YYYY-MM-DD, DD-MM-YYYY)
+  const parts = raw.split(/[/.-]/)
+  if (parts.length === 3) {
+    const p0 = parseInt(parts[0], 10)
+    const p1 = parseInt(parts[1], 10)
+    const p2 = parseInt(parts[2], 10)
+
+    // YYYY-MM-DD
+    if (p0 >= 1990 && p0 <= 2099 && p1 >= 1 && p1 <= 12 && p2 >= 1 && p2 <= 31) {
+      const d = new Date(Date.UTC(p0, p1 - 1, p2))
+      if (!isNaN(d.getTime())) return d.toISOString()
+    }
+
+    // DD-MM-YYYY
+    if (p2 >= 1990 && p2 <= 2099 && p1 >= 1 && p1 <= 12 && p0 >= 1 && p0 <= 31) {
+      const d = new Date(Date.UTC(p2, p1 - 1, p0))
+      if (!isNaN(d.getTime())) return d.toISOString()
+    }
+
+    // MM-DD-YYYY
+    if (p2 >= 1990 && p2 <= 2099 && p0 >= 1 && p0 <= 12 && p1 >= 1 && p1 <= 31) {
+      const d = new Date(Date.UTC(p2, p0 - 1, p1))
+      if (!isNaN(d.getTime())) return d.toISOString()
+    }
+  }
+
+  return new Date().toISOString()
+}
+
+export async function importCustomersAction(
+  rows: ImportCustomerItem[]
+): Promise<ImportCustomersResult> {
+  const profile = await requireRole('admin')
+
+  if (!rows || rows.length === 0) {
+    return {
+      success: false,
+      error: 'Tidak ada baris data pelanggan yang dikirim untuk diimpor.',
+    }
+  }
+
+  const admin = getSupabaseAdmin()
+  const toInsert: Array<{
+    id: string
+    org_id: string
+    name: string
+    phone: string | null
+    email: string | null
+    address: string
+    created_at: string
+    updated_at: string
+  }> = []
+
+  const validationErrors: string[] = []
+
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i]
+    const name = r.name?.trim()
+    const address = r.address?.trim()
+
+    if (!name) {
+      validationErrors.push(`Baris ${i + 1}: Nama perusahaan / pelanggan tidak boleh kosong`)
+      continue
+    }
+
+    if (!address) {
+      validationErrors.push(`Baris ${i + 1} (${name}): Alamat servis tidak boleh kosong`)
+      continue
+    }
+
+    // Auto-generate UUID ID as requested
+    const autoId = crypto.randomUUID()
+    const createdAt = parseRegisteredDate(r.dateRegistered)
+
+    toInsert.push({
+      id: autoId,
+      org_id: profile.orgId,
+      name,
+      phone: r.phone?.trim() || null,
+      email: r.email?.trim() || null,
+      address,
+      created_at: createdAt,
+      updated_at: new Date().toISOString(),
+    })
+  }
+
+  if (toInsert.length === 0) {
+    return {
+      success: false,
+      error: 'Semua baris data gagal divalidasi. Pastikan nama dan alamat terisi.',
+      errors: validationErrors,
+    }
+  }
+
+  const { error: insertError } = await admin
+    .from('customers')
+    .insert(toInsert)
+
+  if (insertError) {
+    return {
+      success: false,
+      error: 'Gagal melakukan migrasi ke database: ' + insertError.message,
+      errors: validationErrors,
+    }
+  }
+
+  revalidatePath('/admin/customers')
+  revalidatePath('/admin/jobs/new')
+
+  return {
+    success: true,
+    totalCount: rows.length,
+    importedCount: toInsert.length,
+    failedCount: rows.length - toInsert.length,
+    errors: validationErrors,
+  }
+}
+

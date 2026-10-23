@@ -35,6 +35,8 @@ import {
   ChevronUp,
   Clock,
   ShieldAlert,
+  CreditCard,
+  Copy,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -43,6 +45,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { SubscriptionReminderBanner } from '@/components/settings/subscription-reminder-banner'
+import { SubscriptionTab } from '@/components/settings/subscription-tab'
+import { ExtendSubscriptionDialog } from '@/components/settings/extend-subscription-dialog'
 import {
   Dialog,
   DialogContent,
@@ -150,6 +155,57 @@ export function AdminProfileClient({
     updateOrganizationDetailsAction,
     initialOrgActionState
   )
+
+  // --- Subscription & Navigation State ---
+  const [activeTab, setActiveTab] = React.useState<string>('company')
+  const [isExtendModalOpen, setIsExtendModalOpen] = React.useState<boolean>(false)
+  const [copiedOrgId, setCopiedOrgId] = React.useState<boolean>(false)
+  const [reminderDismissed, setReminderDismissed] = React.useState<boolean>(false)
+  const [currentTier, setCurrentTier] = React.useState<string>(
+    organization?.subscription_tier || 'trial'
+  )
+  const [targetTier, setTargetTier] = React.useState<string>('pro')
+
+  // Default initial expiry date: 3 days from now (to demonstrate upcoming expiration reminder)
+  const [expiryDate, setExpiryDate] = React.useState<Date>(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 3)
+    d.setHours(23, 59, 59, 0)
+    return d
+  })
+
+  const now = new Date()
+  const daysLeft = Math.max(0, Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+  const isExpiringSoon = daysLeft <= 7 && daysLeft > 0
+  const isExpired = daysLeft === 0
+
+  const handleCopyOrgId = () => {
+    if (organization?.id) {
+      navigator.clipboard.writeText(organization.id)
+      setCopiedOrgId(true)
+      toast.success('ID Organisasi disalin ke clipboard')
+      setTimeout(() => setCopiedOrgId(false), 2000)
+    }
+  }
+
+  const handleOpenExtendDialog = (tierToUpscale?: string) => {
+    if (tierToUpscale) {
+      setTargetTier(tierToUpscale)
+    } else {
+      setTargetTier(currentTier === 'trial' ? 'pro' : currentTier)
+    }
+    setIsExtendModalOpen(true)
+  }
+
+  const handleExtendSuccess = (newExpiry: Date, monthsAdded: number, appliedTier?: string) => {
+    setExpiryDate(newExpiry)
+    setReminderDismissed(false)
+    if (appliedTier) {
+      setCurrentTier(appliedTier)
+    } else if (currentTier === 'trial') {
+      setCurrentTier('pro')
+    }
+  }
 
   // --- Services Management State ---
   const [services, setServices] = React.useState<CompanyServiceItem[]>(initialServices)
@@ -388,33 +444,79 @@ export function AdminProfileClient({
   return (
     <div className="space-y-6 max-w-5xl">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground font-heading">
-          Pengaturan
-        </h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          Kelola profil perusahaan, katalog layanan & SOP, serta keamanan akun Anda.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground font-heading">
+            Pengaturan
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Kelola profil perusahaan, paket langganan, dan operasional tim.
+          </p>
+        </div>
+
+        {/* Quick Plan Badge & Status */}
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="outline"
+            className="text-xs py-1 px-2.5 font-semibold border-[#007ACC]/30 bg-[#EBF5FC] text-[#007ACC] gap-1.5"
+          >
+            <Sparkles className="h-3 w-3 text-[#007ACC]" />
+            <span className="capitalize">Paket {currentTier}</span>
+          </Badge>
+          <span
+            className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+              isExpired
+                ? 'bg-destructive/10 text-destructive border-destructive/20'
+                : isExpiringSoon
+                ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20'
+                : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+            }`}
+          >
+            {isExpired ? 'Kadaluarsa' : `${daysLeft} Hari Tersisa`}
+          </span>
+        </div>
       </div>
 
-      <Tabs defaultValue="company" className="space-y-6">
+      {/* Subscription Reminder Banner (Shown if expiring soon or expired) */}
+      <SubscriptionReminderBanner
+        daysLeft={daysLeft}
+        expiryDate={expiryDate}
+        currentTier={currentTier}
+        isDismissed={reminderDismissed}
+        onDismiss={() => setReminderDismissed(true)}
+        onExtendClick={() => {
+          setActiveTab('subscription')
+          handleOpenExtendDialog('pro')
+        }}
+      />
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-muted/80 p-0.5 rounded-lg h-9">
-          <TabsTrigger value="company" className="gap-2 text-xs font-medium">
+          <TabsTrigger value="company" className="gap-2 text-xs font-medium cursor-pointer">
             <Building2 className="h-3.5 w-3.5 text-[#007ACC]" />
             Profil Perusahaan
           </TabsTrigger>
-          <TabsTrigger value="services" className="gap-2 text-xs font-medium">
+          <TabsTrigger value="subscription" className="gap-2 text-xs font-medium cursor-pointer">
+            <CreditCard className="h-3.5 w-3.5 text-[#007ACC]" />
+            Paket & Langganan
+            {isExpiringSoon && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                {daysLeft}h
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="services" className="gap-2 text-xs font-medium cursor-pointer">
             <Briefcase className="h-3.5 w-3.5 text-[#007ACC]" />
             Layanan & SOP
             <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px] h-4">
               {services.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="profile" className="gap-2 text-xs font-medium">
+          <TabsTrigger value="profile" className="gap-2 text-xs font-medium cursor-pointer">
             <User className="h-3.5 w-3.5 text-[#007ACC]" />
             Profil Admin
           </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2 text-xs font-medium">
+          <TabsTrigger value="security" className="gap-2 text-xs font-medium cursor-pointer">
             <KeyRound className="h-3.5 w-3.5 text-[#007ACC]" />
             Keamanan Akun
           </TabsTrigger>
@@ -579,38 +681,62 @@ export function AdminProfileClient({
               </CardContent>
             </Card>
 
-            {/* Sidebar: Subscription & Info */}
+            {/* Sidebar: Identitas Organisasi & Keamanan */}
             <Card className="shadow-sm border-border bg-card h-fit">
               <CardHeader className="pb-3 border-b border-border/50">
                 <CardTitle className="text-base flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-[#007ACC]" />
-                  Status Organisasi
+                  Identitas Organisasi
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Ringkasan status lisensi & identifikasi sistem.
+                  ID sistem dan parameter keamanan tenant akun Anda.
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4 space-y-4 text-xs">
                 <div>
-                  <span className="text-muted-foreground block font-medium">ID Organisasi:</span>
-                  <div className="mt-1">
-                    <span className="font-mono text-[11px] bg-muted px-2 py-1 rounded text-muted-foreground select-all border border-border/50 block truncate">
+                  <span className="text-muted-foreground block font-medium">ID Organisasi (UUID):</span>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <span className="font-mono text-[11px] bg-muted px-2 py-1 rounded text-muted-foreground select-all border border-border/50 block truncate flex-1">
                       {organization?.id}
                     </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyOrgId}
+                      className="h-7 px-2 shrink-0 cursor-pointer"
+                      title="Salin ID Organisasi"
+                    >
+                      {copiedOrgId ? (
+                        <Check className="h-3 w-3 text-emerald-600" />
+                      ) : (
+                        <Copy className="h-3 w-3 text-muted-foreground" />
+                      )}
+                    </Button>
                   </div>
                 </div>
 
                 <div>
                   <span className="text-muted-foreground block font-medium">Paket Langganan:</span>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="secondary" className="capitalize font-semibold gap-1 text-xs">
-                      <Sparkles className="h-3 w-3 text-amber-500" />
-                      {organization?.subscription_tier || 'Trial'}
-                    </Badge>
-                    <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      Aktif
-                    </span>
+                  <div className="flex items-center justify-between mt-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="capitalize font-semibold gap-1 text-xs">
+                        <Sparkles className="h-3 w-3 text-amber-500" />
+                        {currentTier}
+                      </Badge>
+                      <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        Aktif
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('subscription')}
+                      className="text-[11px] text-[#007ACC] hover:underline font-medium cursor-pointer"
+                    >
+                      Kelola Paket &rarr;
+                    </button>
                   </div>
                 </div>
 
@@ -631,7 +757,7 @@ export function AdminProfileClient({
                     <span>Multi-Tenant Guard</span>
                   </div>
                   <p className="leading-relaxed">
-                    Data lokasi dan katalog layanan Anda hanya dapat diakses oleh teknisi dan staf di bawah organisasi ini.
+                    Data lokasi, tiket kerja teknisi, dan SOP perusahaan Anda terenkripsi dan terisolasi ketat di bawah organisasi ini.
                   </p>
                 </div>
               </CardContent>
@@ -640,7 +766,21 @@ export function AdminProfileClient({
         </TabsContent>
 
         {/* ========================================================================= */}
-        {/* TAB 2: LAYANAN PERUSAHAAN (SERVICES CATALOG) */}
+        {/* TAB 2: PAKET & LANGGANAN (SUBSCRIPTION & BILLING) */}
+        {/* ========================================================================= */}
+        <TabsContent value="subscription" className="space-y-6 focus-visible:outline-none">
+          <SubscriptionTab
+            currentTier={currentTier}
+            expiryDate={expiryDate}
+            daysLeft={daysLeft}
+            isExpiringSoon={isExpiringSoon}
+            isExpired={isExpired}
+            onOpenExtendDialog={handleOpenExtendDialog}
+          />
+        </TabsContent>
+
+        {/* ========================================================================= */}
+        {/* TAB 3: LAYANAN PERUSAHAAN (SERVICES CATALOG) */}
         {/* ========================================================================= */}
         <TabsContent value="services" className="space-y-6 focus-visible:outline-none">
           <Card className="shadow-sm border-border bg-card">
@@ -1951,6 +2091,18 @@ export function AdminProfileClient({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ========================================================================= */}
+      {/* POPUP PERIODE CHOICE: EXTEND SUBSCRIPTION MODAL */}
+      {/* ========================================================================= */}
+      <ExtendSubscriptionDialog
+        open={isExtendModalOpen}
+        onOpenChange={setIsExtendModalOpen}
+        currentTier={currentTier}
+        targetTier={targetTier}
+        currentExpiryDate={expiryDate}
+        onExtendSuccess={handleExtendSuccess}
+      />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requireRole } from '@/lib/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { CreateCustomerDialog } from './create-customer-dialog'
+import { ImportCustomersDialog } from './import-customers-dialog'
 import { WhatsAppActionDialog } from '@/components/whatsapp/whatsapp-action-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Building2, Phone, Mail, MapPin, Eye, Plus, Calendar } from 'lucide-react'
@@ -30,7 +31,10 @@ export default async function CustomersPage() {
             Kelola data pelanggan, kontak, dan alamat lokasi servis untuk penugasan tiket.
           </p>
         </div>
-        <CreateCustomerDialog />
+        <div className="flex items-center gap-2.5">
+          <ImportCustomersDialog />
+          <CreateCustomerDialog />
+        </div>
       </div>
 
       {list.length === 0 ? (
@@ -41,9 +45,12 @@ export default async function CustomersPage() {
           </div>
           <h3 className="font-heading text-[16px] font-semibold text-[#0F172A]">Belum Ada Data Pelanggan</h3>
           <p className="text-[13px] text-[#475569] max-w-sm mx-auto mt-2 mb-6 leading-relaxed">
-            Tambahkan pelanggan pertama Anda agar dapat mulai menjadwalkan pekerjaan servis teknisi.
+            Tambahkan pelanggan manual atau migrasikan database klien lama Anda menggunakan file CSV untuk mulai menjadwalkan pekerjaan teknisi.
           </p>
-          <CreateCustomerDialog />
+          <div className="flex items-center justify-center gap-3">
+            <ImportCustomersDialog />
+            <CreateCustomerDialog />
+          </div>
         </div>
       ) : (
         /* Customer Table Container with Thin-Line & Smooth Shadow */

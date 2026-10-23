@@ -506,3 +506,35 @@ export async function dismissOnboardingAction(): Promise<OrgActionState> {
 
   return { success: true }
 }
+
+export async function extendSubscriptionAction(
+  months: number,
+  tier: string = 'pro'
+): Promise<OrgActionState> {
+  const profile = await requireUser()
+  if (profile.role !== 'admin' && profile.role !== 'owner') {
+    return { error: 'Hanya Admin atau Owner yang dapat memperpanjang paket langganan.' }
+  }
+
+  const admin = getSupabaseAdmin()
+
+  const { error } = await admin
+    .from('organizations')
+    .update({
+      subscription_tier: tier,
+    })
+    .eq('id', profile.orgId)
+
+  if (error) {
+    return { error: 'Gagal memperbarui langganan: ' + error.message }
+  }
+
+  revalidatePath('/admin/profile')
+  revalidatePath('/owner/profile')
+
+  return {
+    success: true,
+    message: `Langganan berhasil diperpanjang selama ${months} bulan!`,
+  }
+}
+
