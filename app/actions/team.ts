@@ -174,3 +174,165 @@ export async function resendInviteAction(inviteId: string): Promise<{ success: b
   }
 }
 
+export type ImportTechnicianItem = {
+  name: string
+  role?: string | null
+  phone?: string | null
+  email?: string | null
+  dateRegistered?: string | null
+}
+
+export type ImportTechniciansResult = {
+  success: boolean
+  error?: string
+  totalCount?: number
+  importedCount?: number
+  failedCount?: number
+  errors?: string[]
+}
+
+function parseRegisteredDate(dateStr?: string | null): string {
+  if (!dateStr || !dateStr.trim()) {
+    return new Date().toISOString()
+  }
+
+  const raw = dateStr.trim()
+  const direct = new Date(raw)
+  if (!isNaN(direct.getTime()) && direct.getFullYear() > 1990 && direct.getFullYear() < 2100) {
+    return direct.toISOString()
+  }
+
+  const parts = raw.split(/[/.-]/)
+  if (parts.length === 3) {
+    const p0 = parseInt(parts[0], 10)
+    const p1 = parseInt(parts[1], 10)
+    const p2 = parseInt(parts[2], 10)
+
+    // YYYY-MM-DD
+    if (p0 >= 1990 && p0 <= 2099 && p1 >= 1 && p1 <= 12 && p2 >= 1 && p2 <= 31) {
+      const d = new Date(Date.UTC(p0, p1 - 1, p2))
+      if (!isNaN(d.getTime())) return d.toISOString()
+    }
+
+    // DD-MM-YYYY
+    if (p2 >= 1990 && p2 <= 2099 && p1 >= 1 && p1 <= 12 && p0 >= 1 && p0 <= 31) {
+      const d = new Date(Date.UTC(p2, p1 - 1, p0))
+      if (!isNaN(d.getTime())) return d.toISOString()
+    }
+  }
+
+  return new Date().toISOString()
+}
+
+export async function importTechniciansAction(
+  rows: ImportTechnicianItem[]
+): Promise<ImportTechniciansResult> {
+  const profile = await requireRole('admin')
+
+  if (!rows || rows.length === 0) {
+    return {
+      success: false,
+      error: 'Tidak ada baris data teknisi yang dikirim untuk diimpor.',
+    }
+  }
+
+  const admin = getSupabaseAdmin()
+  const validationErrors: string[] = []
+  let importedCount = 0
+
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i]
+    const name = r.name?.trim()
+
+    if (!name) {
+      validationErrors.push(`Baris ${i + 1}: Nama teknisi tidak boleh kosong`)
+      continue
+    }
+
+    // Normalize role
+    let role: 'technician' | 'owner' = 'technician'
+    const roleLower = (r.role || '').toLowerCase()
+    if (roleLower.includes('owner') || roleLower.includes('pemilik') || roleLower.includes('manager')) {
+      role = 'owner'
+    }
+
+    // Resolve email
+    let email = r.email?.trim().toLowerCase()
+    const phone = r.phone?.trim() || null
+
+    if (!email) {
+      const cleanSlug = name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'teknisi'
+      const cleanPhone = (phone || '').replace(/[^0-9]/g, '').slice(-4) || `${Math.floor(1000 + Math.random() * 9000)}`
+      email = `${cleanSlug}.${cleanPhone}@tim.gridline.id`
+    }
+
+    // Check if user with this email already exists in profiles
+    const { data: existingProfile } = await admin
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle()
+
+    if (existingProfile) {
+      validationErrors.push(`Baris ${i + 1} (${name}): Email ${email} sudah terdaftar di sistem`)
+      continue
+    }
+
+    const defaultPassword = 'Teknisi2026!'
+    const createdAt = parseRegisteredDate(r.dateRegistered)
+
+    // 1. Create Auth User
+    const { data: authData, error: authError } = await admin.auth.admin.createUser({
+      email,
+      password: defaultPassword,
+      email_confirm: true,
+      user_metadata: { name },
+    })
+
+    if (authError || !authData.user) {
+      validationErrors.push(`Baris ${i + 1} (${name}): Gagal mendaftarkan akun auth (${authError?.message || 'Error auth'})`)
+      continue
+    }
+
+    // 2. Insert into profiles with org_id and role
+    const { error: profileError } = await admin
+      .from('profiles')
+      .insert({
+        id: authData.user.id,
+        org_id: profile.orgId,
+        name,
+        email,
+        phone,
+        role,
+        created_at: createdAt,
+      })
+
+    if (profileError) {
+      await admin.auth.admin.deleteUser(authData.user.id)
+      validationErrors.push(`Baris ${i + 1} (${name}): Gagal menyimpan profil teknisi (${profileError.message})`)
+      continue
+    }
+
+    importedCount++
+  }
+
+  revalidatePath('/admin/technicians')
+
+  if (importedCount === 0) {
+    return {
+      success: false,
+      error: 'Semua baris data teknisi gagal diproses. Periksa pesan validasi.',
+      errors: validationErrors,
+    }
+  }
+
+  return {
+    success: true,
+    totalCount: rows.length,
+    importedCount,
+    failedCount: rows.length - importedCount,
+    errors: validationErrors,
+  }
+}
+
+

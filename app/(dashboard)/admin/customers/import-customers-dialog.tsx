@@ -372,24 +372,28 @@ export function ImportCustomersDialog({
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-6 sm:p-7">
-        <DialogHeader className="space-y-1.5 pb-2 border-b border-border/60">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-[#EBF5FC] text-[#007ACC] border border-[#D0E8F8] flex items-center justify-center shrink-0">
-              <Database className="h-4 w-4" />
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+        {/* Fixed Header on the Top Container */}
+        <div className="p-5 sm:p-6 pb-4 border-b border-border/60 bg-background shrink-0 sticky top-0 z-10 pr-12">
+          <DialogHeader className="space-y-1.5 text-left">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-[#EBF5FC] text-[#007ACC] border border-[#D0E8F8] flex items-center justify-center shrink-0">
+                <Database className="h-4 w-4" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-bold text-foreground font-heading">
+                  Migrasi & Import Data Pelanggan
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  Unggah file CSV untuk memigrasikan database klien ke sistem. Nilai nama, kontak, alamat, dan tanggal terdaftar dipertahankan, sedangkan ID unik dibuat otomatis.
+                </DialogDescription>
+              </div>
             </div>
-            <div>
-              <DialogTitle className="text-base font-bold text-foreground font-heading">
-                Migrasi & Import Data Pelanggan
-              </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">
-                Unggah file CSV untuk memigrasikan database klien lama ke sistem. Nilai nama, kontak, alamat, dan tanggal terdaftar akan dipertahankan, sedangkan ID unik akan dibuat secara otomatis.
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
+          </DialogHeader>
+        </div>
 
-        <div className="space-y-5 pt-3">
+        {/* Scrollable Body Container */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
           {/* STEP 1: Upload Dropzone if no file selected */}
           {!file && (
             <div className="space-y-4">
@@ -682,38 +686,41 @@ export function ImportCustomersDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-2 pt-4 border-t border-border/50">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isSubmitting}
-            onClick={() => handleOpenChange(false)}
-            className="h-9 text-xs px-4 cursor-pointer"
-          >
-            Batal
-          </Button>
-
-          {file && (
+        {/* Fixed Footer at the Bottom Container */}
+        <div className="p-4 sm:p-5 pt-3 border-t border-border/50 bg-background shrink-0 sticky bottom-0 z-10">
+          <DialogFooter className="gap-2 sm:gap-2">
             <Button
               type="button"
-              disabled={isSubmitting || validRows.length === 0}
-              onClick={handleExecuteImport}
-              className="h-9 text-xs font-semibold bg-[#007ACC] hover:bg-[#0062A3] text-white px-5 gap-2 cursor-pointer shadow-xs"
+              variant="outline"
+              disabled={isSubmitting}
+              onClick={() => handleOpenChange(false)}
+              className="h-9 text-xs px-4 cursor-pointer"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Memigrasikan {validRows.length} Pelanggan...
-                </>
-              ) : (
-                <>
-                  <Database className="h-3.5 w-3.5" />
-                  Migrasikan {validRows.length} Pelanggan
-                </>
-              )}
+              Batal
             </Button>
-          )}
-        </DialogFooter>
+
+            {file && (
+              <Button
+                type="button"
+                disabled={isSubmitting || validRows.length === 0}
+                onClick={handleExecuteImport}
+                className="h-9 text-xs font-semibold bg-[#007ACC] hover:bg-[#0062A3] text-white px-5 gap-2 cursor-pointer shadow-xs"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Memigrasikan {validRows.length} Pelanggan...
+                  </>
+                ) : (
+                  <>
+                    <Database className="h-3.5 w-3.5" />
+                    Migrasikan {validRows.length} Pelanggan
+                  </>
+                )}
+              </Button>
+            )}
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   )

@@ -1,6 +1,7 @@
 import { requireRole } from '@/lib/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { InviteMemberDialog } from './invite-member-dialog'
+import { ImportTechniciansDialog } from './import-technicians-dialog'
 import { ResendInviteButton } from '@/components/team/resend-invite-button'
 import { TechnicianPerformanceTab } from '@/components/team/technician-performance-tab'
 import { TechnicianCommissionTab } from '@/components/team/technician-commission-tab'
@@ -66,7 +67,10 @@ export default async function TechniciansPage({ searchParams }: PageProps) {
             Kelola akses teknisi, pantau pencapaian SLA, dan evaluasi rekap komisi.
           </p>
         </div>
-        <InviteMemberDialog />
+        <div className="flex items-center gap-2.5">
+          <ImportTechniciansDialog />
+          <InviteMemberDialog />
+        </div>
       </div>
 
       <Tabs defaultValue={activeTab} className="w-full space-y-6">
