@@ -183,92 +183,103 @@ export function BapDocument({
           </Button>
           <div>
             <h1 className="text-sm font-semibold text-foreground">Dokumen Berita Acara Pekerjaan (BAP)</h1>
-            <p className="text-xs text-muted-foreground">Format Cetak Resmi F4 (Folio: 215 × 330 mm)</p>
+            <p className="text-xs text-muted-foreground">Unduh PDF Resmi Berkualitas Vektor (Format F4 & A4)</p>
           </div>
         </div>
-        <BapPrintButton />
+        <BapPrintButton
+          jobId={job.id}
+          jobNumber={job.job_number}
+          checklistCount={checklist?.length || 0}
+          photosCount={(beforePhotos?.length || 0) + (afterPhotos?.length || 0)}
+        />
       </div>
 
-      {/* Official BAP Sheet (F4 Dimensions: 215mm x 330mm) - Tanpa Outline Box Luar */}
-      <div className="w-full max-w-[215mm] mx-auto bg-white text-slate-900 p-8 sm:p-12 shadow-sm print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none print:w-full">
+      {/* Official BAP Sheet (F4 Dimensions: 215mm x 330mm) */}
+      <div
+        id="bap-document-sheet"
+        className="w-full max-w-[215mm] mx-auto bg-white text-slate-900 p-8 sm:p-12 shadow-sm border border-slate-200/80 rounded-sm print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none print:w-full"
+      >
         {/* KOP SURAT (Letterhead Pelaksana Jasa) */}
-        <div className="border-b-2 border-slate-900 pb-4 mb-5 flex justify-between items-start gap-4">
-          <div className="space-y-1 max-w-[70%]">
-            <h2 className="text-xl font-bold tracking-tight text-slate-950 uppercase leading-snug">
+        <div className="border-b-[2.5px] border-slate-900 pb-3 mb-4 flex justify-between items-start gap-4 page-break-inside-avoid">
+          <div className="space-y-1 max-w-[68%]">
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-950 uppercase leading-snug">
               {organization.name}
             </h2>
             {orgFullAddress && (
               <p className="text-xs text-slate-700 leading-relaxed">{orgFullAddress}</p>
             )}
-            <div className="text-[11px] text-slate-600 flex flex-wrap gap-x-4 gap-y-0.5">
-              {organization.phone && <span>Telepon: {organization.phone}</span>}
+            <div className="text-[11px] text-slate-500 flex flex-wrap gap-x-3 gap-y-0.5">
+              {organization.phone && <span>Telp: {organization.phone}</span>}
+              {organization.phone && organization.email && <span>•</span>}
               {organization.email && <span>Email: {organization.email}</span>}
             </div>
           </div>
-          <div className="text-right space-y-1 shrink-0">
-            <p className="text-xs font-semibold text-slate-800">DOKUMEN RESMI</p>
-            <p className="text-xs font-mono font-bold text-slate-900">{bapDocNumber}</p>
-            <p className="text-xs text-slate-600">{formattedDateStr}</p>
+          <div className="text-right shrink-0">
+            <span className="inline-block px-2 py-0.5 rounded border border-[#007ACC] bg-[#EBF5FC] text-[#007ACC] text-[9.5px] font-bold tracking-wider uppercase">
+              DOKUMEN RESMI BAP
+            </span>
+            <div className="font-mono font-bold text-xs text-slate-900 mt-1">{bapDocNumber}</div>
+            <div className="text-[11px] text-slate-500 mt-0.5">{formattedDateStr}</div>
           </div>
         </div>
 
         {/* JUDUL DOKUMEN */}
-        <div className="text-center my-5">
-          <h3 className="text-base font-bold uppercase tracking-wide text-slate-950">
+        <div className="text-center my-4 page-break-inside-avoid">
+          <h3 className="text-sm sm:text-base font-bold uppercase tracking-wide text-slate-950">
             BERITA ACARA PENYELESAIAN PEKERJAAN
           </h3>
-          <p className="text-xs text-slate-600 mt-1">
-            Nomor: <span className="font-mono font-semibold text-slate-900">{bapDocNumber}</span>
+          <p className="text-xs text-slate-600 mt-0.5">
+            Nomor: <span className="font-mono font-bold text-slate-900">{bapDocNumber}</span>
           </p>
         </div>
 
         {/* KLAUSUL PEMBUKA */}
-        <p className="text-xs text-slate-800 leading-relaxed mb-4 text-justify">
-          Pada hari ini, <strong className="font-semibold">{dayName}</strong>, tanggal{' '}
-          <strong className="font-semibold">{formattedDateStr}</strong>, telah selesai dilaksanakan pekerjaan
+        <p className="text-xs text-slate-700 leading-relaxed mb-4 text-justify page-break-inside-avoid">
+          Pada hari ini, <strong className="font-semibold text-slate-900">{dayName}</strong>, tanggal{' '}
+          <strong className="font-semibold text-slate-900">{formattedDateStr}</strong>, telah selesai dilaksanakan pekerjaan
           layanan teknis lapangan dengan rincian kesepakatan antara pihak-pihak di bawah ini:
         </p>
 
-        {/* DATA PARA PIHAK (Pelaksana Jasa & Pelanggan) */}
-        <div className="grid grid-cols-2 gap-8 mb-5 text-xs">
-          {/* Pihak Pertama */}
-          <div className="space-y-1.5">
-            <p className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
-              PIHAK PERTAMA (Pelaksana Jasa)
+        {/* DATA PARA PIHAK (Pelaksana Jasa & Pelanggan) - DENGAN OUTLINE BIRU KHAS BAP */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-5 text-xs page-break-inside-avoid">
+          {/* PELAKSANA JASA */}
+          <div className="border-l-[3.5px] border-[#007ACC] pl-3 py-0.5 space-y-1">
+            <p className="font-bold text-[#007ACC] uppercase tracking-wider text-[11px] mb-1.5">
+              PELAKSANA JASA
             </p>
-            <div className="space-y-1 text-slate-800">
-              <div className="grid grid-cols-3 gap-1">
-                <span className="text-slate-600">Perusahaan</span>
-                <span className="col-span-2 font-medium text-slate-950">{organization.name}</span>
+            <div className="space-y-1 text-slate-800 text-[11.5px]">
+              <div className="grid grid-cols-[75px_1fr] gap-1">
+                <span className="text-slate-500">Perusahaan</span>
+                <span className="font-medium text-slate-950">: {organization.name}</span>
               </div>
-              <div className="grid grid-cols-3 gap-1">
-                <span className="text-slate-600">Teknisi</span>
-                <span className="col-span-2 font-medium text-slate-950">{technician?.name || '-'}</span>
+              <div className="grid grid-cols-[75px_1fr] gap-1">
+                <span className="text-slate-500">Teknisi</span>
+                <span className="font-medium text-slate-950">: {technician?.name || '-'}</span>
               </div>
-              <div className="grid grid-cols-3 gap-1">
-                <span className="text-slate-600">Kontak</span>
-                <span className="col-span-2 text-slate-900">{technician?.phone || organization.phone || '-'}</span>
+              <div className="grid grid-cols-[75px_1fr] gap-1">
+                <span className="text-slate-500">Kontak</span>
+                <span className="text-slate-900">: {technician?.phone || organization.phone || '-'}</span>
               </div>
             </div>
           </div>
 
-          {/* Pihak Kedua */}
-          <div className="space-y-1.5">
-            <p className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
-              PIHAK KEDUA (Pelanggan / Penerima Jasa)
+          {/* PELANGGAN */}
+          <div className="border-l-[3.5px] border-[#007ACC] pl-3 py-0.5 space-y-1">
+            <p className="font-bold text-[#007ACC] uppercase tracking-wider text-[11px] mb-1.5">
+              PELANGGAN
             </p>
-            <div className="space-y-1 text-slate-800">
-              <div className="grid grid-cols-3 gap-1">
-                <span className="text-slate-600">Nama Klien</span>
-                <span className="col-span-2 font-medium text-slate-950">{customer?.name || '-'}</span>
+            <div className="space-y-1 text-slate-800 text-[11.5px]">
+              <div className="grid grid-cols-[75px_1fr] gap-1">
+                <span className="text-slate-500">Nama Klien</span>
+                <span className="font-medium text-slate-950">: {customer?.name || '-'}</span>
               </div>
-              <div className="grid grid-cols-3 gap-1">
-                <span className="text-slate-600">No. Telepon</span>
-                <span className="col-span-2 text-slate-900">{customer?.phone || '-'}</span>
+              <div className="grid grid-cols-[75px_1fr] gap-1">
+                <span className="text-slate-500">Kontak</span>
+                <span className="text-slate-900">: {customer?.phone || '-'}</span>
               </div>
-              <div className="grid grid-cols-3 gap-1">
-                <span className="text-slate-600">Alamat Lokasi</span>
-                <span className="col-span-2 text-slate-900 leading-snug">{job.address || customer?.address || '-'}</span>
+              <div className="grid grid-cols-[75px_1fr] gap-1">
+                <span className="text-slate-500">Alamat</span>
+                <span className="text-slate-900 leading-snug">: {job.address || customer?.address || '-'}</span>
               </div>
             </div>
           </div>
@@ -563,10 +574,10 @@ export function BapDocument({
 
               {/* Verifikasi Identitas Teknisi & Sistem */}
               <div className="h-20 w-48 flex flex-col items-center justify-center my-2 text-center">
-                <p className="text-[10px] font-bold text-slate-800 tracking-wider">
+                <span className="inline-block px-2.5 py-1 rounded border border-[#007ACC] bg-[#EBF5FC] text-[#007ACC] text-[10px] font-bold tracking-wider uppercase mb-1">
                   TERVALIDASI SISTEM
-                </p>
-                <p className="text-[9px] font-mono text-slate-500 mt-0.5">
+                </span>
+                <p className="text-[9.5px] font-mono text-slate-500">
                   WO: {job.job_number}
                 </p>
               </div>
