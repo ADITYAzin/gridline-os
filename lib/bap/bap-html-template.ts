@@ -66,11 +66,15 @@ export interface BapTemplateData {
     id: string
     signed_url: string
     captured_at: string | null
+    checklist_item_id?: string | null
+    caption?: string | null
   }>
   afterPhotos: Array<{
     id: string
     signed_url: string
     captured_at: string | null
+    checklist_item_id?: string | null
+    caption?: string | null
   }>
   signature: {
     customer_name: string
@@ -487,6 +491,18 @@ export function generateBapHtml(data: BapTemplateData): string {
                     let notesLabel = item.completed_at
                       ? `${new Date(item.completed_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`
                       : 'Terverifikasi'
+
+                    const allEvidencePhotos = [
+                      ...beforePhotos.map((p, i) => ({ ...p, label: `Foto Sebelum #${i + 1}` })),
+                      ...afterPhotos.map((p, i) => ({ ...p, label: `Foto Sesudah #${i + 1}` })),
+                    ]
+                    const matchedPhoto = allEvidencePhotos.find((p) => p.checklist_item_id === item.id)
+                    if (matchedPhoto) {
+                      notesLabel = item.completed_at
+                        ? `${new Date(item.completed_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB (${matchedPhoto.label})`
+                        : `Terverifikasi (${matchedPhoto.label})`
+                    }
+
                     if (item.is_na) {
                       statusLabel = 'Tidak Berlaku (N/A)'
                       notesLabel = item.na_reason || 'Tidak relevan'
@@ -528,7 +544,7 @@ export function generateBapHtml(data: BapTemplateData): string {
                                 (p, i) => `
                               <div class="photo-item">
                                 <img src="${p.signed_url}" alt="Before #${i + 1}" />
-                                <div class="photo-caption">Foto #${i + 1}</div>
+                                <div class="photo-caption">${p.caption ? `Foto #${i + 1} • Bukti: ${p.caption}` : `Foto #${i + 1}`}</div>
                               </div>
                             `
                               )
@@ -546,7 +562,7 @@ export function generateBapHtml(data: BapTemplateData): string {
                                 (p, i) => `
                               <div class="photo-item">
                                 <img src="${p.signed_url}" alt="After #${i + 1}" />
-                                <div class="photo-caption">Foto #${i + 1}</div>
+                                <div class="photo-caption">${p.caption ? `Foto #${i + 1} • Bukti: ${p.caption}` : `Foto #${i + 1}`}</div>
                               </div>
                             `
                               )

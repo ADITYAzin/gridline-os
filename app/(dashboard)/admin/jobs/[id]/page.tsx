@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import { WhatsAppActionDialog } from '@/components/whatsapp/whatsapp-action-dialog'
 import { SlaBadge } from '@/components/jobs/sla-badge'
+import { RealtimeJobsListener } from '@/components/realtime/realtime-jobs-listener'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -50,6 +51,7 @@ export default async function JobDetailPage({ params }: PageProps) {
     { data: signature },
     { data: report },
     { data: technicians },
+    { data: attendance },
   ] = await Promise.all([
     supabase
       .from('jobs')
@@ -80,6 +82,7 @@ export default async function JobDetailPage({ params }: PageProps) {
     supabase.from('signatures').select('*').eq('job_id', id).maybeSingle(),
     supabase.from('work_reports').select('*').eq('job_id', id).maybeSingle(),
     supabase.from('profiles').select('id, name').eq('org_id', profile.orgId).eq('role', 'technician').order('name'),
+    supabase.from('job_attendance').select('check_in_at, check_out_at').eq('job_id', id).maybeSingle(),
   ])
 
   if (!job) {
@@ -203,6 +206,7 @@ export default async function JobDetailPage({ params }: PageProps) {
                 scheduledEnd={schedule?.end_at}
                 completedAt={job.completed_at}
               />
+              <RealtimeJobsListener orgId={profile.orgId} />
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               Dibuat {new Date(job.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -746,11 +750,13 @@ export default async function JobDetailPage({ params }: PageProps) {
           <CompletionReviewCard
             jobId={job.id}
             status={job.status}
+            hasCheckIn={Boolean(attendance?.check_in_at)}
             isChecklistComplete={completedChecklistCount === totalChecklistCount && totalChecklistCount > 0}
             hasBeforePhoto={beforePhotos.length >= 1}
             hasAfterPhoto={afterPhotos.length >= 1}
             hasSignature={Boolean(signature)}
             hasReport={Boolean(report)}
+            hasCheckOut={Boolean(attendance?.check_out_at)}
           />
         </div>
       </div>

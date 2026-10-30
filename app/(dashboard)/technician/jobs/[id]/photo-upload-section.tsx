@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
-import { uploadJobPhotoAction } from '@/app/actions/execution'
+import { uploadJobPhotoAction, deleteJobPhotoAction } from '@/app/actions/execution'
 import { compressImage } from '@/lib/image-compress'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Camera, Image as ImageIcon, Loader2, Check } from 'lucide-react'
+import { Camera, Image as ImageIcon, Loader2, Check, X } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface JobPhoto {
   id: string
@@ -25,6 +26,7 @@ interface PhotoUploadSectionProps {
 export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSectionProps) {
   const [isPending, startTransition] = useTransition()
   const [isProcessing, setIsProcessing] = useState(false)
+  const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [activeType, setActiveType] = useState<'before' | 'after'>('before')
@@ -48,8 +50,11 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
       startTransition(async () => {
         try {
           const res = await uploadJobPhotoAction(jobId, activeType, formData)
-          if (res.error) {
+          if (res?.error) {
             setError(res.error)
+            toast.error(res.error)
+          } else {
+            toast.success(`Foto ${activeType === 'before' ? 'Before' : 'After'} berhasil diunggah.`)
           }
         } finally {
           setIsProcessing(false)
@@ -58,11 +63,32 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
     } catch {
       setIsProcessing(false)
       setError('Gagal memproses foto sebelum diunggah.')
+      toast.error('Gagal memproses foto sebelum diunggah.')
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
     }
+  }
+
+  const handleDeletePhoto = (photoId: string, photoType: 'before' | 'after') => {
+    if (disabled || deletingPhotoId) return
+
+    setDeletingPhotoId(photoId)
+    startTransition(async () => {
+      try {
+        const res = await deleteJobPhotoAction(jobId, photoId)
+        if (res?.error) {
+          toast.error(res.error)
+        } else {
+          toast.success(`Foto ${photoType === 'before' ? 'Before' : 'After'} berhasil dihapus.`)
+        }
+      } catch {
+        toast.error('Gagal menghapus foto. Silakan coba lagi.')
+      } finally {
+        setDeletingPhotoId(null)
+      }
+    })
   }
 
   const triggerUpload = (type: 'before' | 'after') => {
@@ -92,7 +118,7 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
         />
 
         {error && (
-          <div className="rounded bg-destructive/10 border border-destructive/20 p-2 text-xs text-destructive">
+          <div className="rounded-[8px] bg-destructive/10 border border-destructive/20 p-2 text-xs text-destructive">
             {error}
           </div>
         )}
@@ -141,7 +167,31 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
                     <ImageIcon className="h-5 w-5 text-muted-foreground" />
                   </div>
                 )}
-                <span className="absolute bottom-1 right-1 text-[9px] font-mono bg-black/60 text-white px-1 rounded backdrop-blur-xs">#{idx + 1}</span>
+
+                {/* Nomor Urut Foto */}
+                <span className="absolute bottom-1 right-1 text-[9px] font-mono bg-black/60 text-white px-1 rounded backdrop-blur-xs z-5">
+                  #{idx + 1}
+                </span>
+
+                {/* Tombol Icon Silang Hapus Foto */}
+                {!disabled && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeletePhoto(p.id, 'before')
+                    }}
+                    disabled={deletingPhotoId === p.id}
+                    title="Hapus foto ini"
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-rose-600/90 hover:bg-rose-700 text-white flex items-center justify-center shadow-md touch-press transition-all active:scale-95 z-10 cursor-pointer"
+                  >
+                    {deletingPhotoId === p.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <X className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                )}
               </div>
             ))}
             {isUploading && activeType === 'before' && (
@@ -197,7 +247,31 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
                     <ImageIcon className="h-5 w-5 text-muted-foreground" />
                   </div>
                 )}
-                <span className="absolute bottom-1 right-1 text-[9px] font-mono bg-black/60 text-white px-1 rounded backdrop-blur-xs">#{idx + 1}</span>
+
+                {/* Nomor Urut Foto */}
+                <span className="absolute bottom-1 right-1 text-[9px] font-mono bg-black/60 text-white px-1 rounded backdrop-blur-xs z-5">
+                  #{idx + 1}
+                </span>
+
+                {/* Tombol Icon Silang Hapus Foto */}
+                {!disabled && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeletePhoto(p.id, 'after')
+                    }}
+                    disabled={deletingPhotoId === p.id}
+                    title="Hapus foto ini"
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-rose-600/90 hover:bg-rose-700 text-white flex items-center justify-center shadow-md touch-press transition-all active:scale-95 z-10 cursor-pointer"
+                  >
+                    {deletingPhotoId === p.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <X className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                )}
               </div>
             ))}
             {isUploading && activeType === 'after' && (

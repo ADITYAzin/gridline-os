@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Briefcase, Coins, User } from 'lucide-react'
+import { Briefcase, Coins, User, Award } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export function TechnicianBottomNav() {
+export function TechnicianBottomNav({ commissionEnabled = false }: { commissionEnabled?: boolean }) {
   const pathname = usePathname()
 
   const tabs = [
@@ -16,9 +16,9 @@ export function TechnicianBottomNav() {
       isActive: pathname === '/technician' || pathname.startsWith('/technician/jobs'),
     },
     {
-      label: 'Komisi Saya',
+      label: commissionEnabled ? 'Komisi Saya' : 'Performa',
       href: '/technician/commissions',
-      icon: Coins,
+      icon: commissionEnabled ? Coins : Award,
       isActive: pathname === '/technician/commissions',
     },
     {

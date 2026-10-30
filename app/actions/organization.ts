@@ -22,13 +22,13 @@ const sopItemSchema = z.object({
   order: z.number().int().min(1),
   requires_photo: z.boolean().default(false),
   is_critical: z.boolean().default(false),
-  hint: z.string().trim().max(500, 'Hint maksimal 500 karakter').optional().or(z.literal('')),
+  hint: z.string().trim().max(500, 'Hint maksimal 500 karakter').optional().nullable().or(z.literal('')),
 })
 
 const sopFieldsSchema = z.object({
   sopMode: z.enum(['strict', 'reference', 'none']).default('none'),
   sopItems: z.array(sopItemSchema).default([]),
-  sopNotes: z.string().trim().max(1000, 'Catatan SOP maksimal 1000 karakter').optional().or(z.literal('')),
+  sopNotes: z.string().trim().max(1000, 'Catatan SOP maksimal 1000 karakter').optional().nullable().or(z.literal('')),
   estimatedDurationMinutes: z.coerce.number().int().min(1).max(1440).optional().nullable(),
   riskLevel: z.enum(['low', 'medium', 'high']).default('low'),
 })

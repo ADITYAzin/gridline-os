@@ -24,15 +24,20 @@ export function useRealtimeJobs({
   const [status, setStatus] = useState<RealtimeConnectionStatus>('connecting')
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const isRefreshingManual = useRef(false)
+  const onUpdateRef = useRef(onUpdate)
+
+  useEffect(() => {
+    onUpdateRef.current = onUpdate
+  }, [onUpdate])
 
   const handleRefresh = useCallback(() => {
     isRefreshingManual.current = true
     startTransition(() => {
       router.refresh()
       setLastUpdated(new Date())
-      onUpdate?.()
+      onUpdateRef.current?.()
     })
-  }, [router, onUpdate])
+  }, [router])
 
   useEffect(() => {
     if (!orgId && !technicianId) return
@@ -106,26 +111,59 @@ export function useRealtimeJobs({
         startTransition(() => {
           router.refresh()
           setLastUpdated(new Date())
-          onUpdate?.()
+          onUpdateRef.current?.()
         })
       }
     )
 
-    // 2. Subscribe to 'schedules' table (if orgId provided)
+    // 2. Subscribe to org-scoped tables (if orgId provided)
     if (orgId) {
+      const orgScopedTables = [
+        'schedules',
+        'checklist_items',
+        'job_photos',
+        'work_reports',
+        'signatures',
+        'company_services',
+        'customer_assets',
+        'customers',
+        'profiles',
+        'invite_tokens',
+      ]
+
+      for (const tableName of orgScopedTables) {
+        channel.on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: tableName,
+            filter: `org_id=eq.${orgId}`,
+          },
+          () => {
+            startTransition(() => {
+              router.refresh()
+              setLastUpdated(new Date())
+              onUpdateRef.current?.()
+            })
+          }
+        )
+      }
+
+      // Also subscribe to organizations row for this orgId
       channel.on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
-          table: 'schedules',
-          filter: `org_id=eq.${orgId}`,
+          table: 'organizations',
+          filter: `id=eq.${orgId}`,
         },
         () => {
           startTransition(() => {
             router.refresh()
             setLastUpdated(new Date())
-            onUpdate?.()
+            onUpdateRef.current?.()
           })
         }
       )
@@ -136,24 +174,29 @@ export function useRealtimeJobs({
       channel.on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'job_attendance',
           filter: `org_id=eq.${orgId}`,
         },
         (payload) => {
-          const attendance = payload.new as { type?: 'check_in' | 'check_out' }
+          const newAtt = payload.new as { check_in_at?: string | null; check_out_at?: string | null }
+          const oldAtt = payload.old as { check_in_at?: string | null; check_out_at?: string | null }
           if (enableToasts) {
-            if (attendance.type === 'check_in') {
+            if (newAtt?.check_in_at && !oldAtt?.check_in_at) {
               toast.info('Check-in Lapangan Terverifikasi', {
                 description: 'Teknisi telah tiba di lokasi pelanggan dan merekam koordinat GPS.',
+              })
+            } else if (newAtt?.check_out_at && !oldAtt?.check_out_at) {
+              toast.info('Check-out Lapangan Tercatat', {
+                description: 'Teknisi telah menyelesaikan kunjungan di lokasi pelanggan.',
               })
             }
           }
           startTransition(() => {
             router.refresh()
             setLastUpdated(new Date())
-            onUpdate?.()
+            onUpdateRef.current?.()
           })
         }
       )
@@ -173,7 +216,7 @@ export function useRealtimeJobs({
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [orgId, technicianId, enableToasts, router, onUpdate])
+  }, [orgId, technicianId, enableToasts, router])
 
   return {
     status,

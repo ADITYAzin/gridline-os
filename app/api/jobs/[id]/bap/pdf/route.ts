@@ -86,6 +86,8 @@ export async function GET(
           type: photo.type,
           signed_url: data?.signedUrl || '',
           captured_at: photo.captured_at,
+          checklist_item_id: photo.checklist_item_id,
+          caption: photo.caption,
         }
       })
     )

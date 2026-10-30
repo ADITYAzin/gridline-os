@@ -1,132 +1,266 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { checkInAction, checkOutAction } from '@/app/actions/execution'
+import { useState, useTransition, useRef } from 'react'
+import { checkInAction } from '@/app/actions/execution'
+import { compressImage } from '@/lib/image-compress'
 import { Button } from '@/components/ui/button'
-import { MapPin, CheckCircle2, Loader2, Navigation } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Camera,
+  CheckCircle2,
+  Loader2,
+  Navigation,
+  MapPin,
+  Maximize2,
+  Sparkles,
+} from 'lucide-react'
 
 interface CheckInButtonProps {
   jobId: string
   attendance: {
     check_in_at: string | null
     check_out_at: string | null
+    check_in_photo_url?: string | null
+    display_photo_url?: string | null
   } | null
 }
 
 export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
   const [isPending, startTransition] = useTransition()
   const [isLocating, setIsLocating] = useState(false)
+  const [isCompressing, setIsCompressing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isCheckedIn = Boolean(attendance?.check_in_at)
-  const isCheckedOut = Boolean(attendance?.check_out_at)
-  const isBusy = isPending || isLocating
+  const isBusy = isPending || isLocating || isCompressing
 
-  const handleAction = (type: 'in' | 'out') => {
+  // Trigger camera file input
+  const handleTriggerCapture = () => {
     setError(null)
-    setIsLocating(true)
-
-    const executeWithCoords = (lat?: number, lng?: number) => {
-      setIsLocating(false)
-      startTransition(async () => {
-        const res = type === 'in' ? await checkInAction(jobId, lat, lng) : await checkOutAction(jobId, lat, lng)
-        if (res.error) {
-          setError(res.error)
-        }
-      })
-    }
-
-    if (typeof window !== 'undefined' && 'geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          executeWithCoords(pos.coords.latitude, pos.coords.longitude)
-        },
-        () => {
-          // If GPS fails or times out, proceed immediately so user is never blocked
-          executeWithCoords()
-        },
-        { timeout: 3000, enableHighAccuracy: false, maximumAge: 60000 },
-      )
-    } else {
-      executeWithCoords()
-    }
+    fileInputRef.current?.click()
   }
 
-  if (isCheckedOut) {
-    return (
-      <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          <span className="font-semibold">Check-out Selesai</span>
-        </div>
-        <span className="text-[11px] text-muted-foreground">
-          {new Date(attendance!.check_out_at!).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-        </span>
-      </div>
-    )
+  // Handle selected camera/file photo & acquire GPS coords
+  const handlePhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawFile = e.target.files?.[0]
+    if (!rawFile) return
+
+    setError(null)
+    setIsCompressing(true)
+
+    try {
+      // 1. Compress image client-side to save mobile bandwidth
+      const compressedFile = await compressImage(rawFile, 1200, 0.8)
+      setIsCompressing(false)
+      setIsLocating(true)
+
+      // 2. Acquire GPS coordinates
+      const executeCheckIn = (lat?: number, lng?: number) => {
+        setIsLocating(false)
+        startTransition(async () => {
+          const formData = new FormData()
+          formData.append('photo', compressedFile)
+
+          const res = await checkInAction(jobId, lat, lng, formData)
+          if (res?.error) {
+            setError(res.error)
+          }
+        })
+      }
+
+      if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            executeCheckIn(pos.coords.latitude, pos.coords.longitude)
+          },
+          () => {
+            // If GPS times out or denied, proceed anyway so technician is never stranded
+            executeCheckIn()
+          },
+          { timeout: 4000, enableHighAccuracy: false, maximumAge: 60000 },
+        )
+      } else {
+        executeCheckIn()
+      }
+    } catch {
+      setIsCompressing(false)
+      setIsLocating(false)
+      setError('Gagal memproses foto kehadiran. Silakan coba lagi.')
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
   }
 
   return (
     <div className="space-y-2">
+      {/* Hidden camera input with capture="user" (front selfie camera prioritized on mobile) */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        capture="user"
+        className="hidden"
+        onChange={handlePhotoSelected}
+      />
+
       {error && (
-        <div className="rounded bg-destructive/10 border border-destructive/20 p-2 text-xs text-destructive">
-          {error}
+        <div className="rounded-[8px] bg-destructive/10 border border-destructive/20 p-2.5 text-xs text-destructive flex items-start gap-2">
+          <span className="font-semibold">Perhatian:</span>
+          <span>{error}</span>
         </div>
       )}
 
       {!isCheckedIn ? (
-        <Button
-          onClick={() => handleAction('in')}
-          disabled={isBusy}
-          className="w-full h-12 gap-2 font-bold shadow-xs bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white rounded-[8px] touch-press cursor-pointer"
-        >
-          {isLocating ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Mendapatkan Lokasi GPS...
-            </>
-          ) : isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Mencatat Check-in...
-            </>
-          ) : (
-            <>
-              <Navigation className="h-4 w-4" /> Check-in di Lokasi Servis (GPS)
-            </>
-          )}
-        </Button>
-      ) : (
-        <div className="flex items-center justify-between gap-3 p-3 bg-[#F0F9FF] rounded-[8px] border border-[#BAE6FD]">
-          <div className="flex items-center gap-2 text-xs">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            <span className="text-[#0369A1]">
-              Check-in:{' '}
-              <strong className="font-mono text-[#0F172A]">
-                {new Date(attendance!.check_in_at!).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-              </strong>
+        <div className="rounded-[10px] bg-gradient-to-r from-[#EBF5FC] to-white border border-[#BAE6FD] p-3 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between text-xs text-[#0369A1]">
+            <span className="font-semibold flex items-center gap-1.5">
+              <Navigation className="h-4 w-4 text-[#007ACC]" />
+              Presensi Kedatangan di Lokasi
+            </span>
+            <span className="text-[10px] bg-[#007ACC]/10 text-[#007ACC] px-1.5 py-0.5 rounded font-medium">
+              GPS + Foto
             </span>
           </div>
+          <p className="text-[11px] text-[#475569] leading-relaxed">
+            Ambil foto kehadiran di tempat sebelum memulai.
+          </p>
+
           <Button
-            onClick={() => handleAction('out')}
-            variant="outline"
-            size="sm"
+            type="button"
+            onClick={handleTriggerCapture}
             disabled={isBusy}
-            className="h-9 text-xs font-semibold gap-1.5 border-[#007ACC]/30 text-[#007ACC] hover:bg-white active:bg-[#EBF5FC] rounded-[8px] touch-press cursor-pointer"
+            className="w-full h-11 gap-2 font-bold shadow-xs bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white rounded-[8px] touch-press cursor-pointer text-xs"
           >
-            {isLocating ? (
+            {isCompressing ? (
               <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> GPS...
+                <Loader2 className="h-4 w-4 animate-spin" /> Mengompresi Foto...
+              </>
+            ) : isLocating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Mengambil Titik GPS...
               </>
             ) : isPending ? (
               <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Menyimpan...
+                <Loader2 className="h-4 w-4 animate-spin" /> Mencatat Kehadiran...
               </>
             ) : (
               <>
-                <MapPin className="h-3.5 w-3.5" /> Check-out Selesai
+                <Camera className="h-4 w-4" /> Ambil Foto & Check-in di Lokasi
               </>
             )}
           </Button>
         </div>
+      ) : (
+        /* Status Card Saat Sudah Check-in (Top Area - Tanpa Tombol Checkout) */
+        <div className="p-3 bg-emerald-50/70 rounded-[10px] border border-emerald-200/80 shadow-2xs flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-emerald-100 text-emerald-700">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-emerald-900">Hadir di Lokasi</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <p className="text-[11px] text-[#475569] truncate">
+                Pukul{' '}
+                <strong className="font-mono text-[#0F172A]">
+                  {new Date(attendance!.check_in_at!).toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}{' '}
+                  WIB
+                </strong>
+              </p>
+            </div>
+          </div>
+
+          {/* Pratinjau Foto Kehadiran (Jika ada) */}
+          {attendance?.display_photo_url ? (
+            <div className="shrink-0 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPreviewOpen(true)}
+                className="relative group h-10 w-10 rounded-[8px] overflow-hidden border border-emerald-300 shadow-2xs cursor-pointer focus:outline-hidden"
+                title="Lihat Foto Kehadiran"
+              >
+                <img
+                  src={attendance.display_photo_url}
+                  alt="Foto Kehadiran"
+                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                  <Maximize2 className="h-3 w-3" />
+                </div>
+              </button>
+            </div>
+          ) : (
+            <span className="text-[10px] text-emerald-700 font-medium bg-emerald-100 px-2 py-0.5 rounded-full">
+              GPS Tercatat
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Modal Dialog Pratinjau Foto Kehadiran */}
+      {attendance?.display_photo_url && (
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="sm:max-w-md p-5 sm:p-6 rounded-2xl bg-white border border-slate-200 shadow-xl">
+            <DialogHeader className="pb-3 border-b">
+              <DialogTitle className="text-sm font-bold flex items-center gap-2 text-[#0F172A]">
+                <Camera className="h-4 w-4 text-[#007ACC]" />
+                Bukti Foto Presensi Teknisi
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="mt-3.5 space-y-3">
+              <div className="aspect-4/3 rounded-xl overflow-hidden bg-slate-950 border border-slate-200 shadow-inner flex items-center justify-center">
+                <img
+                  src={attendance.display_photo_url}
+                  alt="Foto Kehadiran"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-[#64748B]">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span>
+                    Waktu Check-in:{' '}
+                    <strong className="text-[#0F172A] font-mono">
+                      {new Date(attendance.check_in_at!).toLocaleTimeString('id-ID', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}{' '}
+                      WIB
+                    </strong>
+                  </span>
+                </div>
+                <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+                  Tercatat
+                </span>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPreviewOpen(false)}
+                className="w-full h-9 text-xs font-medium text-[#475569] rounded-[8px]"
+              >
+                Tutup Pratinjau
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )

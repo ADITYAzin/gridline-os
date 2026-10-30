@@ -140,10 +140,16 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
         <div className="space-y-6">
           {filteredTechnicians.map((tech) => {
             const techSchedules = schedules.filter((s) => s.technician_id === tech.id)
-            const hasOngoingJob = techSchedules.some((s) => {
+            const ongoingJobs = techSchedules.filter((s) => {
               const job = Array.isArray(s.jobs) ? s.jobs[0] : s.jobs
               return job?.status === 'on_progress'
             })
+            const scheduledJobs = techSchedules.filter((s) => {
+              const job = Array.isArray(s.jobs) ? s.jobs[0] : s.jobs
+              return job && (job.status === 'assigned' || job.status === 'pending')
+            })
+            const hasOngoingJob = ongoingJobs.length > 0
+            const scheduledCount = scheduledJobs.length
             const activeTechSchedules = techSchedules.filter((s) => {
               const job = Array.isArray(s.jobs) ? s.jobs[0] : s.jobs
               return job && job.status !== 'cancelled'
@@ -184,9 +190,18 @@ export function DispatchView({ technicians, schedules, orgId }: DispatchViewProp
                     <div>
                       <div className="flex items-center gap-2">
                         <CardTitle className="text-sm font-semibold">{tech.name}</CardTitle>
-                        {hasOngoingJob && (
-                          <Badge variant="default" className="text-[10px] bg-blue-600 hover:bg-blue-600 px-1.5 py-0">
-                            Sedang Bertugas
+                        {hasOngoingJob ? (
+                          <Badge variant="default" className="text-[10px] bg-[#007ACC] hover:bg-[#007ACC] px-1.5 py-0 gap-1 inline-flex items-center text-white">
+                            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                            Sedang di Lapangan
+                          </Badge>
+                        ) : scheduledCount > 0 ? (
+                          <Badge variant="secondary" className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200/80 px-1.5 py-0 font-medium">
+                            Terjadwal ({scheduledCount} Job)
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] text-slate-500 border-slate-200 bg-slate-50 px-1.5 py-0 font-normal">
+                            Siap Ditugaskan
                           </Badge>
                         )}
                       </div>

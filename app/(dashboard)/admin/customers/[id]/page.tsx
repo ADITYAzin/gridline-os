@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { WhatsAppActionDialog } from '@/components/whatsapp/whatsapp-action-dialog'
+import { EditCustomerDialog } from '@/components/customers/edit-customer-dialog'
+import { DeleteCustomerDialog } from '@/components/customers/delete-customer-dialog'
 import { SlaBadge } from '@/components/jobs/sla-badge'
 import { CustomerAssetsTab } from '@/components/customers/customer-assets-tab'
 import {
@@ -125,6 +127,18 @@ export default async function CustomerDetailPage({ params }: PageProps) {
               Buat Job Baru
             </Link>
           </Button>
+
+          <EditCustomerDialog
+            customer={customer}
+            triggerVariant="button"
+          />
+
+          <DeleteCustomerDialog
+            customerId={customer.id}
+            customerName={customer.name}
+            triggerVariant="button"
+            redirectOnDelete
+          />
         </div>
       </div>
 

@@ -9,27 +9,36 @@ import { CheckCircle2, AlertCircle, Loader2, ShieldCheck } from 'lucide-react'
 interface CompletionReviewCardProps {
   jobId: string
   status: string
+  hasCheckIn?: boolean
   isChecklistComplete: boolean
   hasBeforePhoto: boolean
   hasAfterPhoto: boolean
   hasSignature: boolean
   hasReport: boolean
+  hasCheckOut?: boolean
 }
 
 export function CompletionReviewCard({
   jobId,
   status,
+  hasCheckIn = false,
   isChecklistComplete,
   hasBeforePhoto,
   hasAfterPhoto,
   hasSignature,
   hasReport,
+  hasCheckOut = false,
 }: CompletionReviewCardProps) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
   const isAllRequirementsMet =
-    isChecklistComplete && hasBeforePhoto && hasAfterPhoto && hasSignature && hasReport
+    hasCheckIn &&
+    isChecklistComplete &&
+    hasBeforePhoto &&
+    hasAfterPhoto &&
+    hasSignature &&
+    hasReport
 
   const isCompleted = status === 'completed'
   const isCancelled = status === 'cancelled'
@@ -67,11 +76,13 @@ export function CompletionReviewCard({
   }
 
   const checklistItems = [
+    { label: 'Check-in Kehadiran (GPS)', isMet: hasCheckIn },
     { label: 'Checklist SOP', isMet: isChecklistComplete },
-    { label: 'Foto Sebelum', isMet: hasBeforePhoto },
-    { label: 'Foto Sesudah', isMet: hasAfterPhoto },
+    { label: 'Foto Sebelum (Before)', isMet: hasBeforePhoto },
+    { label: 'Foto Sesudah (After)', isMet: hasAfterPhoto },
     { label: 'Tanda Tangan Pelanggan', isMet: hasSignature },
     { label: 'Laporan Pekerjaan', isMet: hasReport },
+    { label: 'Check-out Kepulangan (GPS)', isMet: hasCheckOut },
   ]
 
   return (

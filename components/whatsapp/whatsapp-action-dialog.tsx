@@ -5,7 +5,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -21,13 +20,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  createWhatsAppUrl,
   formatWhatsAppPhone,
   generateWhatsAppMessage,
+  openWhatsAppTargeted,
   type WhatsAppScenario,
   type WhatsAppTemplateData,
+  type WhatsAppTargetPlatform,
 } from '@/lib/whatsapp'
-import { MessageSquare, Send, AlertCircle, ExternalLink } from 'lucide-react'
+import { MessageSquare, Send, AlertCircle, ExternalLink, Globe, Smartphone, Check } from 'lucide-react'
 
 interface WhatsAppActionDialogProps {
   recipientType: 'customer' | 'technician'
@@ -53,6 +53,18 @@ export function WhatsAppActionDialog({
   className = '',
 }: WhatsAppActionDialogProps) {
   const [open, setOpen] = useState(false)
+  const [targetPlatform, setTargetPlatform] = useState<WhatsAppTargetPlatform>(() => {
+    if (typeof window === 'undefined') return 'web_tab'
+    try {
+      const saved = localStorage.getItem('gridline_wa_target_platform')
+      if (saved === 'web_tab' || saved === 'app') {
+        return saved
+      }
+    } catch {
+      // Ignore localStorage restrictions
+    }
+    return 'web_tab'
+  })
 
   // Determine appropriate initial scenario
   const initialScenario: WhatsAppScenario =
@@ -66,6 +78,15 @@ export function WhatsAppActionDialog({
   const normalizedPhone = formatWhatsAppPhone(recipientPhone)
   const isValidPhone = Boolean(normalizedPhone)
 
+  const handlePlatformChange = (val: WhatsAppTargetPlatform) => {
+    setTargetPlatform(val)
+    try {
+      localStorage.setItem('gridline_wa_target_platform', val)
+    } catch {
+      // Ignore
+    }
+  }
+
   const handleScenarioChange = (newScenario: WhatsAppScenario) => {
     setScenario(newScenario)
     setMessage(generateWhatsAppMessage(newScenario, templateData))
@@ -73,8 +94,11 @@ export function WhatsAppActionDialog({
 
   const handleOpenWhatsApp = () => {
     if (!normalizedPhone) return
-    const url = createWhatsAppUrl(normalizedPhone, message)
-    window.open(url, '_blank', 'noopener,noreferrer')
+    openWhatsAppTargeted({
+      phone: normalizedPhone,
+      message,
+      targetPlatform,
+    })
     setOpen(false)
   }
 
@@ -166,6 +190,49 @@ export function WhatsAppActionDialog({
               placeholder="Tulis pesan..."
             />
           </div>
+
+          {/* Platform Selector & Anti-Tab Note */}
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                Tujuan Pembukaan
+              </Label>
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                <Check className="h-3 w-3" /> Tab aktif digunakan ulang
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handlePlatformChange('web_tab')}
+                className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
+                  targetPlatform === 'web_tab'
+                    ? 'border-emerald-500 bg-emerald-50/80 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold shadow-xs'
+                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                <Globe className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span>WhatsApp Web</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePlatformChange('app')}
+                className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
+                  targetPlatform === 'app'
+                    ? 'border-emerald-500 bg-emerald-50/80 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold shadow-xs'
+                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                <Smartphone className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span>Aplikasi WhatsApp</span>
+              </button>
+            </div>
+            <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-tight">
+              {targetPlatform === 'web_tab'
+                ? 'Menggunakan tab WhatsApp yang sama tanpa membuka tab baru berulang kali.'
+                : 'Membuka langsung aplikasi WhatsApp Desktop atau HP tanpa membuka tab browser.'}
+            </p>
+          </div>
         </div>
 
         {/* Footer - Fixed at Bottom */}
@@ -193,3 +260,4 @@ export function WhatsAppActionDialog({
     </Dialog>
   )
 }
+

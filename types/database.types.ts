@@ -82,6 +82,7 @@ export type Database = {
       }
       company_services: {
         Row: {
+          commission_rate: number | null
           created_at: string
           default_price: number | null
           description: string | null
@@ -97,6 +98,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          commission_rate?: number | null
           created_at?: string
           default_price?: number | null
           description?: string | null
@@ -112,6 +114,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          commission_rate?: number | null
           created_at?: string
           default_price?: number | null
           description?: string | null
@@ -305,6 +308,7 @@ export type Database = {
           check_in_at: string | null
           check_in_latitude: number | null
           check_in_longitude: number | null
+          check_in_photo_url: string | null
           check_out_at: string | null
           check_out_latitude: number | null
           check_out_longitude: number | null
@@ -319,6 +323,7 @@ export type Database = {
           check_in_at?: string | null
           check_in_latitude?: number | null
           check_in_longitude?: number | null
+          check_in_photo_url?: string | null
           check_out_at?: string | null
           check_out_latitude?: number | null
           check_out_longitude?: number | null
@@ -333,6 +338,7 @@ export type Database = {
           check_in_at?: string | null
           check_in_latitude?: number | null
           check_in_longitude?: number | null
+          check_in_photo_url?: string | null
           check_out_at?: string | null
           check_out_latitude?: number | null
           check_out_longitude?: number | null
@@ -369,7 +375,9 @@ export type Database = {
       }
       job_photos: {
         Row: {
+          caption: string | null
           captured_at: string
+          checklist_item_id: string | null
           created_at: string
           file_url: string
           id: string
@@ -381,7 +389,9 @@ export type Database = {
           uploaded_by: string
         }
         Insert: {
+          caption?: string | null
           captured_at: string
+          checklist_item_id?: string | null
           created_at?: string
           file_url: string
           id?: string
@@ -393,7 +403,9 @@ export type Database = {
           uploaded_by: string
         }
         Update: {
+          caption?: string | null
           captured_at?: string
+          checklist_item_id?: string | null
           created_at?: string
           file_url?: string
           id?: string
@@ -580,12 +592,17 @@ export type Database = {
         Row: {
           address: string | null
           city: string | null
+          commission_enabled: boolean
+          commission_type: string
           created_at: string
+          default_commission_rate: number
           email: string | null
           id: string
           is_onboarded: boolean
           job_sequence: number
           name: string
+          on_time_bonus_enabled: boolean
+          on_time_bonus_rate: number
           phone: string | null
           postal_code: string | null
           province: string | null
@@ -594,12 +611,17 @@ export type Database = {
         Insert: {
           address?: string | null
           city?: string | null
+          commission_enabled?: boolean
+          commission_type?: string
           created_at?: string
+          default_commission_rate?: number
           email?: string | null
           id?: string
           is_onboarded?: boolean
           job_sequence?: number
           name: string
+          on_time_bonus_enabled?: boolean
+          on_time_bonus_rate?: number
           phone?: string | null
           postal_code?: string | null
           province?: string | null
@@ -608,12 +630,17 @@ export type Database = {
         Update: {
           address?: string | null
           city?: string | null
+          commission_enabled?: boolean
+          commission_type?: string
           created_at?: string
+          default_commission_rate?: number
           email?: string | null
           id?: string
           is_onboarded?: boolean
           job_sequence?: number
           name?: string
+          on_time_bonus_enabled?: boolean
+          on_time_bonus_rate?: number
           phone?: string | null
           postal_code?: string | null
           province?: string | null

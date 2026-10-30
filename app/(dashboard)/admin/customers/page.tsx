@@ -4,6 +4,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { CreateCustomerDialog } from './create-customer-dialog'
 import { ImportCustomersDialog } from './import-customers-dialog'
 import { WhatsAppActionDialog } from '@/components/whatsapp/whatsapp-action-dialog'
+import { EditCustomerDialog } from '@/components/customers/edit-customer-dialog'
+import { DeleteCustomerDialog } from '@/components/customers/delete-customer-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Building2, Phone, Mail, MapPin, Eye, Plus, Calendar } from 'lucide-react'
 
@@ -71,7 +73,7 @@ export default async function CustomersPage() {
                   <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] w-[10%] min-w-[110px]">
                     Terdaftar
                   </TableHead>
-                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] text-center w-[8%] min-w-[120px]">
+                  <TableHead className="h-11 px-4 text-[12px] font-semibold text-[#475569] uppercase tracking-[0.02em] text-center w-[10%] min-w-[160px]">
                     Aksi
                   </TableHead>
                 </TableRow>
@@ -190,6 +192,14 @@ export default async function CustomersPage() {
                         >
                           <Plus className="h-4 w-4" />
                         </Link>
+                        <EditCustomerDialog
+                          customer={c}
+                          triggerVariant="icon"
+                        />
+                        <DeleteCustomerDialog
+                          customerId={c.id}
+                          customerName={c.name}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>

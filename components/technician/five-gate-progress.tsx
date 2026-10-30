@@ -9,6 +9,7 @@ import {
   FileText,
   CheckCircle2,
   Clock,
+  LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -18,6 +19,7 @@ interface FiveGateProgressProps {
   hasPhotosCompleted: boolean
   hasSignature: boolean
   hasReport: boolean
+  hasCheckOut?: boolean
   isCompleted: boolean
 }
 
@@ -27,14 +29,16 @@ export function FiveGateProgress({
   hasPhotosCompleted,
   hasSignature,
   hasReport,
+  hasCheckOut = false,
   isCompleted,
 }: FiveGateProgressProps) {
   const gates = [
     { label: 'Check-in', done: hasCheckIn, icon: Navigation },
-    { label: 'Checklist SOP', done: hasChecklistCompleted, icon: ListChecks },
+    { label: 'SOP', done: hasChecklistCompleted, icon: ListChecks },
     { label: 'Foto Bukti', done: hasPhotosCompleted, icon: Camera },
-    { label: 'Tanda Tangan', done: hasSignature, icon: PenTool },
+    { label: 'Ttd', done: hasSignature, icon: PenTool },
     { label: 'Laporan', done: hasReport, icon: FileText },
+    { label: 'Check-out', done: hasCheckOut, icon: LogOut },
   ]
 
   const completedCount = gates.filter((g) => g.done).length
@@ -53,7 +57,7 @@ export function FiveGateProgress({
               </span>
             ) : (
               <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-0.5">
-                <Clock className="h-3 w-3 text-amber-500" /> {completedCount}/5 Lengkap
+                <Clock className="h-3 w-3 text-amber-500" /> {completedCount}/6 Lengkap
               </span>
             )}
           </div>
@@ -71,15 +75,15 @@ export function FiveGateProgress({
           />
         </div>
 
-        {/* 5-Gate Step Pills */}
-        <div className="grid grid-cols-5 gap-1.5 pt-1">
+        {/* 6-Gate Step Pills */}
+        <div className="grid grid-cols-6 gap-1 pt-1">
           {gates.map((g, idx) => {
             const Icon = g.icon
             return (
               <div
                 key={idx}
                 className={cn(
-                  'flex flex-col items-center justify-center p-1.5 rounded-md border text-center transition-all',
+                  'flex flex-col items-center justify-center p-1 rounded-md border text-center transition-all',
                   g.done
                     ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-2xs'
                     : 'bg-muted/40 border-border/40 text-muted-foreground'
@@ -87,15 +91,15 @@ export function FiveGateProgress({
               >
                 <div
                   className={cn(
-                    'h-5 w-5 rounded-full flex items-center justify-center mb-1 text-[10px]',
+                    'h-4.5 w-4.5 rounded-full flex items-center justify-center mb-0.5 text-[9px]',
                     g.done
                       ? 'bg-emerald-500 text-white'
                       : 'bg-muted text-muted-foreground'
                   )}
                 >
-                  {g.done ? <CheckCircle2 className="h-3 w-3" /> : <Icon className="h-2.5 w-2.5" />}
+                  {g.done ? <CheckCircle2 className="h-2.5 w-2.5" /> : <Icon className="h-2 w-2" />}
                 </div>
-                <span className="text-[9px] font-medium leading-tight truncate max-w-full">
+                <span className="text-[8.5px] font-medium leading-tight truncate max-w-full">
                   {g.label}
                 </span>
               </div>

@@ -7,9 +7,18 @@ import {
   MapPin,
   Search,
   RefreshCw,
+  Camera,
+  Maximize2,
+  CheckCircle2,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useRealtimeJobs } from '@/components/realtime/use-realtime-jobs'
 import { RealtimeIndicator } from '@/components/realtime/realtime-indicator'
 
@@ -29,6 +38,7 @@ export interface MapJobItem {
   technician_id?: string | null
   check_in_at?: string | null
   check_out_at?: string | null
+  check_in_photo_url?: string | null
 }
 
 interface LiveMapViewProps {
@@ -59,6 +69,12 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
+  const [previewPhoto, setPreviewPhoto] = useState<{
+    url: string
+    jobNumber: string
+    techName: string
+    time: string
+  } | null>(null)
 
   // Realtime subscription
   const { status, lastUpdated, isRefreshing, refresh } = useRealtimeJobs({
@@ -103,98 +119,80 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
     })
   }, [activeJobs, statusFilter, searchQuery])
 
-  // Jobs that have valid coordinates for the map
+  // Get jobs that have valid GPS coordinates for the map
   const mappedJobs = useMemo(() => {
     return filteredJobs.filter(
       (job) => job.latitude != null && job.longitude != null && !isNaN(job.latitude) && !isNaN(job.longitude)
     )
   }, [filteredJobs])
 
-  // Realtime counts per tab
-  const tabCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      all: activeJobs.length,
-      on_progress: 0,
-      assigned: 0,
-      pending: 0,
-      completed: 0,
-    }
-
-    for (const job of activeJobs) {
-      if (job.status in counts) {
-        counts[job.status]++
-      }
-    }
-
-    return counts
-  }, [activeJobs])
-
   return (
     <div className="space-y-4">
-      {/* Page Header */}
+      {/* Top Bar: Title & Stats */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground font-heading">
-            Peta Lapangan
+          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-primary" />
+            Peta Lapangan & Presensi
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Pantau sebaran tiket dan kehadiran teknisi di lapangan secara realtime.
+            Monitoring lokasi penugasan, status GPS kehadiran, dan bukti foto teknisi secara realtime.
           </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <RealtimeIndicator status={status} lastUpdated={lastUpdated} />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refresh}
-            disabled={isRefreshing}
-            className="h-8 px-2.5 text-xs gap-1.5 rounded-lg"
-          >
-            <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>Segarkan</span>
-          </Button>
+          <RealtimeIndicator
+            status={status}
+            lastUpdated={lastUpdated}
+            onRefresh={refresh}
+            isRefreshing={isRefreshing}
+          />
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-2.5 rounded-xl border bg-card/60 shadow-2xs">
-        {/* Search Box */}
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
-            type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari no. tiket, pelanggan, atau teknisi..."
-            className="h-8 pl-8 text-xs rounded-lg bg-background"
+            placeholder="Cari no tiket, pelanggan, teknisi, alamat..."
+            className="pl-8.5 h-8.5 text-xs bg-card"
           />
         </div>
 
-        {/* Status Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 md:pb-0">
-          {STATUS_FILTERS.map((f) => {
-            const isActive = statusFilter === f.value
-            const count = tabCounts[f.value] ?? 0
+        {/* Status Filter Badges */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          {STATUS_FILTERS.map((filter) => {
+            const isSelected = statusFilter === filter.value
+            const count =
+              filter.value === 'all'
+                ? activeJobs.length
+                : activeJobs.filter((j) => j.status === filter.value).length
 
             return (
               <button
-                key={f.value}
+                key={filter.value}
                 type="button"
-                onClick={() => setStatusFilter(f.value)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                    : 'bg-background text-muted-foreground border-border hover:bg-muted/40 hover:text-foreground'
+                onClick={() => setStatusFilter(filter.value)}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer ${
+                  isSelected
+                    ? 'bg-primary text-primary-foreground shadow-2xs font-semibold'
+                    : 'bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {f.color && <span className={`h-1.5 w-1.5 rounded-full ${f.color}`} />}
-                <span>{f.label}</span>
+                {filter.color && (
+                  <span
+                    className={`h-2 w-2 rounded-full ${filter.color} ${
+                      isSelected ? 'ring-2 ring-primary-foreground/30' : ''
+                    }`}
+                  />
+                )}
+                <span>{filter.label}</span>
                 <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-semibold leading-none tabular-nums ${
-                    isActive
-                      ? 'bg-primary-foreground/20 text-primary-foreground'
-                      : 'bg-muted text-muted-foreground'
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                    isSelected ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-background/80 text-muted-foreground'
                   }`}
                 >
                   {count}
@@ -289,16 +287,43 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
                       <span className="text-muted-foreground truncate max-w-[140px]">
                         {job.technician_name ? job.technician_name : <span className="italic text-amber-600">Belum ada teknisi</span>}
                       </span>
-                      {isCheckedIn ? (
-                        <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-[10px]">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          Hadir {checkInTime}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground/70">
-                          {job.status === 'assigned' ? 'Menuju Lokasi' : job.status === 'completed' ? 'Selesai' : 'Belum Check-in'}
-                        </span>
-                      )}
+
+                      <div className="flex items-center gap-1.5">
+                        {isCheckedIn ? (
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-[10px]">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Hadir {checkInTime}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground/70">
+                            {job.status === 'assigned' ? 'Menuju Lokasi' : job.status === 'completed' ? 'Selesai' : 'Belum Check-in'}
+                          </span>
+                        )}
+
+                        {/* Thumbnail Foto Kehadiran Teknisi (Bisa diklik untuk memperbesar) */}
+                        {job.check_in_photo_url && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setPreviewPhoto({
+                                url: job.check_in_photo_url!,
+                                jobNumber: job.job_number,
+                                techName: job.technician_name || 'Teknisi',
+                                time: checkInTime,
+                              })
+                            }}
+                            className="relative h-6 w-6 rounded border border-emerald-300 overflow-hidden shrink-0 hover:scale-110 transition-transform cursor-pointer shadow-2xs"
+                            title="Lihat Foto Presensi"
+                          >
+                            <img
+                              src={job.check_in_photo_url}
+                              alt="Selfie Check-in"
+                              className="h-full w-full object-cover"
+                            />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between text-[11px] pt-1.5 mt-1.5 border-t border-border/30">
@@ -339,6 +364,52 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
           />
         </div>
       </div>
+
+      {/* Modal Dialog Zoom Foto Presensi Teknisi */}
+      {previewPhoto && (
+        <Dialog open={Boolean(previewPhoto)} onOpenChange={() => setPreviewPhoto(null)}>
+          <DialogContent className="sm:max-w-md p-5 sm:p-6 rounded-2xl bg-card border border-border shadow-xl">
+            <DialogHeader className="pb-3 border-b">
+              <DialogTitle className="text-sm font-bold flex items-center gap-2 text-foreground">
+                <Camera className="h-4 w-4 text-primary" />
+                Bukti Foto Presensi — {previewPhoto.jobNumber}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="mt-3.5 space-y-3">
+              <div className="aspect-4/3 rounded-xl overflow-hidden bg-slate-950 border border-border/80 shadow-inner flex items-center justify-center">
+                <img
+                  src={previewPhoto.url}
+                  alt={`Presensi ${previewPhoto.jobNumber}`}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+
+              <div className="p-3 rounded-xl bg-muted/40 border border-border text-xs flex items-center justify-between">
+                <div>
+                  <span className="text-muted-foreground block text-[11px]">Teknisi Bertugas:</span>
+                  <span className="font-semibold text-foreground text-xs">{previewPhoto.techName}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-muted-foreground block text-[11px]">Waktu Presensi:</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono text-xs">
+                    {previewPhoto.time || 'Tercatat'}
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPreviewPhoto(null)}
+                className="w-full h-9 text-xs font-medium rounded-lg"
+              >
+                Tutup
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

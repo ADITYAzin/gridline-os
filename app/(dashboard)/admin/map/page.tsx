@@ -1,5 +1,7 @@
 import { requireRole } from '@/lib/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { STORAGE } from '@/lib/constants'
 import { LiveMapView, type MapJobItem } from '@/components/map/live-map-view'
 
 export const metadata = {
@@ -10,8 +12,9 @@ export const metadata = {
 export default async function AdminMapPage() {
   const profile = await requireRole('admin')
   const supabase = await createSupabaseServerClient()
+  const admin = getSupabaseAdmin()
 
-  // Fetch only active/relevant jobs (exclude cancelled jobs)
+  // Fetch active/relevant jobs (exclude cancelled jobs)
   const { data: rawJobs, error } = await supabase
     .from('jobs')
     .select(`
@@ -37,6 +40,7 @@ export default async function AdminMapPage() {
         check_in_at,
         check_in_latitude,
         check_in_longitude,
+        check_in_photo_url,
         check_out_at
       )
     `)
@@ -48,46 +52,62 @@ export default async function AdminMapPage() {
     console.error('Error fetching jobs for map:', error)
   }
 
-  const jobs: MapJobItem[] = (rawJobs || []).map((j: any) => {
-    // Look up attendance check-in
-    const attendanceList = Array.isArray(j.job_attendance) ? j.job_attendance : []
-    // Find latest check_in_at
-    const latestAttendance = attendanceList.length > 0 ? attendanceList[attendanceList.length - 1] : null
+  const jobs: MapJobItem[] = await Promise.all(
+    (rawJobs || []).map(async (j: any) => {
+      // Look up attendance check-in
+      const attendanceList = Array.isArray(j.job_attendance) ? j.job_attendance : []
+      const latestAttendance = attendanceList.length > 0 ? attendanceList[attendanceList.length - 1] : null
 
-    const checkInAt = latestAttendance?.check_in_at || null
-    const checkOutAt = latestAttendance?.check_out_at || null
+      const checkInAt = latestAttendance?.check_in_at || null
+      const checkOutAt = latestAttendance?.check_out_at || null
+      let checkInPhotoUrl: string | null = null
 
-    // If technician checked in with GPS coordinates, prioritize attendance coordinates
-    const lat = latestAttendance?.check_in_latitude != null
-      ? Number(latestAttendance.check_in_latitude)
-      : j.latitude != null
-      ? Number(j.latitude)
-      : null
+      if (latestAttendance?.check_in_photo_url) {
+        try {
+          const { data: photoData } = await admin.storage
+            .from(STORAGE.jobFilesBucket)
+            .createSignedUrl(latestAttendance.check_in_photo_url, 7200)
+          if (photoData?.signedUrl) {
+            checkInPhotoUrl = photoData.signedUrl
+          }
+        } catch {
+          // fallback
+        }
+      }
 
-    const lng = latestAttendance?.check_in_longitude != null
-      ? Number(latestAttendance.check_in_longitude)
-      : j.longitude != null
-      ? Number(j.longitude)
-      : null
+      // If technician checked in with GPS coordinates, prioritize attendance coordinates
+      const lat = latestAttendance?.check_in_latitude != null
+        ? Number(latestAttendance.check_in_latitude)
+        : j.latitude != null
+        ? Number(j.latitude)
+        : null
 
-    return {
-      id: j.id,
-      job_number: j.job_number,
-      service_type: j.service_type,
-      address: j.address || '',
-      priority: j.priority || 'medium',
-      status: j.status || 'pending',
-      latitude: lat,
-      longitude: lng,
-      created_at: j.created_at,
-      customer_name: j.customers?.name || 'Pelanggan',
-      customer_phone: j.customers?.phone || null,
-      technician_name: j.profiles?.name || null,
-      technician_id: j.technician_id || null,
-      check_in_at: checkInAt,
-      check_out_at: checkOutAt,
-    }
-  })
+      const lng = latestAttendance?.check_in_longitude != null
+        ? Number(latestAttendance.check_in_longitude)
+        : j.longitude != null
+        ? Number(j.longitude)
+        : null
+
+      return {
+        id: j.id,
+        job_number: j.job_number,
+        service_type: j.service_type,
+        address: j.address || '',
+        priority: j.priority || 'medium',
+        status: j.status || 'pending',
+        latitude: lat,
+        longitude: lng,
+        created_at: j.created_at,
+        customer_name: j.customers?.name || 'Pelanggan',
+        customer_phone: j.customers?.phone || null,
+        technician_name: j.profiles?.name || null,
+        technician_id: j.technician_id || null,
+        check_in_at: checkInAt,
+        check_out_at: checkOutAt,
+        check_in_photo_url: checkInPhotoUrl,
+      }
+    })
+  )
 
   return <LiveMapView jobs={jobs} orgId={profile.orgId} />
 }

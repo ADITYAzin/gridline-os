@@ -1,7 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { toggleChecklistItemAction, markChecklistNaAction, resetChecklistItemAction } from '@/app/actions/execution'
+import { useState, useTransition, useRef } from 'react'
+import {
+  toggleChecklistItemAction,
+  markChecklistNaAction,
+  resetChecklistItemAction,
+  uploadJobPhotoAction,
+  deleteJobPhotoAction,
+} from '@/app/actions/execution'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +32,7 @@ import {
   Loader2,
   Info,
   RotateCcw,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -41,14 +48,34 @@ export interface ChecklistItem {
   hint?: string | null
 }
 
+export interface JobPhotoItem {
+  id: string
+  type: 'before' | 'after'
+  file_url: string
+  display_url?: string
+  checklist_item_id?: string | null
+  caption?: string | null
+  created_at?: string
+}
+
 interface ChecklistSectionProps {
   items: ChecklistItem[]
+  jobId?: string
+  photos?: JobPhotoItem[]
   disabled: boolean
 }
 
-export function ChecklistSection({ items, disabled }: ChecklistSectionProps) {
+export function ChecklistSection({ items, jobId, photos = [], disabled }: ChecklistSectionProps) {
   const [checklist, setChecklist] = useState<ChecklistItem[]>(items)
   const [, startTransition] = useTransition()
+
+  // 1-Tap Photo Upload State
+  const [uploadingItemId, setUploadingItemId] = useState<string | null>(null)
+  const [activeUploadTarget, setActiveUploadTarget] = useState<{ item: ChecklistItem; index: number } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  // Lightbox Preview State
+  const [previewPhoto, setPreviewPhoto] = useState<{ url: string; caption: string } | null>(null)
 
   // N/A Modal State
   const [naTargetItem, setNaTargetItem] = useState<ChecklistItem | null>(null)
@@ -63,11 +90,86 @@ export function ChecklistSection({ items, disabled }: ChecklistSectionProps) {
   }
 
   const sopMode = checklist[0]?.sop_mode || 'strict'
+  const requiresPhotoCount = checklist.filter((i) => i.requires_photo).length
+
+  // Trigger camera directly for specific checklist item
+  const handleTriggerCamera = (e: React.MouseEvent, item: ChecklistItem, index: number) => {
+    e.stopPropagation()
+    if (disabled) return
+    setActiveUploadTarget({ item, index })
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+      fileInputRef.current.click()
+    }
+  }
+
+  // Handle photo captured from file input
+  const handlePhotoCaptured = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !jobId || !activeUploadTarget) return
+
+    const { item, index } = activeUploadTarget
+    setUploadingItemId(item.id)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('checklistItemId', item.id)
+      formData.append('caption', item.item)
+
+      // First item or preparation steps default to 'before', others to 'after'
+      const photoType: 'before' | 'after' = index === 0 ? 'before' : 'after'
+      const res = await uploadJobPhotoAction(jobId, photoType, formData)
+
+      if (res?.error) {
+        toast.error(res.error)
+      } else {
+        toast.success(`Foto bukti tersimpan & langkah "${item.item}" otomatis selesai!`)
+        // Optimistically update checklist state
+        setChecklist((prev) =>
+          prev.map((i) => (i.id === item.id ? { ...i, is_completed: true, is_na: false } : i))
+        )
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Kesalahan jaringan'
+      toast.error('Gagal mengunggah foto bukti: ' + msg)
+    } finally {
+      setUploadingItemId(null)
+      setActiveUploadTarget(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  // Handle removing a photo attached to a checklist item
+  const handleDeletePhoto = async (e: React.MouseEvent, photoId: string, itemId: string) => {
+    e.stopPropagation()
+    if (disabled || !jobId) return
+
+    const confirmed = window.confirm('Hapus foto bukti ini? Langkah SOP akan kembali berstatus belum selesai.')
+    if (!confirmed) return
+
+    try {
+      const res = await deleteJobPhotoAction(jobId, photoId)
+      if (res?.error) {
+        toast.error(res.error)
+      } else {
+        toast.success('Foto bukti dihapus.')
+        setChecklist((prev) =>
+          prev.map((i) => (i.id === itemId ? { ...i, is_completed: false } : i))
+        )
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Kesalahan jaringan'
+      toast.error('Gagal menghapus foto: ' + msg)
+    }
+  }
 
   // --- REFERENCE MODE ---
   if (sopMode === 'reference') {
     return (
-      <Card className="shadow-sm border-amber-500/20 bg-amber-500/5">
+      <Card className="shadow-xs rounded-[12px] border-amber-500/20 bg-amber-500/5">
         <CardHeader
           className="p-4 pb-2 cursor-pointer select-none"
           onClick={() => setIsReferenceOpen(!isReferenceOpen)}
@@ -97,15 +199,12 @@ export function ChecklistSection({ items, disabled }: ChecklistSectionProps) {
           <CardContent className="p-4 pt-2 space-y-2.5">
             <ol className="space-y-2 text-xs">
               {checklist.map((item, idx) => (
-                <li
-                  key={item.id}
-                  className="p-2.5 rounded-lg border border-border/70 bg-card/60 flex items-start gap-2.5"
-                >
-                  <span className="h-5 w-5 rounded bg-muted text-muted-foreground font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">
-                    {idx + 1}
+                <li key={item.id} className="flex items-start gap-2.5 p-2 rounded-lg bg-background/60 border border-border/50">
+                  <span className="font-mono text-muted-foreground font-semibold text-[11px] pt-0.5">
+                    {idx + 1}.
                   </span>
-                  <div className="space-y-0.5 flex-1 min-w-0">
-                    <p className="font-medium text-foreground leading-snug">{item.item}</p>
+                  <div className="space-y-0.5 flex-1">
+                    <span className="font-medium text-foreground">{item.item}</span>
                     {item.hint && (
                       <p className="text-[11px] text-muted-foreground leading-relaxed flex items-center gap-1">
                         <Info className="h-3 w-3 text-amber-500 shrink-0" />
@@ -126,18 +225,31 @@ export function ChecklistSection({ items, disabled }: ChecklistSectionProps) {
   }
 
   // --- STRICT MODE ---
-  const handleToggle = (id: string, currentVal: boolean) => {
+  const handleToggle = (item: ChecklistItem, idx: number) => {
     if (disabled) return
-    const nextVal = !currentVal
+    const nextVal = !item.is_completed
+
+    // If item requires photo and has no photo, trigger camera directly (Praktis!)
+    if (nextVal && item.requires_photo) {
+      const itemPhotos = photos.filter((p) => p.checklist_item_id === item.id)
+      if (itemPhotos.length === 0) {
+        handleTriggerCamera({ stopPropagation: () => {} } as React.MouseEvent, item, idx)
+        return
+      }
+    }
 
     setChecklist((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, is_completed: nextVal, is_na: false, na_reason: null } : i)),
+      prev.map((i) => (i.id === item.id ? { ...i, is_completed: nextVal, is_na: false, na_reason: null } : i)),
     )
 
     startTransition(async () => {
-      const res = await toggleChecklistItemAction(id, nextVal)
+      const res = await toggleChecklistItemAction(item.id, nextVal)
       if (res.error) {
         toast.error(res.error)
+        // Revert local state on error
+        setChecklist((prev) =>
+          prev.map((i) => (i.id === item.id ? { ...i, is_completed: item.is_completed } : i)),
+        )
       }
     })
   }
@@ -202,29 +314,51 @@ export function ChecklistSection({ items, disabled }: ChecklistSectionProps) {
 
   return (
     <>
+      {/* Hidden File Input for Direct 1-Tap Camera Capture */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handlePhotoCaptured}
+      />
+
       <Card className="shadow-xs rounded-[12px] bg-white border-[#E2E8F0]">
         <CardHeader className="p-4 pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-xs text-[#475569] uppercase tracking-wider font-semibold flex items-center gap-2">
-              <ListChecks className="h-4 w-4 text-[#007ACC]" /> Prosedur Kerja (SOP)
+              <ListChecks className="h-4 w-4 text-[#007ACC]" /> Prosedur Kerja (SOP Strict)
             </CardTitle>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-muted">
               {completedCount} / {checklist.length} Selesai
             </span>
           </div>
+
+          {/* Gentle Reminder Banner */}
+          {requiresPhotoCount > 0 && (
+            <div className="mt-2 p-2.5 rounded-[8px] bg-sky-50/70 border border-sky-200/80 text-[11px] text-sky-900 flex items-start gap-2">
+              <Camera className="h-4 w-4 text-[#007ACC] shrink-0 mt-0.5" />
+              <div className="leading-snug">
+                <span className="font-semibold">Langkah Wajib Foto:</span> Klik langsung pada langkah bertanda kamera untuk membuka kamera dan menyelesaikan checklist secara otomatis.
+              </div>
+            </div>
+          )}
         </CardHeader>
 
         <CardContent className="p-4 pt-2">
-          <ul className="space-y-2">
-            {checklist.map((item) => {
+          <ul className="space-y-2.5">
+            {checklist.map((item, idx) => {
               const isDone = item.is_completed
               const isNa = item.is_na && !item.is_critical
+              const isUploadingThis = uploadingItemId === item.id
+              const itemPhotos = photos.filter((p) => p.checklist_item_id === item.id)
 
               return (
                 <li
                   key={item.id}
-                  onClick={() => !isNa && handleToggle(item.id, item.is_completed)}
-                  className={`p-3 rounded-[8px] border text-xs select-none transition-all touch-press min-h-[48px] flex flex-col justify-between gap-1.5 ${
+                  onClick={() => !isNa && handleToggle(item, idx)}
+                  className={`p-3 rounded-[10px] border text-xs select-none transition-all touch-press flex flex-col justify-between gap-2 ${
                     isDone
                       ? 'bg-emerald-500/5 border-emerald-500/30 text-emerald-950 dark:text-emerald-200 cursor-pointer'
                       : isNa
@@ -235,16 +369,21 @@ export function ChecklistSection({ items, disabled }: ChecklistSectionProps) {
                   <div className="flex items-start gap-3">
                     {/* Checkbox indicator */}
                     <div
-                      className={`h-5 w-5 rounded-[6px] border flex items-center justify-center shrink-0 mt-0.5 transition-transform ${
+                      className={`h-5 w-5 rounded-[6px] border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                         isDone
                           ? 'bg-emerald-500 border-emerald-500 text-white scale-105'
                           : isNa
                           ? 'bg-muted border-muted-foreground/30 text-muted-foreground'
+                          : item.requires_photo
+                          ? 'border-[#007ACC] bg-[#007ACC]/10 text-[#007ACC] hover:scale-105'
                           : 'border-muted-foreground/40 bg-muted/20'
                       }`}
                     >
                       {isDone && <CheckCircle2 className="h-3.5 w-3.5" />}
                       {isNa && <span className="text-[9px] font-bold">N/A</span>}
+                      {!isDone && !isNa && item.requires_photo && (
+                        <Camera className="h-3 w-3 text-[#007ACC]" />
+                      )}
                     </div>
 
                     {/* Item Description & Badges */}
@@ -259,28 +398,69 @@ export function ChecklistSection({ items, disabled }: ChecklistSectionProps) {
                         </span>
 
                         {item.is_critical && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-600 border border-rose-500/20">
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-600 border border-rose-500/20 shrink-0">
                             <AlertTriangle className="h-2.5 w-2.5" />
                             Kritis K3
                           </span>
                         )}
 
-                        {item.requires_photo && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              const el = document.getElementById('photo-evidence-section')
-                              if (el) {
-                                el.scrollIntoView({ behavior: 'smooth' })
-                              }
-                            }}
-                            className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-[#007ACC]/10 text-[#007ACC] hover:bg-[#007ACC]/20 border border-[#007ACC]/20 cursor-pointer transition-colors"
-                          >
+                        {item.requires_photo && itemPhotos.length === 0 && !isUploadingThis && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#007ACC]/10 text-[#007ACC] border border-[#007ACC]/20 shrink-0">
                             <Camera className="h-2.5 w-2.5" />
-                            Foto Bukti
-                          </button>
+                            Wajib Foto
+                          </span>
                         )}
+
+                        {/* Inline Uploading Indicator */}
+                        {isUploadingThis && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-[#007ACC]/10 text-[#007ACC] animate-pulse shrink-0">
+                            <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                            Mengunggah...
+                          </span>
+                        )}
+
+                        {/* Minimalist Inline Evidence Chip(s) */}
+                        {itemPhotos.map((photo, pIdx) => (
+                          <div
+                            key={photo.id}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 pl-0.5 pr-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[10px] font-medium shrink-0"
+                          >
+                            {photo.display_url ? (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewPhoto({ url: photo.display_url!, caption: item.item })}
+                                className="flex items-center gap-1 cursor-pointer group"
+                                title="Klik untuk memperbesar foto bukti"
+                              >
+                                <img
+                                  src={photo.display_url}
+                                  alt="Bukti SOP"
+                                  className="h-4.5 w-4.5 rounded-full object-cover ring-1 ring-emerald-500/40 group-hover:scale-110 transition-transform"
+                                />
+                                <span className="underline-offset-2 group-hover:underline">
+                                  {itemPhotos.length > 1 ? `Bukti #${pIdx + 1}` : 'Bukti Foto'}
+                                </span>
+                              </button>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <Camera className="h-3 w-3 text-emerald-600" />
+                                {itemPhotos.length > 1 ? `Bukti #${pIdx + 1}` : 'Bukti Foto'}
+                              </span>
+                            )}
+
+                            {!disabled && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeletePhoto(e, photo.id, item.id)}
+                                className="text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-full p-0.5 transition-colors ml-0.5 cursor-pointer"
+                                title="Hapus foto bukti"
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
                       </div>
 
                       {/* Technical Hint */}
@@ -325,6 +505,41 @@ export function ChecklistSection({ items, disabled }: ChecklistSectionProps) {
           </ul>
         </CardContent>
       </Card>
+
+      {/* Lightbox Modal for Photo Preview */}
+      <Dialog open={!!previewPhoto} onOpenChange={(open) => !open && setPreviewPhoto(null)}>
+        <DialogContent className="sm:max-w-md p-4 rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold flex items-center gap-2">
+              <Camera className="h-4 w-4 text-[#007ACC]" />
+              Bukti Foto SOP
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {previewPhoto?.caption}
+            </DialogDescription>
+          </DialogHeader>
+          {previewPhoto?.url && (
+            <div className="relative aspect-4/3 w-full rounded-xl overflow-hidden bg-black/5 border border-border/60">
+              <img
+                src={previewPhoto.url}
+                alt={previewPhoto.caption}
+                className="w-full h-full object-contain"
+              />
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewPhoto(null)}
+              className="text-xs"
+            >
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal Tandai N/A */}
       <Dialog open={!!naTargetItem} onOpenChange={(open) => !open && setNaTargetItem(null)}>

@@ -111,7 +111,7 @@ export async function resendInviteAction(inviteId: string): Promise<{ success: b
   // Get existing invite
   const { data: invite, error: fetchError } = await admin
     .from('invite_tokens')
-    .select('id, email, role, consumed_at')
+    .select('id, email, role, used_at')
     .eq('id', inviteId)
     .eq('org_id', profile.orgId)
     .single()
@@ -120,7 +120,7 @@ export async function resendInviteAction(inviteId: string): Promise<{ success: b
     return { success: false, error: 'Undangan tidak ditemukan.' }
   }
 
-  if (invite.consumed_at) {
+  if (invite.used_at) {
     return { success: false, error: 'Undangan ini telah digunakan oleh pengguna.' }
   }
 
@@ -334,5 +334,248 @@ export async function importTechniciansAction(
     errors: validationErrors,
   }
 }
+
+export type DeleteTechnicianResult = {
+  success: boolean
+  error?: string
+}
+
+export async function deleteTechnicianAction(
+  technicianId: string,
+  confirmationName: string
+): Promise<DeleteTechnicianResult> {
+  const profile = await requireRole('admin')
+
+  if (!technicianId || typeof technicianId !== 'string') {
+    return { success: false, error: 'ID teknisi tidak valid.' }
+  }
+
+  // Prevent admin from deleting themselves
+  if (technicianId === profile.id) {
+    return { success: false, error: 'Anda tidak dapat menghapus akun Anda sendiri.' }
+  }
+
+  const admin = getSupabaseAdmin()
+
+  // 1. Fetch technician profile to verify existence, role, and organization
+  const { data: targetTech, error: fetchError } = await admin
+    .from('profiles')
+    .select('id, name, email, role, org_id')
+    .eq('id', technicianId)
+    .eq('org_id', profile.orgId)
+    .maybeSingle()
+
+  if (fetchError || !targetTech) {
+    return { success: false, error: 'Data teknisi tidak ditemukan dalam organisasi Anda.' }
+  }
+
+  if (targetTech.role !== 'technician') {
+    return { success: false, error: 'Hanya pengguna dengan peran teknisi yang dapat dihapus melalui fitur ini.' }
+  }
+
+  // 2. Validate confirmation name matches (case-insensitive trimmed)
+  if (!confirmationName || targetTech.name.trim().toLowerCase() !== confirmationName.trim().toLowerCase()) {
+    return {
+      success: false,
+      error: `Nama konfirmasi tidak sesuai. Harap ketik "${targetTech.name}".`,
+    }
+  }
+
+  try {
+    // 3. Clean up related records in proper sequence to respect foreign keys
+    // 3.1 Job attendance records
+    await admin.from('job_attendance').delete().eq('technician_id', technicianId)
+
+    // 3.2 Schedule assignments
+    await admin.from('schedules').delete().eq('technician_id', technicianId)
+
+    // 3.3 Active assigned / in-progress jobs -> unassign technician & reset status to pending
+    await admin
+      .from('jobs')
+      .update({ technician_id: null, status: 'pending' })
+      .eq('technician_id', technicianId)
+      .in('status', ['assigned', 'in_progress'])
+
+    // 3.4 Other jobs (completed, cancelled) -> nullify technician_id so FK constraint isn't violated
+    await admin
+      .from('jobs')
+      .update({ technician_id: null })
+      .eq('technician_id', technicianId)
+
+    // 3.5 If jobs were created by this technician, reassign created_by to current admin
+    await admin
+      .from('jobs')
+      .update({ created_by: profile.id })
+      .eq('created_by', technicianId)
+
+    // 3.6 If jobs were cancelled by this technician, nullify cancelled_by
+    await admin
+      .from('jobs')
+      .update({ cancelled_by: null })
+      .eq('cancelled_by', technicianId)
+
+    // 3.7 Leads, photos, signatures
+    await admin.from('leads').update({ technician_id: null }).eq('technician_id', technicianId)
+    await admin.from('job_photos').update({ uploaded_by: null }).eq('uploaded_by', technicianId)
+    await admin.from('signatures').update({ submitted_by: null }).eq('submitted_by', technicianId)
+
+    // 3.8 Invite tokens
+    await admin.from('invite_tokens').delete().eq('org_id', profile.orgId).eq('email', targetTech.email)
+    await admin.from('invite_tokens').delete().eq('invited_by', technicianId)
+
+    // 3.9 Delete from profiles
+    const { error: profileDeleteError } = await admin
+      .from('profiles')
+      .delete()
+      .eq('id', technicianId)
+      .eq('org_id', profile.orgId)
+
+    if (profileDeleteError) {
+      return {
+        success: false,
+        error: 'Gagal menghapus profil teknisi: ' + profileDeleteError.message,
+      }
+    }
+
+    // 3.10 Delete Supabase auth user if it exists
+    try {
+      await admin.auth.admin.deleteUser(technicianId)
+    } catch (authDeleteError) {
+      const err = authDeleteError as Error | undefined
+      console.warn('Peringatan: Gagal menghapus akun auth:', err?.message)
+    }
+
+    // 4. Revalidate cache
+    revalidatePath('/admin/technicians')
+    revalidatePath('/admin/dispatch')
+    revalidatePath('/admin/jobs')
+    revalidatePath('/admin/map')
+
+    return { success: true }
+  } catch (caughtErr) {
+    const err = caughtErr as Error | undefined
+    console.error('Error deleting technician:', err)
+    return {
+      success: false,
+      error: err?.message || 'Terjadi kesalahan sistem saat menghapus teknisi.',
+    }
+  }
+}
+
+const updateTechnicianSchema = z.object({
+  id: z.string().uuid('ID teknisi tidak valid'),
+  name: z.string().min(2, 'Nama teknisi minimal 2 karakter'),
+  phone: z.string().optional().nullable(),
+  email: z.string().email('Format email tidak valid'),
+})
+
+export type UpdateTechnicianInput = {
+  id: string
+  name: string
+  phone?: string | null
+  email: string
+}
+
+export type UpdateTechnicianResult = {
+  success: boolean
+  error?: string
+}
+
+export async function updateTechnicianAction(
+  payload: UpdateTechnicianInput
+): Promise<UpdateTechnicianResult> {
+  const profile = await requireRole('admin')
+
+  const parsed = updateTechnicianSchema.safeParse(payload)
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message || 'Input data tidak valid',
+    }
+  }
+
+  const admin = getSupabaseAdmin()
+
+  // 1. Fetch technician profile to verify existence, role, and organization isolation
+  const { data: targetTech, error: fetchError } = await admin
+    .from('profiles')
+    .select('id, name, email, role, org_id')
+    .eq('id', parsed.data.id)
+    .eq('org_id', profile.orgId)
+    .maybeSingle()
+
+  if (fetchError || !targetTech) {
+    return { success: false, error: 'Data teknisi tidak ditemukan dalam organisasi Anda.' }
+  }
+
+  if (targetTech.role !== 'technician') {
+    return { success: false, error: 'Hanya pengguna dengan peran teknisi yang dapat diedit melalui fitur ini.' }
+  }
+
+  const newEmail = parsed.data.email.toLowerCase().trim()
+  const newName = parsed.data.name.trim()
+  const newPhone = parsed.data.phone?.trim() || null
+
+  // 2. If email changed, check if email is already registered by another user
+  if (newEmail !== targetTech.email.toLowerCase().trim()) {
+    const { data: existingUser } = await admin
+      .from('profiles')
+      .select('id')
+      .eq('email', newEmail)
+      .neq('id', targetTech.id)
+      .maybeSingle()
+
+    if (existingUser) {
+      return { success: false, error: 'Email ini sudah terdaftar untuk pengguna lain.' }
+    }
+  }
+
+  try {
+    // 3. Update profiles table securely with org isolation
+    const { error: profileUpdateError } = await admin
+      .from('profiles')
+      .update({
+        name: newName,
+        email: newEmail,
+        phone: newPhone,
+      })
+      .eq('id', targetTech.id)
+      .eq('org_id', profile.orgId)
+
+    if (profileUpdateError) {
+      return {
+        success: false,
+        error: 'Gagal memperbarui profil teknisi: ' + profileUpdateError.message,
+      }
+    }
+
+    // 4. Update Supabase Auth user metadata & email
+    try {
+      await admin.auth.admin.updateUserById(targetTech.id, {
+        email: newEmail,
+        user_metadata: { name: newName },
+      })
+    } catch (authErr) {
+      console.warn('Peringatan: Gagal memperbarui data auth pengguna:', authErr)
+    }
+
+    // 5. Revalidate cache
+    revalidatePath('/admin/technicians')
+    revalidatePath('/admin/dispatch')
+    revalidatePath('/admin/jobs')
+    revalidatePath('/admin/map')
+
+    return { success: true }
+  } catch (caughtErr) {
+    const err = caughtErr as Error | undefined
+    console.error('Error updating technician:', err)
+    return {
+      success: false,
+      error: err?.message || 'Terjadi kesalahan sistem saat memperbarui data teknisi.',
+    }
+  }
+}
+
+
 
 

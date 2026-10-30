@@ -2,6 +2,7 @@ import { requireRole } from '@/lib/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { JobStatusChart } from '@/components/charts/job-status-chart'
 import { ServiceTypeChart } from '@/components/charts/service-type-chart'
+import { RealtimeJobsListener } from '@/components/realtime/realtime-jobs-listener'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Briefcase,
@@ -66,9 +67,12 @@ export default async function OwnerDashboardPage() {
             <ShieldCheck className="h-3.5 w-3.5" /> Owner & Management Portal
           </span>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-heading">
-          Executive Visibility Hub
-        </h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-heading">
+            Executive Visibility Hub
+          </h1>
+          <RealtimeJobsListener orgId={profile.orgId} />
+        </div>
         <p className="text-xs text-slate-500 mt-1">
           Ringkasan performa operasional lapangan, utilisasi teknisi, dan pemenuhan servis klien.
         </p>

@@ -203,6 +203,7 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
 
   revalidatePath('/admin/jobs')
   revalidatePath('/admin')
+  revalidatePath('/admin/technicians')
   redirect(`/admin/jobs/${job.id}`)
 }
 
@@ -258,6 +259,7 @@ export async function assignJobAction(
   revalidatePath(`/admin/jobs/${jobId}`)
   revalidatePath('/admin/jobs')
   revalidatePath('/admin/dispatch')
+  revalidatePath('/admin/technicians')
   return { success: true }
 }
 
@@ -289,5 +291,6 @@ export async function cancelJobAction(jobId: string, reason: string): Promise<{ 
   revalidatePath(`/admin/jobs/${jobId}`)
   revalidatePath('/admin/jobs')
   revalidatePath('/admin/dispatch')
+  revalidatePath('/admin/technicians')
   return { success: true }
 }

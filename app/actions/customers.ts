@@ -223,3 +223,210 @@ export async function importCustomersAction(
   }
 }
 
+export type DeleteCustomerResult = {
+  success: boolean
+  error?: string
+}
+
+export async function deleteCustomerAction(
+  customerId: string,
+  confirmationName: string
+): Promise<DeleteCustomerResult> {
+  const profile = await requireRole('admin')
+
+  if (!customerId || typeof customerId !== 'string') {
+    return { success: false, error: 'ID pelanggan tidak valid.' }
+  }
+
+  const admin = getSupabaseAdmin()
+
+  // 1. Fetch customer to verify existence and org ownership
+  const { data: customer, error: fetchError } = await admin
+    .from('customers')
+    .select('id, name, org_id')
+    .eq('id', customerId)
+    .eq('org_id', profile.orgId)
+    .maybeSingle()
+
+  if (fetchError || !customer) {
+    return { success: false, error: 'Data pelanggan tidak ditemukan dalam organisasi Anda.' }
+  }
+
+  // 2. Validate confirmation name matches (case-insensitive trimmed)
+  if (!confirmationName || customer.name.trim().toLowerCase() !== confirmationName.trim().toLowerCase()) {
+    return {
+      success: false,
+      error: `Nama konfirmasi tidak sesuai. Harap ketik "${customer.name}".`,
+    }
+  }
+
+  try {
+    // 3. Find all jobs associated with this customer
+    const { data: customerJobs } = await admin
+      .from('jobs')
+      .select('id')
+      .eq('customer_id', customerId)
+      .eq('org_id', profile.orgId)
+
+    const jobIds = (customerJobs || []).map((j) => j.id)
+
+    if (jobIds.length > 0) {
+      // 3.1 Delete job attendances
+      await admin.from('job_attendance').delete().in('job_id', jobIds)
+
+      // 3.2 Delete schedules
+      await admin.from('schedules').delete().in('job_id', jobIds)
+
+      // 3.3 Delete checklist items
+      await admin.from('checklist_items').delete().in('job_id', jobIds)
+
+      // 3.4 Delete job photos
+      await admin.from('job_photos').delete().in('job_id', jobIds)
+
+      // 3.5 Delete signatures
+      await admin.from('signatures').delete().in('job_id', jobIds)
+
+      // 3.6 Delete work reports
+      await admin.from('work_reports').delete().in('job_id', jobIds)
+
+      // 3.7 Delete jobs
+      const { error: jobsDeleteError } = await admin
+        .from('jobs')
+        .delete()
+        .in('id', jobIds)
+
+      if (jobsDeleteError) {
+        return {
+          success: false,
+          error: 'Gagal menghapus tiket pekerjaan terkait: ' + jobsDeleteError.message,
+        }
+      }
+    }
+
+    // 4. Delete customer assets
+    await admin.from('customer_assets').delete().eq('customer_id', customerId)
+
+    // 5. Delete customer record
+    const { error: customerDeleteError } = await admin
+      .from('customers')
+      .delete()
+      .eq('id', customerId)
+      .eq('org_id', profile.orgId)
+
+    if (customerDeleteError) {
+      return {
+        success: false,
+        error: 'Gagal menghapus data pelanggan: ' + customerDeleteError.message,
+      }
+    }
+
+    // 6. Revalidate cache
+    revalidatePath('/admin/customers')
+    revalidatePath('/admin/jobs')
+    revalidatePath('/admin/jobs/new')
+    revalidatePath('/admin/dispatch')
+    revalidatePath('/admin/map')
+
+    return { success: true }
+  } catch (caughtErr) {
+    const err = caughtErr as Error | undefined
+    console.error('Error deleting customer:', err)
+    return {
+      success: false,
+      error: err?.message || 'Terjadi kesalahan sistem saat menghapus data pelanggan.',
+    }
+  }
+}
+
+const updateCustomerSchema = z.object({
+  id: z.string().uuid('ID pelanggan tidak valid'),
+  name: z.string().min(2, 'Nama pelanggan minimal 2 karakter'),
+  phone: z.string().optional().nullable(),
+  email: z.string().email('Format email tidak valid').optional().nullable().or(z.literal('')),
+  address: z.string().min(5, 'Alamat lengkap minimal 5 karakter'),
+})
+
+export type UpdateCustomerInput = {
+  id: string
+  name: string
+  phone?: string | null
+  email?: string | null
+  address: string
+}
+
+export type UpdateCustomerResult = {
+  success: boolean
+  error?: string
+  customer?: {
+    id: string
+    name: string
+    address: string
+    phone?: string | null
+    email?: string | null
+  }
+}
+
+export async function updateCustomerAction(
+  payload: UpdateCustomerInput
+): Promise<UpdateCustomerResult> {
+  const profile = await requireRole('admin')
+
+  const parsed = updateCustomerSchema.safeParse(payload)
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message || 'Input data tidak valid',
+    }
+  }
+
+  const admin = getSupabaseAdmin()
+
+  // 1. Verify existence and tenant org isolation
+  const { data: existing, error: fetchErr } = await admin
+    .from('customers')
+    .select('id, org_id')
+    .eq('id', parsed.data.id)
+    .eq('org_id', profile.orgId)
+    .maybeSingle()
+
+  if (fetchErr || !existing) {
+    return {
+      success: false,
+      error: 'Data pelanggan tidak ditemukan dalam organisasi Anda.',
+    }
+  }
+
+  // 2. Perform secure update with parameterized inputs
+  const { data: updated, error: updateErr } = await admin
+    .from('customers')
+    .update({
+      name: parsed.data.name.trim(),
+      phone: parsed.data.phone?.trim() || null,
+      email: parsed.data.email?.trim() || null,
+      address: parsed.data.address.trim(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', parsed.data.id)
+    .eq('org_id', profile.orgId)
+    .select('id, name, address, phone, email')
+    .single()
+
+  if (updateErr || !updated) {
+    return {
+      success: false,
+      error: 'Gagal memperbarui data pelanggan: ' + (updateErr?.message || 'Database error'),
+    }
+  }
+
+  revalidatePath('/admin/customers')
+  revalidatePath(`/admin/customers/${parsed.data.id}`)
+  revalidatePath('/admin/jobs')
+  revalidatePath('/admin/jobs/new')
+
+  return {
+    success: true,
+    customer: updated,
+  }
+}
+
+

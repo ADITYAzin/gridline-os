@@ -144,34 +144,34 @@ function createPopupContent(job: MapJobItem) {
   }
 
   return `
-    <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px; min-width: 250px; max-width: 300px;">
+    <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 2px; min-width: 240px; max-width: 280px;">
       <!-- Header -->
-      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #F1F5F9; padding-bottom: 8px; margin-bottom: 8px;">
-        <span style="font-family: ui-monospace, monospace; font-size: 13px; font-weight: 700; color: #007ACC;">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; margin-bottom: 6px;">
+        <span style="font-family: ui-monospace, monospace; font-size: 12.5px; font-weight: 700; color: #007ACC;">
           ${job.job_number}
         </span>
-        <span style="font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 9999px; ${statusInfo.badgeBg}">
+        <span style="font-size: 9.5px; font-weight: 600; padding: 2px 7px; border-radius: 9999px; ${statusInfo.badgeBg}">
           ${statusInfo.label}
         </span>
       </div>
 
       <!-- Service Type -->
-      <div style="font-size: 13px; font-weight: 600; color: #0F172A; margin-bottom: 4px; line-height: 1.3;">
+      <div style="font-size: 12px; font-weight: 700; color: #0F172A; margin-bottom: 2px; line-height: 1.3;">
         ${job.service_type}
       </div>
 
       <!-- Customer -->
-      <div style="font-size: 11px; color: #334155; margin-bottom: 3px; font-weight: 600;">
+      <div style="font-size: 11px; color: #334155; margin-bottom: 2px; font-weight: 600;">
         ${job.customer_name}
       </div>
 
       <!-- Address -->
-      <div style="font-size: 11px; color: #64748B; line-height: 1.4; margin-bottom: 8px;">
+      <div style="font-size: 10.5px; color: #64748B; line-height: 1.35; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
         ${job.address}
       </div>
 
       <!-- Presence & Technician Box -->
-      <div style="font-size: 11px; color: #475569; padding: 7px 8px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; margin-bottom: 8px;">
+      <div style="font-size: 11px; color: #475569; padding: 6px 8px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; margin-bottom: 6px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
           <span style="color: #64748B;">Teknisi:</span>
           <span style="font-weight: 600; color: #0F172A;">${job.technician_name || 'Belum ada'}</span>
@@ -187,6 +187,25 @@ function createPopupContent(job: MapJobItem) {
               : `<span style="font-style: italic; color: #94A3B8;">Belum Check-in</span>`
           }
         </div>
+        ${
+          job.check_in_photo_url
+            ? `
+          <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #CBD5E1;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 9.5px; font-weight: 700; color: #007ACC; text-transform: uppercase;">Bukti Foto Check-in:</span>
+              <span style="font-size: 8.5px; color: #64748B;">Verifikasi Fisik</span>
+            </div>
+            <div style="position: relative; width: 100%; height: 100px; border-radius: 6px; overflow: hidden; background: #0F172A; border: 1px solid #CBD5E1;">
+              <img 
+                src="${job.check_in_photo_url}" 
+                alt="Foto Presensi Teknisi" 
+                style="width: 100%; height: 100px; object-fit: cover; display: block;" 
+              />
+            </div>
+          </div>
+          `
+            : ''
+        }
       </div>
 
       <!-- Action Button -->

@@ -5,7 +5,12 @@ import { requireRole, requireUser } from '@/lib/auth'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { STORAGE, PHOTO } from '@/lib/constants'
 
-export async function checkInAction(jobId: string, latitude?: number, longitude?: number) {
+export async function checkInAction(
+  jobId: string,
+  latitude?: number,
+  longitude?: number,
+  formData?: FormData,
+) {
   const profile = await requireRole('technician')
   const admin = getSupabaseAdmin()
 
@@ -22,8 +27,31 @@ export async function checkInAction(jobId: string, latitude?: number, longitude?
   }
 
   const now = new Date().toISOString()
+  let photoPath: string | null = null
 
-  // 2. Upsert attendance & update job status in parallel
+  // 2. Handle attendance selfie/presence photo upload if provided
+  const photoFile = formData?.get('photo') as File | null
+  if (photoFile && photoFile.size > 0) {
+    if (photoFile.size > PHOTO.maxBytes) {
+      return { error: 'Ukuran foto kehadiran maksimal 5MB.' }
+    }
+    const fileExt = photoFile.name.split('.').pop() || 'jpg'
+    photoPath = `${profile.orgId}/${jobId}/attendance/checkin_${Date.now()}.${fileExt}`
+    const fileBuffer = Buffer.from(await photoFile.arrayBuffer())
+
+    const { error: uploadError } = await admin.storage
+      .from(STORAGE.jobFilesBucket)
+      .upload(photoPath, fileBuffer, {
+        contentType: photoFile.type || 'image/jpeg',
+        upsert: true,
+      })
+
+    if (uploadError) {
+      return { error: 'Gagal mengunggah foto kehadiran: ' + uploadError.message }
+    }
+  }
+
+  // 3. Upsert attendance & update job status in parallel
   const [attResult] = await Promise.all([
     admin.from('job_attendance').upsert(
       {
@@ -33,12 +61,13 @@ export async function checkInAction(jobId: string, latitude?: number, longitude?
         check_in_at: now,
         check_in_latitude: latitude || null,
         check_in_longitude: longitude || null,
+        ...(photoPath ? { check_in_photo_url: photoPath } : {}),
       },
       { onConflict: 'job_id' },
     ),
     admin
       .from('jobs')
-      .update({ status: 'on_progress' })
+      .update({ status: 'on_progress', updated_at: now })
       .eq('id', jobId),
   ])
 
@@ -47,6 +76,32 @@ export async function checkInAction(jobId: string, latitude?: number, longitude?
   }
 
   revalidatePath(`/technician/jobs/${jobId}`)
+  revalidatePath(`/admin/jobs/${jobId}`)
+  revalidatePath('/admin/map')
+  revalidatePath('/admin/technicians')
+  revalidatePath('/admin/dispatch')
+  return { success: true }
+}
+
+// Helper: Ensure technician has checked in before performing any work operations
+async function verifyTechnicianCheckedIn(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  jobId: string,
+  orgId: string,
+) {
+  const { data: att } = await admin
+    .from('job_attendance')
+    .select('check_in_at')
+    .eq('job_id', jobId)
+    .eq('org_id', orgId)
+    .maybeSingle()
+
+  if (!att?.check_in_at) {
+    return {
+      error:
+        'Anda wajib melakukan Check-in kedatangan di lokasi terlebih dahulu sebelum memulai proses pekerjaan ini.',
+    }
+  }
   return { success: true }
 }
 
@@ -54,9 +109,68 @@ export async function checkOutAction(jobId: string, latitude?: number, longitude
   const profile = await requireRole('technician')
   const admin = getSupabaseAdmin()
 
-  const now = new Date().toISOString()
+  // 1. Verify Check-in exists
+  const { data: att } = await admin
+    .from('job_attendance')
+    .select('check_in_at, check_out_at')
+    .eq('job_id', jobId)
+    .eq('technician_id', profile.id)
+    .maybeSingle()
 
-  const { error } = await admin
+  if (!att?.check_in_at) {
+    return { error: 'Tidak dapat melakukan Check-out karena Anda belum melakukan Check-in di lokasi.' }
+  }
+
+  // 2. Anti-skip verification: Verify all prerequisite work is complete before allowing check-out
+  // a. Strict SOP checklist
+  const { data: pendingSop } = await admin
+    .from('checklist_items')
+    .select('id')
+    .eq('job_id', jobId)
+    .eq('sop_mode', 'strict')
+    .eq('is_completed', false)
+    .or('is_na.eq.false,is_critical.eq.true')
+
+  if (pendingSop && pendingSop.length > 0) {
+    return { error: 'Gagal Check-out: Seluruh langkah SOP wajib diselesaikan terlebih dahulu.' }
+  }
+
+  // b. Photos Before & After
+  const { data: photos } = await admin
+    .from('job_photos')
+    .select('type')
+    .eq('job_id', jobId)
+
+  const hasBefore = (photos || []).some((p) => p.type === 'before')
+  const hasAfter = (photos || []).some((p) => p.type === 'after')
+  if (!hasBefore || !hasAfter) {
+    return { error: 'Gagal Check-out: Minimal 1 foto Before dan 1 foto After wajib diunggah.' }
+  }
+
+  // c. Customer signature
+  const { count: sigCount } = await admin
+    .from('signatures')
+    .select('*', { count: 'exact', head: true })
+    .eq('job_id', jobId)
+
+  if (!sigCount || sigCount < 1) {
+    return { error: 'Gagal Check-out: Tanda tangan pelanggan wajib diperoleh terlebih dahulu.' }
+  }
+
+  // d. Work report
+  const { data: report } = await admin
+    .from('work_reports')
+    .select('result')
+    .eq('job_id', jobId)
+    .maybeSingle()
+
+  if (!report || !report.result || report.result.trim().length < 5) {
+    return { error: 'Gagal Check-out: Laporan hasil pekerjaan teknisi wajib diisi terlebih dahulu.' }
+  }
+
+  // 3. Record Check-out attendance
+  const now = new Date().toISOString()
+  const { error: attError } = await admin
     .from('job_attendance')
     .update({
       check_out_at: now,
@@ -66,21 +180,79 @@ export async function checkOutAction(jobId: string, latitude?: number, longitude
     .eq('job_id', jobId)
     .eq('technician_id', profile.id)
 
-  if (error) {
-    return { error: 'Gagal mencatat check-out: ' + error.message }
+  if (attError) {
+    return { error: 'Gagal mencatat check-out: ' + attError.message }
+  }
+
+  // 4. Transition job to 'completed'
+  // Trigger trg_validate_job_lifecycle_transition will validate all conditions and succeed!
+  const { error: jobError } = await admin
+    .from('jobs')
+    .update({
+      status: 'completed',
+      completed_at: now,
+      updated_at: now,
+    })
+    .eq('id', jobId)
+    .eq('org_id', profile.orgId)
+
+  if (jobError) {
+    return { error: 'Check-out tercatat, namun gagal menutup tiket: ' + jobError.message }
   }
 
   revalidatePath(`/technician/jobs/${jobId}`)
-  return { success: true }
+  revalidatePath(`/technician/jobs/${jobId}/bap`)
+  revalidatePath('/technician')
+  revalidatePath('/technician/commissions')
+  revalidatePath(`/admin/jobs/${jobId}`)
+  revalidatePath(`/admin/jobs`)
+  revalidatePath('/admin')
+  revalidatePath('/admin/dispatch')
+  revalidatePath('/admin/technicians')
+  revalidatePath('/admin/map')
+
+  return { success: true, completed: true }
 }
 
 export async function toggleChecklistItemAction(itemId: string, isCompleted: boolean) {
   const profile = await requireRole('technician')
   const admin = getSupabaseAdmin()
 
+  // 1. Fetch item and job_id
+  const { data: currentItem } = await admin
+    .from('checklist_items')
+    .select('id, job_id, requires_photo')
+    .eq('id', itemId)
+    .eq('org_id', profile.orgId)
+    .single()
+
+  if (!currentItem) {
+    return { error: 'Item checklist tidak ditemukan.' }
+  }
+
+  // 2. Anti-skip: Check-in is required before touching checklist
+  const checkInCheck = await verifyTechnicianCheckedIn(admin, currentItem.job_id, profile.orgId)
+  if (checkInCheck.error) {
+    return { error: checkInCheck.error }
+  }
+
+  // 3. Verify photo requirement if marking complete
+  if (isCompleted && currentItem.requires_photo) {
+    const { count } = await admin
+      .from('job_photos')
+      .select('*', { count: 'exact', head: true })
+      .eq('checklist_item_id', itemId)
+
+    if (!count || count === 0) {
+      return {
+        error: 'Langkah ini memerlukan foto bukti fisik. Silakan potret bukti foto pada langkah ini.',
+      }
+    }
+  }
+
   const now = isCompleted ? new Date().toISOString() : null
 
-  const { error } = await admin
+  const { data: updatedItem, error } = await admin
     .from('checklist_items')
     .update({
       is_completed: isCompleted,
@@ -90,9 +262,17 @@ export async function toggleChecklistItemAction(itemId: string, isCompleted: boo
     })
     .eq('id', itemId)
     .eq('org_id', profile.orgId)
+    .select('job_id')
+    .single()
 
   if (error) {
     return { error: 'Gagal memperbarui checklist: ' + error.message }
+  }
+
+  if (updatedItem?.job_id) {
+    await admin.from('jobs').update({ updated_at: new Date().toISOString() }).eq('id', updatedItem.job_id)
+    revalidatePath(`/technician/jobs/${updatedItem.job_id}`)
+    revalidatePath(`/admin/jobs/${updatedItem.job_id}`)
   }
 
   return { success: true }
@@ -113,13 +293,19 @@ export async function markChecklistNaAction(
   // Verify the item is not critical — critical items cannot be marked N/A
   const { data: item } = await admin
     .from('checklist_items')
-    .select('is_critical')
+    .select('is_critical, job_id')
     .eq('id', itemId)
     .eq('org_id', profile.orgId)
     .single()
 
   if (!item) {
     return { error: 'Item checklist tidak ditemukan.' }
+  }
+
+  // Anti-skip: Check-in is required before touching checklist
+  const checkInCheck = await verifyTechnicianCheckedIn(admin, item.job_id, profile.orgId)
+  if (checkInCheck.error) {
+    return { error: checkInCheck.error }
   }
 
   if (item.is_critical) {
@@ -141,6 +327,11 @@ export async function markChecklistNaAction(
     return { error: 'Gagal menandai item N/A: ' + error.message }
   }
 
+  if (item.job_id) {
+    await admin.from('jobs').update({ updated_at: new Date().toISOString() }).eq('id', item.job_id)
+    revalidatePath(`/admin/jobs/${item.job_id}`)
+  }
+
   return { success: true }
 }
 
@@ -150,7 +341,24 @@ export async function resetChecklistItemAction(
   const profile = await requireRole('technician')
   const admin = getSupabaseAdmin()
 
-  const { error } = await admin
+  const { data: currentItem } = await admin
+    .from('checklist_items')
+    .select('job_id')
+    .eq('id', itemId)
+    .eq('org_id', profile.orgId)
+    .single()
+
+  if (!currentItem) {
+    return { error: 'Item checklist tidak ditemukan.' }
+  }
+
+  // Anti-skip: Check-in is required
+  const checkInCheck = await verifyTechnicianCheckedIn(admin, currentItem.job_id, profile.orgId)
+  if (checkInCheck.error) {
+    return { error: checkInCheck.error }
+  }
+
+  const { data: updatedItem, error } = await admin
     .from('checklist_items')
     .update({
       is_completed: false,
@@ -160,9 +368,16 @@ export async function resetChecklistItemAction(
     })
     .eq('id', itemId)
     .eq('org_id', profile.orgId)
+    .select('job_id')
+    .single()
 
   if (error) {
     return { error: 'Gagal mereset item checklist: ' + error.message }
+  }
+
+  if (updatedItem?.job_id) {
+    await admin.from('jobs').update({ updated_at: new Date().toISOString() }).eq('id', updatedItem.job_id)
+    revalidatePath(`/admin/jobs/${updatedItem.job_id}`)
   }
 
   return { success: true }
@@ -171,6 +386,8 @@ export async function resetChecklistItemAction(
 export async function uploadJobPhotoAction(jobId: string, type: 'before' | 'after', formData: FormData) {
   const profile = await requireRole('technician')
   const file = formData.get('file') as File | null
+  const checklistItemId = (formData.get('checklistItemId') as string | null) || null
+  const caption = (formData.get('caption') as string | null) || null
 
   if (!file) {
     return { error: 'File foto tidak ditemukan.' }
@@ -181,6 +398,12 @@ export async function uploadJobPhotoAction(jobId: string, type: 'before' | 'afte
   }
 
   const admin = getSupabaseAdmin()
+
+  // Anti-skip: Check-in is required before uploading photos
+  const checkInCheck = await verifyTechnicianCheckedIn(admin, jobId, profile.orgId)
+  if (checkInCheck.error) {
+    return { error: checkInCheck.error }
+  }
 
   // 1. Check current photo count (Decision #8)
   const { count } = await admin
@@ -209,21 +432,133 @@ export async function uploadJobPhotoAction(jobId: string, type: 'before' | 'afte
     return { error: 'Gagal mengunggah foto ke storage: ' + uploadError.message }
   }
 
-  // 3. Save photo reference to database
+  const now = new Date().toISOString()
+
+  // 3. Save photo reference to database with optional checklist_item_id & caption
   const { error: dbError } = await admin.from('job_photos').insert({
     org_id: profile.orgId,
     job_id: jobId,
     type,
     file_url: filePath,
     uploaded_by: profile.id,
-    captured_at: new Date().toISOString(),
+    captured_at: now,
+    checklist_item_id: checklistItemId,
+    caption: caption,
   })
 
   if (dbError) {
     return { error: 'Gagal menyimpan data foto: ' + dbError.message }
   }
 
+  // 4. If attached to a checklist item, automatically mark it completed (1-Tap Action!)
+  if (checklistItemId) {
+    await admin
+      .from('checklist_items')
+      .update({
+        is_completed: true,
+        completed_at: now,
+        is_na: false,
+        na_reason: null,
+        updated_at: now,
+      })
+      .eq('id', checklistItemId)
+      .eq('job_id', jobId)
+      .eq('org_id', profile.orgId)
+  }
+
+  await admin.from('jobs').update({ updated_at: now }).eq('id', jobId).eq('org_id', profile.orgId)
+
   revalidatePath(`/technician/jobs/${jobId}`)
+  revalidatePath(`/technician/jobs/${jobId}/bap`)
+  revalidatePath(`/admin/jobs/${jobId}`)
+  revalidatePath(`/admin/jobs/${jobId}/bap`)
+  return { success: true }
+}
+
+export async function deleteJobPhotoAction(jobId: string, photoId: string) {
+  const profile = await requireRole('technician')
+  const admin = getSupabaseAdmin()
+
+  // 1. Verify job is assigned to technician and not completed/cancelled
+  const { data: job } = await admin
+    .from('jobs')
+    .select('id, org_id, status, technician_id')
+    .eq('id', jobId)
+    .eq('technician_id', profile.id)
+    .single()
+
+  if (!job) {
+    return { error: 'Pekerjaan tidak ditemukan atau Anda tidak ditugaskan pada pekerjaan ini.' }
+  }
+
+  if (job.status === 'completed' || job.status === 'cancelled') {
+    return { error: 'Foto tidak dapat dihapus karena status tiket pekerjaan sudah selesai atau dibatalkan.' }
+  }
+
+  // 2. Fetch photo record to get file path and checklist relation
+  const { data: photo } = await admin
+    .from('job_photos')
+    .select('id, file_url, checklist_item_id')
+    .eq('id', photoId)
+    .eq('job_id', jobId)
+    .eq('org_id', profile.orgId)
+    .single()
+
+  if (!photo) {
+    return { error: 'Data foto tidak ditemukan.' }
+  }
+
+  // 3. Remove physical file from storage bucket
+  if (photo.file_url) {
+    const { error: storageError } = await admin.storage
+      .from(STORAGE.jobFilesBucket)
+      .remove([photo.file_url])
+
+    if (storageError) {
+      console.warn('Gagal menghapus file dari storage bucket, melanjutkan penghapusan database:', storageError)
+    }
+  }
+
+  // 4. Delete photo row from database
+  const { error: dbError } = await admin
+    .from('job_photos')
+    .delete()
+    .eq('id', photoId)
+    .eq('job_id', jobId)
+    .eq('org_id', profile.orgId)
+
+  if (dbError) {
+    return { error: 'Gagal menghapus catatan foto: ' + dbError.message }
+  }
+
+  const now = new Date().toISOString()
+
+  // 5. If photo was linked to a checklist item, check if any remaining photos exist
+  if (photo.checklist_item_id) {
+    const { count } = await admin
+      .from('job_photos')
+      .select('*', { count: 'exact', head: true })
+      .eq('checklist_item_id', photo.checklist_item_id)
+      .neq('id', photoId)
+
+    if (!count || count === 0) {
+      await admin
+        .from('checklist_items')
+        .update({
+          is_completed: false,
+          completed_at: null,
+          updated_at: now,
+        })
+        .eq('id', photo.checklist_item_id)
+    }
+  }
+
+  await admin.from('jobs').update({ updated_at: now }).eq('id', jobId).eq('org_id', profile.orgId)
+
+  revalidatePath(`/technician/jobs/${jobId}`)
+  revalidatePath(`/technician/jobs/${jobId}/bap`)
+  revalidatePath(`/admin/jobs/${jobId}`)
+  revalidatePath(`/admin/jobs/${jobId}/bap`)
   return { success: true }
 }
 
@@ -239,6 +574,12 @@ export async function submitSignatureAction(jobId: string, customerName: string,
   }
 
   const admin = getSupabaseAdmin()
+
+  // Anti-skip: Check-in is required before asking for customer signature
+  const checkInCheck = await verifyTechnicianCheckedIn(admin, jobId, profile.orgId)
+  if (checkInCheck.error) {
+    return { error: checkInCheck.error }
+  }
 
   // Extract base64 and upload to storage
   const base64Data = signatureBase64.split(';base64,').pop()!
@@ -256,6 +597,8 @@ export async function submitSignatureAction(jobId: string, customerName: string,
     return { error: 'Gagal menyimpan file tanda tangan: ' + uploadError.message }
   }
 
+  const now = new Date().toISOString()
+
   // Upsert signature row
   const { error: dbError } = await admin.from('signatures').upsert(
     {
@@ -263,7 +606,7 @@ export async function submitSignatureAction(jobId: string, customerName: string,
       job_id: jobId,
       customer_name: customerName.trim(),
       signature_url: filePath,
-      signed_at: new Date().toISOString(),
+      signed_at: now,
     },
     { onConflict: 'job_id' },
   )
@@ -272,7 +615,10 @@ export async function submitSignatureAction(jobId: string, customerName: string,
     return { error: 'Gagal mencatat tanda tangan: ' + dbError.message }
   }
 
+  await admin.from('jobs').update({ updated_at: now }).eq('id', jobId).eq('org_id', profile.orgId)
+
   revalidatePath(`/technician/jobs/${jobId}`)
+  revalidatePath(`/admin/jobs/${jobId}`)
   return { success: true }
 }
 
@@ -280,7 +626,6 @@ export async function submitWorkReportAction(
   jobId: string,
   result: string,
   notes?: string,
-  completeJobIfReady: boolean = true,
 ) {
   const profile = await requireRole('technician')
 
@@ -303,6 +648,12 @@ export async function submitWorkReportAction(
     return { error: 'Pekerjaan tidak ditemukan atau Anda tidak ditugaskan pada pekerjaan ini.' }
   }
 
+  // Anti-skip: Check-in is required before submitting work report
+  const checkInCheck = await verifyTechnicianCheckedIn(admin, jobId, profile.orgId)
+  if (checkInCheck.error) {
+    return { error: checkInCheck.error }
+  }
+
   const now = new Date().toISOString()
 
   // 2. Upsert work report
@@ -322,28 +673,7 @@ export async function submitWorkReportAction(
     return { error: 'Gagal mengirim laporan: ' + reportError.message }
   }
 
-  // 3. Attempt to transition status to 'completed' if completeJobIfReady is true
-  let completed = false
-  if (completeJobIfReady && job.status !== 'completed') {
-    const { error: completeError } = await admin
-      .from('jobs')
-      .update({
-        status: 'completed',
-        completed_at: now,
-      })
-      .eq('id', jobId)
-      .eq('org_id', profile.orgId)
-
-    if (!completeError) {
-      completed = true
-      // Auto-record check-out if not done yet
-      await admin
-        .from('job_attendance')
-        .update({ check_out_at: now })
-        .eq('job_id', jobId)
-        .is('check_out_at', null)
-    }
-  }
+  await admin.from('jobs').update({ updated_at: now }).eq('id', jobId).eq('org_id', profile.orgId)
 
   // Revalidate both technician and admin view paths for instant synchronization
   revalidatePath(`/technician/jobs/${jobId}`)
@@ -353,8 +683,9 @@ export async function submitWorkReportAction(
   revalidatePath('/admin/jobs')
   revalidatePath('/admin')
   revalidatePath('/admin/dispatch')
+  revalidatePath('/admin/technicians')
 
-  return { success: true, completed }
+  return { success: true }
 }
 
 export async function completeJobAction(jobId: string) {
@@ -378,14 +709,35 @@ export async function completeJobAction(jobId: string) {
     return { error: 'Hak akses tidak memadai.' }
   }
 
-  // 2. Attempt to transition job into 'completed'
-  // Trigger trg_validate_job_lifecycle_transition will automatically validate all 5 conditions!
+  // 2. If Admin/Owner is completing on behalf of technician, verify check-in and ensure check-out
   const now = new Date().toISOString()
+  if (profile.role === 'admin' || (profile.role as string) === 'owner') {
+    const { data: att } = await admin
+      .from('job_attendance')
+      .select('check_in_at, check_out_at')
+      .eq('job_id', jobId)
+      .maybeSingle()
+
+    if (!att?.check_in_at) {
+      return { error: 'Gagal menyelesaikan: Teknisi belum melakukan Check-in di lokasi.' }
+    }
+
+    if (!att.check_out_at) {
+      await admin
+        .from('job_attendance')
+        .update({ check_out_at: now })
+        .eq('job_id', jobId)
+    }
+  }
+
+  // 3. Attempt to transition job into 'completed'
+  // Trigger trg_validate_job_lifecycle_transition will automatically validate all 7 conditions!
   const { error } = await admin
     .from('jobs')
     .update({
       status: 'completed',
       completed_at: now,
+      updated_at: now,
     })
     .eq('id', jobId)
     .eq('org_id', profile.orgId)
@@ -394,21 +746,16 @@ export async function completeJobAction(jobId: string) {
     return { error: error.message }
   }
 
-  // 3. Auto-record check-out if technician hasn't checked out yet
-  await admin
-    .from('job_attendance')
-    .update({ check_out_at: now })
-    .eq('job_id', jobId)
-    .is('check_out_at', null)
-
   // 4. Invalidate both technician and admin view paths
   revalidatePath(`/technician/jobs/${jobId}`)
+  revalidatePath(`/technician/jobs/${jobId}/bap`)
   revalidatePath('/technician')
   revalidatePath('/technician/commissions')
   revalidatePath(`/admin/jobs/${jobId}`)
   revalidatePath('/admin/jobs')
   revalidatePath('/admin')
   revalidatePath('/admin/dispatch')
+  revalidatePath('/admin/technicians')
 
   return { success: true }
 }

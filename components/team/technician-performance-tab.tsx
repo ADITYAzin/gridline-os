@@ -13,10 +13,11 @@ interface TechnicianPerformanceTabProps {
 export function TechnicianPerformanceTab({ metrics }: TechnicianPerformanceTabProps) {
   const totalCompletedAll = metrics.reduce((acc, m) => acc + m.totalCompleted, 0)
   const totalAssignedAll = metrics.reduce((acc, m) => acc + m.totalAssigned, 0)
+  const techsWithCompleted = metrics.filter((m) => m.totalCompleted > 0)
   const averageSla =
-    metrics.length > 0
-      ? Math.round(metrics.reduce((acc, m) => acc + m.onTimeRate, 0) / metrics.length)
-      : 100
+    techsWithCompleted.length > 0
+      ? Math.round(techsWithCompleted.reduce((acc, m) => acc + m.onTimeRate, 0) / techsWithCompleted.length)
+      : 0
 
   // Sorted by total completed descending
   const sortedByCompleted = [...metrics].sort((a, b) => b.totalCompleted - a.totalCompleted)
@@ -163,7 +164,13 @@ export function TechnicianPerformanceTab({ metrics }: TechnicianPerformanceTabPr
                     <TableCell className="px-4 py-2 align-middle text-center">
                       <div className="text-xs font-bold text-[#0F172A]">{m.totalCompleted} <span className="text-[#64748B] font-normal">/ {m.totalAssigned}</span></div>
                       <div className="text-[10px] text-[#94A3B8]">
-                        {m.totalActive > 0 ? `${m.totalActive} aktif` : '0 aktif'}
+                        {m.totalOnProgress > 0 && m.totalScheduled > 0
+                          ? `${m.totalOnProgress} di lapangan, ${m.totalScheduled} terjadwal`
+                          : m.totalOnProgress > 0
+                          ? `${m.totalOnProgress} di lapangan`
+                          : m.totalScheduled > 0
+                          ? `${m.totalScheduled} terjadwal`
+                          : '0 aktif'}
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-2 align-middle">
@@ -177,7 +184,9 @@ export function TechnicianPerformanceTab({ metrics }: TechnicianPerformanceTabPr
                         <div className="h-1.5 w-full rounded-full bg-[#F1F5F9] overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all ${
-                              m.onTimeRate >= 85
+                              m.totalCompleted === 0
+                                ? 'bg-slate-300'
+                                : m.onTimeRate >= 85
                                 ? 'bg-emerald-500'
                                 : m.onTimeRate >= 70
                                 ? 'bg-amber-500'
@@ -192,12 +201,17 @@ export function TechnicianPerformanceTab({ metrics }: TechnicianPerformanceTabPr
                       {formatDuration(m.averageDurationMinutes)}
                     </TableCell>
                     <TableCell className="px-4 py-2 align-middle text-center">
-                      {m.totalActive > 0 ? (
-                        <Badge variant="default" className="text-[10px] bg-[#007ACC] hover:bg-[#007ACC]">
-                          Sedang Bertugas
+                      {m.fieldStatus === 'on_progress' ? (
+                        <Badge variant="default" className="text-[10px] bg-[#007ACC] hover:bg-[#007ACC] text-white font-medium gap-1 inline-flex items-center">
+                          <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                          Sedang di Lapangan {m.totalOnProgress > 1 ? `(${m.totalOnProgress})` : ''}
+                        </Badge>
+                      ) : m.fieldStatus === 'scheduled' ? (
+                        <Badge variant="secondary" className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200/80 hover:bg-amber-100/60 font-medium">
+                          Terjadwal ({m.totalScheduled} Job)
                         </Badge>
                       ) : (
-                        <Badge variant="secondary" className="text-[10px]">
+                        <Badge variant="outline" className="text-[10px] text-slate-500 border-slate-200 bg-slate-50 hover:bg-slate-100 font-normal">
                           Siap Ditugaskan
                         </Badge>
                       )}

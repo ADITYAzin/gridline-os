@@ -110,8 +110,64 @@ Silakan buka aplikasi Opilines untuk memeriksa checklist SOP dan lakukan check-i
   }
 }
 
+export const WA_WINDOW_NAME = 'gridline_whatsapp'
+
 export function createWhatsAppUrl(phone: string, message: string): string {
   const formattedPhone = formatWhatsAppPhone(phone)
   if (!formattedPhone) return '#'
   return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`
 }
+
+export function createWhatsAppWebDirectUrl(phone: string, message: string): string {
+  const formattedPhone = formatWhatsAppPhone(phone)
+  if (!formattedPhone) return '#'
+  return `https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(message)}`
+}
+
+export function createWhatsAppProtocolUrl(phone: string, message: string): string {
+  const formattedPhone = formatWhatsAppPhone(phone)
+  if (!formattedPhone) return '#'
+  return `whatsapp://send?phone=${formattedPhone}&text=${encodeURIComponent(message)}`
+}
+
+export type WhatsAppTargetPlatform = 'web_tab' | 'app' | 'auto'
+
+export function openWhatsAppTargeted({
+  phone,
+  message,
+  targetPlatform = 'web_tab',
+}: {
+  phone: string
+  message: string
+  targetPlatform?: WhatsAppTargetPlatform
+}): void {
+  if (typeof window === 'undefined') return
+
+  const formattedPhone = formatWhatsAppPhone(phone)
+  if (!formattedPhone) return
+
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+  // 1. If 'app' mode selected or detected as mobile device, trigger native WhatsApp protocol directly (0 browser tabs)
+  if (targetPlatform === 'app' || (targetPlatform === 'auto' && isMobile)) {
+    const protocolUrl = createWhatsAppProtocolUrl(formattedPhone, message)
+    const anchor = document.createElement('a')
+    anchor.href = protocolUrl
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    return
+  }
+
+  // 2. Desktop WhatsApp Web: Reuse single named window context ('gridline_whatsapp') to prevent opening duplicate tabs
+  const webUrl = createWhatsAppWebDirectUrl(formattedPhone, message)
+  const targetWindow = window.open(webUrl, WA_WINDOW_NAME)
+  if (targetWindow) {
+    try {
+      targetWindow.focus()
+    } catch {
+      // Browsers may restrict focus() across different origins
+    }
+  }
+}
+

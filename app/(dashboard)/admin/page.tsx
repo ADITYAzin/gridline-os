@@ -127,7 +127,7 @@ export default async function AdminDashboardPage() {
       .eq('org_id', profile.orgId)
       .neq('status', 'cancelled')
       .order('created_at', { ascending: false })
-      .limit(6),
+      .limit(10),
   ])
 
   const jobs = allJobs || []
@@ -382,7 +382,7 @@ export default async function AdminDashboardPage() {
               <Users className="h-3.5 w-3.5" />
             </div>
             <span>
-              Teknisi Siaga: <strong className="text-slate-900 font-semibold">{totalTechs || 0}</strong> personil
+              Teknisi Siaga: <strong className="text-slate-900 font-semibold">{totalTechs || 0}</strong>
             </span>
           </Link>
 
@@ -396,7 +396,7 @@ export default async function AdminDashboardPage() {
               <Building2 className="h-3.5 w-3.5" />
             </div>
             <span>
-              Pelanggan Terdaftar: <strong className="text-slate-900 font-semibold">{totalCustomers || 0}</strong> klien
+              Pelanggan Terdaftar: <strong className="text-slate-900 font-semibold">{totalCustomers || 0}</strong>
             </span>
           </Link>
 
@@ -435,7 +435,7 @@ export default async function AdminDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {/* Left Column: Recent Jobs Table */}
         <div className="lg:col-span-8 rounded-xl border border-border/80 bg-white shadow-elevation-1 overflow-hidden flex flex-col h-full">
-          <div className="p-4 px-5 border-b border-border/70 flex items-center justify-between bg-slate-50/50">
+          <div className="p-4 px-5 border-b border-border/70 flex items-center justify-between bg-slate-50/50 shrink-0">
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-semibold font-heading text-slate-900">
@@ -451,16 +451,16 @@ export default async function AdminDashboardPage() {
             </div>
             <Link
               href="/admin/jobs"
-              className="text-xs font-medium text-[#007ACC] hover:text-[#0062A3] flex items-center gap-1 hover:underline"
+              className="text-xs font-medium text-[#007ACC] hover:text-[#0062A3] flex items-center gap-1 hover:underline shrink-0"
             >
               <span>Semua Tiket</span>
               <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
 
-          <div className="divide-y divide-border/60 flex-1">
+          <div className="divide-y divide-border/60 overflow-y-auto h-[396px] [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.3)_transparent]">
             {recentJobs.length === 0 ? (
-              <div className="p-12 text-center flex flex-col items-center justify-center flex-1">
+              <div className="p-12 text-center flex flex-col items-center justify-center h-full">
                 <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
                   <Briefcase className="h-5 w-5" />
                 </div>
@@ -581,7 +581,7 @@ export default async function AdminDashboardPage() {
         {/* Right Column: Aksi Cepat Dispatcher (Tinggi sejajar dengan Tiket Pekerjaan Terbaru) */}
         <div className="lg:col-span-4 flex flex-col h-full">
           <div className="h-full rounded-xl border border-border/80 bg-white shadow-elevation-1 overflow-hidden flex flex-col">
-            <div className="p-4 px-5 border-b border-border/70 flex items-center justify-between bg-slate-50/50">
+            <div className="p-4 px-5 border-b border-border/70 flex items-center justify-between bg-slate-50/50 shrink-0">
               <div>
                 <h3 className="text-sm font-semibold font-heading text-slate-900">
                   Aksi Cepat Dispatcher

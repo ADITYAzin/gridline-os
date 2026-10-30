@@ -92,7 +92,7 @@ export function QuickActionTray({
                 address,
               }}
               defaultScenario="customer_on_the_way"
-              triggerButtonText="Kirim Update via WhatsApp"
+              triggerButtonText="Kirim Kabar"
               size="sm"
             />
           </div>

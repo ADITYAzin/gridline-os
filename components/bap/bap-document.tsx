@@ -71,11 +71,15 @@ export interface BapDocumentProps {
     id: string
     signed_url: string
     captured_at: string | null
+    checklist_item_id?: string | null
+    caption?: string | null
   }>
   afterPhotos: Array<{
     id: string
     signed_url: string
     captured_at: string | null
+    checklist_item_id?: string | null
+    caption?: string | null
   }>
   signature: {
     customer_name: string
@@ -419,6 +423,19 @@ export function BapDocument({
                     ? `${new Date(item.completed_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`
                     : 'Terverifikasi'
 
+                  // Check if this SOP item has a linked photo evidence
+                  const allEvidencePhotos = [
+                    ...beforePhotos.map((p, i) => ({ ...p, label: `Foto Sebelum #${i + 1}` })),
+                    ...afterPhotos.map((p, i) => ({ ...p, label: `Foto Sesudah #${i + 1}` })),
+                  ]
+                  const matchedPhoto = allEvidencePhotos.find((p) => p.checklist_item_id === item.id)
+
+                  if (matchedPhoto) {
+                    notesLabel = item.completed_at
+                      ? `${new Date(item.completed_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB (${matchedPhoto.label})`
+                      : `Terverifikasi (${matchedPhoto.label})`
+                  }
+
                   if (item.is_na) {
                     statusLabel = 'Tidak Berlaku (N/A)'
                     notesLabel = item.na_reason || 'Tidak relevan dengan unit'
@@ -475,8 +492,8 @@ export function BapDocument({
                               alt={`Sebelum #${idx + 1}`}
                               className="w-full h-full object-cover"
                             />
-                            <span className="text-[10px] text-center font-mono text-slate-600 bg-slate-100 py-0.5">
-                              Foto #{idx + 1}
+                            <span className="text-[10px] text-center font-mono text-slate-700 bg-slate-100 py-1 px-1.5 leading-tight border-t border-slate-200">
+                              {p.caption ? `Foto #${idx + 1} • Bukti: ${p.caption}` : `Foto #${idx + 1}`}
                             </span>
                           </div>
                         ))}
@@ -497,8 +514,8 @@ export function BapDocument({
                               alt={`Sesudah #${idx + 1}`}
                               className="w-full h-full object-cover"
                             />
-                            <span className="text-[10px] text-center font-mono text-slate-600 bg-slate-100 py-0.5">
-                              Foto #{idx + 1}
+                            <span className="text-[10px] text-center font-mono text-slate-700 bg-slate-100 py-1 px-1.5 leading-tight border-t border-slate-200">
+                              {p.caption ? `Foto #${idx + 1} • Bukti: ${p.caption}` : `Foto #${idx + 1}`}
                             </span>
                           </div>
                         ))}

@@ -5,10 +5,13 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { STORAGE } from '@/lib/constants'
 import { CheckInButton } from './check-in-button'
+import { CheckOutSection } from './check-out-section'
 import { ChecklistSection } from './checklist-section'
 import { PhotoUploadSection } from './photo-upload-section'
 import { SignaturePadModal } from './signature-pad-modal'
 import { WorkReportForm } from './work-report-form'
+import { JobCompletedBanner } from '@/components/technician/job-completed-view'
+import { calculateJobCommission } from '@/lib/commission'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,6 +20,7 @@ import { TechnicianStatusBadge } from '@/components/technician/status-badge'
 import { FiveGateProgress } from '@/components/technician/five-gate-progress'
 import { QuickActionTray } from '@/components/technician/quick-action-tray'
 import { SopOperationalBanner } from '@/components/technician/sop-operational-banner'
+import { RealtimeJobsListener } from '@/components/realtime/realtime-jobs-listener'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -35,6 +39,8 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
     { data: photos },
     { data: signature },
     { data: report },
+    { data: schedule },
+    { data: orgConfig },
   ] = await Promise.all([
     supabase
       .from('jobs')
@@ -47,6 +53,8 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
         address,
         priority,
         status,
+        created_at,
+        completed_at,
         technician_id,
         customers(name, phone),
         customer_assets(id, asset_name, brand, model_number, serial_number, location_tag, notes, warranty_expires_at, status)
@@ -55,15 +63,21 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
       .eq('org_id', profile.orgId)
       .eq('technician_id', profile.id)
       .maybeSingle(),
-    supabase.from('job_attendance').select('check_in_at, check_out_at').eq('job_id', id).maybeSingle(),
+    supabase.from('job_attendance').select('check_in_at, check_out_at, check_in_photo_url').eq('job_id', id).maybeSingle(),
     supabase
       .from('checklist_items')
       .select('id, item, is_completed, is_na, na_reason, sop_mode, requires_photo, is_critical, hint')
       .eq('job_id', id)
       .order('created_at', { ascending: true }),
-    supabase.from('job_photos').select('id, type, file_url, created_at').eq('job_id', id),
+    supabase.from('job_photos').select('id, type, file_url, created_at, checklist_item_id, caption').eq('job_id', id),
     supabase.from('signatures').select('customer_name, signature_url, signed_at').eq('job_id', id).maybeSingle(),
     supabase.from('work_reports').select('result, notes, submitted_at').eq('job_id', id).maybeSingle(),
+    supabase.from('schedules').select('start_at, end_at').eq('job_id', id).maybeSingle(),
+    supabase
+      .from('organizations')
+      .select('commission_enabled, commission_type, default_commission_rate, on_time_bonus_enabled, on_time_bonus_rate')
+      .eq('id', profile.orgId)
+      .maybeSingle(),
   ])
 
   if (!job) {
@@ -73,7 +87,7 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
   // Fetch Service SOP Configuration & Risk Guidelines
   const { data: serviceConfig } = await supabase
     .from('company_services')
-    .select('sop_mode, sop_notes, estimated_duration_minutes, risk_level')
+    .select('sop_mode, sop_notes, estimated_duration_minutes, risk_level, commission_rate')
     .eq('org_id', profile.orgId)
     .eq('name', job.service_type)
     .maybeSingle()
@@ -153,8 +167,30 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
     }
   }
 
-  // Calculate 5-Gate Completion State (supports Tri-Mode SOP and N/A)
+  // Generate signed URL for attendance check-in photo if present
+  let attendanceWithSignedPhoto = attendance
+    ? {
+        ...attendance,
+        display_photo_url: null as string | null,
+      }
+    : null
+
+  if (attendance?.check_in_photo_url) {
+    try {
+      const { data: attData } = await admin.storage
+        .from(STORAGE.jobFilesBucket)
+        .createSignedUrl(attendance.check_in_photo_url, 7200)
+      if (attData?.signedUrl && attendanceWithSignedPhoto) {
+        attendanceWithSignedPhoto.display_photo_url = attData.signedUrl
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  // Calculate 6-Gate Completion State (supports Tri-Mode SOP and N/A)
   const hasCheckIn = Boolean(attendance?.check_in_at)
+  const hasCheckOut = Boolean(attendance?.check_out_at)
   const checklistList = checklist || []
   const isReferenceSop = checklistList.length > 0 && checklistList[0]?.sop_mode === 'reference'
   const hasChecklistCompleted =
@@ -166,8 +202,39 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
     (photos || []).some((p) => p.type === 'after')
   const hasSignature = Boolean(signature?.signed_at)
   const hasReport = Boolean(report?.submitted_at)
-  const allOtherGatesMet = hasCheckIn && hasChecklistCompleted && hasPhotosCompleted && hasSignature
-  const isAllGatesMet = allOtherGatesMet && hasReport
+  const isReadyForCheckout =
+    hasCheckIn && hasChecklistCompleted && hasPhotosCompleted && hasSignature && hasReport
+  const isAllGatesMet = isReadyForCheckout && hasCheckOut
+
+  // Calculate job commission if organization commission is enabled
+  let jobCommission = null
+  if (orgConfig?.commission_enabled) {
+    const sRates: Record<string, number> = {}
+    if (job.service_type && serviceConfig?.commission_rate != null) {
+      sRates[job.service_type] = Number(serviceConfig.commission_rate)
+    }
+
+    jobCommission = calculateJobCommission(
+      {
+        id: job.id,
+        job_number: job.job_number,
+        service_type: job.service_type,
+        status: job.status,
+        created_at: job.created_at,
+        completed_at: job.completed_at,
+        scheduled_end: schedule?.end_at,
+        check_in_at: attendance?.check_in_at,
+      },
+      {
+        commission_enabled: true,
+        commission_type: (orgConfig.commission_type as 'service_based' | 'flat') || 'service_based',
+        default_commission_rate: Number(orgConfig.default_commission_rate) || 0,
+        on_time_bonus_enabled: Boolean(orgConfig.on_time_bonus_enabled),
+        on_time_bonus_rate: Number(orgConfig.on_time_bonus_rate) || 0,
+        serviceRates: sRates,
+      }
+    )
+  }
 
   return (
     <div className="space-y-4 pb-14">
@@ -189,29 +256,54 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
             </h1>
           </div>
         </div>
-        {job.status === 'completed' && (
-          <Button asChild variant="outline" size="sm" className="h-9 px-2.5 gap-1.5 text-xs font-semibold text-[#007ACC] border-[#007ACC]/30 hover:bg-[#EBF5FC] rounded-[8px] shrink-0 touch-press">
-            <Link href={`/technician/jobs/${job.id}/bap`} target="_blank">
-              <Printer className="h-3.5 w-3.5" />
-              <span>BAP</span>
-            </Link>
-          </Button>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          <RealtimeJobsListener technicianId={profile.id} compact={true} />
+          {job.status === 'completed' && (
+            <Button asChild variant="outline" size="sm" className="h-9 px-2.5 gap-1.5 text-xs font-semibold text-[#007ACC] border-[#007ACC]/30 hover:bg-[#EBF5FC] rounded-[8px] shrink-0 touch-press">
+              <Link href={`/technician/jobs/${job.id}/bap`} target="_blank">
+                <Printer className="h-3.5 w-3.5" />
+                <span>BAP</span>
+              </Link>
+            </Button>
+          )}
+        </div>
       </header>
 
-      {/* 5-Gate Visual Readiness Progress */}
+      {/* 6-Gate Visual Readiness Progress */}
       <FiveGateProgress
         hasCheckIn={hasCheckIn}
         hasChecklistCompleted={hasChecklistCompleted}
         hasPhotosCompleted={hasPhotosCompleted}
         hasSignature={hasSignature}
         hasReport={hasReport}
+        hasCheckOut={hasCheckOut}
         isCompleted={isLocked}
       />
 
-      {/* GPS Check-in / Check-out Action */}
+      {/* Visual Banner Perayaan Penyelesaian Tiket (Ketika Status Selesai) */}
+      {job.status === 'completed' && (
+        <JobCompletedBanner
+          jobNumber={job.job_number}
+          serviceType={job.service_type}
+          completedAt={job.completed_at}
+          jobId={job.id}
+          commissionAmount={jobCommission?.totalCommission}
+        />
+      )}
+
+      {/* GPS Check-in & Presence Action (TOP) */}
       {!isLocked && (
-        <CheckInButton jobId={job.id} attendance={attendance} />
+        <>
+          <CheckInButton jobId={job.id} attendance={attendanceWithSignedPhoto} />
+          {!hasCheckIn && (
+            <div className="p-3 rounded-[12px] bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-2.5 shadow-2xs">
+              <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
+              <span className="font-medium leading-relaxed">
+                Tahap pengerjaan (SOP, foto bukti, tanda tangan, dan laporan) terkunci. Lakukan <strong>Check-in kedatangan di lokasi</strong> terlebih dahulu untuk memulai pengerjaan.
+              </span>
+            </div>
+          )}
+        </>
       )}
 
       {/* Work Order Info & Quick Navigation Action Card */}
@@ -305,23 +397,48 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
         sopMode={serviceConfig?.sop_mode as 'strict' | 'reference' | 'none' | null}
       />
 
-      {/* SOP Checklist Section */}
-      <ChecklistSection items={checklist || []} disabled={isLocked} />
+      {/* SOP Checklist Section with Direct 1-Tap Photo Action */}
+      <ChecklistSection
+        items={checklist || []}
+        jobId={job.id}
+        photos={photosWithSignedUrls}
+        disabled={isLocked || !hasCheckIn}
+      />
 
       {/* Photo Evidence Section (Before / After) */}
-      <PhotoUploadSection jobId={job.id} photos={photosWithSignedUrls} disabled={isLocked} />
+      <PhotoUploadSection
+        jobId={job.id}
+        photos={photosWithSignedUrls}
+        disabled={isLocked || !hasCheckIn}
+      />
 
       {/* Customer E-Signature Section */}
-      <SignaturePadModal jobId={job.id} existingSignature={signatureWithSignedUrl} disabled={isLocked} />
+      <SignaturePadModal
+        jobId={job.id}
+        existingSignature={signatureWithSignedUrl}
+        disabled={isLocked || !hasCheckIn}
+      />
 
       {/* Work Report Section */}
       <WorkReportForm
         jobId={job.id}
         existingReport={report}
-        disabled={isLocked}
-        allOtherGatesMet={allOtherGatesMet}
-        isAllGatesMet={isAllGatesMet}
+        disabled={isLocked || !hasCheckIn}
+        hasCheckIn={hasCheckIn}
       />
+
+      {/* Check-out Lapangan (BOTTOM) - Diposisikan di akhir setelah laporan pengerjaan */}
+      {!isLocked && (
+        <CheckOutSection
+          jobId={job.id}
+          attendance={attendanceWithSignedPhoto}
+          disabled={isLocked}
+          isReadyForCheckout={isReadyForCheckout}
+          jobNumber={job.job_number}
+          serviceType={job.service_type}
+          commissionAmount={jobCommission?.totalCommission}
+        />
+      )}
     </div>
   )
 }
