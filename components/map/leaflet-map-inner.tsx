@@ -372,6 +372,19 @@ export default function LeafletMapInner({
         style={{ width: '100%', height: '100%', minHeight: '580px' }}
       />
       <style jsx global>{`
+        .leaflet-container {
+          width: 100% !important;
+          height: 100% !important;
+          position: relative !important;
+          z-index: 10 !important;
+          background: #e2e8f0 !important;
+        }
+        .leaflet-tile-pane {
+          z-index: 200 !important;
+        }
+        .leaflet-tile {
+          visibility: inherit !important;
+        }
         .custom-gridline-icon-pin {
           background: transparent !important;
           border: none !important;

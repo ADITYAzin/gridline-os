@@ -1,24 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "leaflet/dist/leaflet.css";
-
-/* Leaflet Container & Tiles Reliability */
-.leaflet-container {
-  width: 100% !important;
-  height: 100% !important;
-  position: relative !important;
-  z-index: 10 !important;
-  background: #e2e8f0 !important;
-}
-
-.leaflet-tile-pane {
-  z-index: 200 !important;
-}
-
-.leaflet-tile {
-  visibility: inherit !important;
-}
 
 @custom-variant dark (&:is(.dark *));
 
@@ -170,6 +152,9 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;
   }
+  a, button, input, select, textarea, label, summary, [role="button"], [tabindex]:not([tabindex="-1"]) {
+    touch-action: manipulation;
+  }
 }
 
 @utility pt-safe {
@@ -181,6 +166,7 @@
 }
 
 @utility touch-press {
+  touch-action: manipulation;
   transition: transform 0.1s ease, opacity 0.1s ease;
   &:active {
     transform: scale(0.97);
