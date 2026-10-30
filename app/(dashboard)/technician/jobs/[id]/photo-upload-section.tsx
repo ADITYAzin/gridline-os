@@ -160,6 +160,8 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
                   <img
                     src={p.display_url}
                     alt={`Before #${idx + 1}`}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -240,6 +242,8 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
                   <img
                     src={p.display_url}
                     alt={`After #${idx + 1}`}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 ) : (

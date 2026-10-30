@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { TechnicianStatusBadge } from '@/components/technician/status-badge'
-import { MapPin, ArrowRight, Navigation, CheckCircle2, AlertCircle, Wrench, Calendar, Clock } from 'lucide-react'
+import { MapPin, ArrowRight, Navigation, CheckCircle2, Wrench, Calendar, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface TechnicianJobItem {
@@ -30,6 +30,7 @@ interface TechnicianJobListProps {
 
 export function TechnicianJobList({ jobs }: TechnicianJobListProps) {
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('active')
+  const [completedLimit, setCompletedLimit] = useState(3)
 
   const activeJobs = jobs.filter((j) => j.status === 'assigned' || j.status === 'on_progress')
   const completedJobs = jobs.filter((j) => j.status === 'completed')
@@ -38,7 +39,7 @@ export function TechnicianJobList({ jobs }: TechnicianJobListProps) {
     activeTab === 'active'
       ? activeJobs
       : activeTab === 'completed'
-      ? completedJobs
+      ? completedJobs.slice(0, completedLimit)
       : jobs
 
   // Find topmost priority / active job for the Hero Banner
@@ -268,6 +269,18 @@ export function TechnicianJobList({ jobs }: TechnicianJobListProps) {
               </Card>
             </Link>
           ))}
+
+          {/* Slicing: Load 3 more completed jobs on demand */}
+          {activeTab === 'completed' && completedJobs.length > completedLimit && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCompletedLimit((prev) => prev + 3)}
+              className="w-full h-10 text-xs font-semibold border-dashed border-[#007ACC]/40 text-[#007ACC] hover:bg-[#EBF5FC] rounded-[8px] touch-press mt-2 shadow-2xs cursor-pointer"
+            >
+              <span>Tampilkan 3 Tugas Sebelumnya ({completedJobs.length - completedLimit} tersisa)</span>
+            </Button>
+          )}
         </div>
       )}
     </div>

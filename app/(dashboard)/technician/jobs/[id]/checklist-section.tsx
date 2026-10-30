@@ -440,6 +440,8 @@ export function ChecklistSection({ items, jobId, photos = [], disabled }: Checkl
                                 <img
                                   src={photo.display_url}
                                   alt="Bukti SOP"
+                                  loading="lazy"
+                                  decoding="async"
                                   className="h-4.5 w-4.5 rounded-full object-cover ring-1 ring-emerald-500/40 group-hover:scale-110 transition-transform"
                                 />
                                 <span className="underline-offset-2 group-hover:underline">
