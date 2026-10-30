@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { submitWorkReportAction } from '@/app/actions/execution'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -27,7 +26,6 @@ export function WorkReportForm({
   disabled,
   hasCheckIn = true,
 }: WorkReportFormProps) {
-  const router = useRouter()
   const [result, setResult] = useState(existingReport?.result || '')
   const [notes, setNotes] = useState(existingReport?.notes || '')
   const [error, setError] = useState<string | null>(null)
@@ -52,7 +50,6 @@ export function WorkReportForm({
       } else {
         setSuccess(true)
         toast.success('Laporan kerja berhasil disimpan. Silakan lakukan Check-out di bawah.')
-        router.refresh()
       }
     })
   }

@@ -1,6 +1,11 @@
-// Gridline OS — Progressive Web App Service Worker
-const CACHE_NAME = 'gridline-os-v1'
+// Gridline OS — Progressive Web App Service Worker (High-Performance & Offline-Resilient)
+const CACHE_VERSION = 'gridline-os-v2'
+const STATIC_CACHE = `${CACHE_VERSION}-static`
+const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`
+
 const PRECACHE_ASSETS = [
+  '/',
+  '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon.svg',
@@ -10,7 +15,7 @@ const PRECACHE_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
-      .open(CACHE_NAME)
+      .open(STATIC_CACHE)
       .then((cache) => cache.addAll(PRECACHE_ASSETS))
       .then(() => self.skipWaiting())
   )
@@ -23,7 +28,7 @@ self.addEventListener('activate', (event) => {
       .then((keys) =>
         Promise.all(
           keys.map((key) => {
-            if (key !== CACHE_NAME) {
+            if (key !== STATIC_CACHE && key !== RUNTIME_CACHE) {
               return caches.delete(key)
             }
           })
@@ -36,38 +41,59 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
 
-  // Only handle GET requests and exclude Supabase API & Next.js server actions
+  // 1. Skip non-GET requests, APIs, Supabase endpoints, and Next.js Server Actions
   if (
     event.request.method !== 'GET' ||
     url.pathname.startsWith('/api/') ||
-    url.origin.includes('supabase.co')
+    url.origin.includes('supabase.co') ||
+    event.request.headers.get('next-action')
   ) {
     return
   }
 
-  // Cache-first for icons and static images
-  if (url.pathname.startsWith('/icons/')) {
+  // 2. Next.js Static Chunks, Styles, Fonts, and Icons (Stale-While-Revalidate)
+  if (
+    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.startsWith('/icons/') ||
+    url.hostname.includes('fonts.gstatic.com') ||
+    url.hostname.includes('fonts.googleapis.com')
+  ) {
     event.respondWith(
-      caches.match(event.request).then((cached) => {
-        return (
-          cached ||
-          fetch(event.request).then((response) => {
-            const copy = response.clone()
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy))
-            return response
+      caches.open(STATIC_CACHE).then(async (cache) => {
+        const cached = await cache.match(event.request)
+        const fetchPromise = fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(event.request, networkResponse.clone())
+            }
+            return networkResponse
           })
-        )
+          .catch(() => cached)
+
+        return cached || fetchPromise
       })
     )
     return
   }
 
-  // Network-first with graceful offline fallback for navigation requests
+  // 3. Navigation Requests: Network-first with runtime cache fallback
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match(event.request)
-      })
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone()
+            caches.open(RUNTIME_CACHE).then((cache) => cache.put(event.request, copy))
+          }
+          return networkResponse
+        })
+        .catch(async () => {
+          const cached = await caches.match(event.request)
+          if (cached) return cached
+          const fallback = await caches.match('/technician')
+          return fallback || caches.match('/')
+        })
     )
+    return
   }
 })

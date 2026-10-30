@@ -25,12 +25,30 @@ export function useRealtimeJobs({
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const isRefreshingManual = useRef(false)
   const onUpdateRef = useRef(onUpdate)
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     onUpdateRef.current = onUpdate
   }, [onUpdate])
 
+  // Debounced refresh to coalesce multiple rapid Postgres change events into a single RSC revalidation
+  const scheduleDebouncedRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current)
+    }
+    refreshTimeoutRef.current = setTimeout(() => {
+      startTransition(() => {
+        router.refresh()
+        setLastUpdated(new Date())
+        onUpdateRef.current?.()
+      })
+    }, 350)
+  }, [router])
+
   const handleRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current)
+    }
     isRefreshingManual.current = true
     startTransition(() => {
       router.refresh()
@@ -108,11 +126,7 @@ export function useRealtimeJobs({
           }
         }
 
-        startTransition(() => {
-          router.refresh()
-          setLastUpdated(new Date())
-          onUpdateRef.current?.()
-        })
+        scheduleDebouncedRefresh()
       }
     )
 
@@ -141,11 +155,7 @@ export function useRealtimeJobs({
             filter: `org_id=eq.${orgId}`,
           },
           () => {
-            startTransition(() => {
-              router.refresh()
-              setLastUpdated(new Date())
-              onUpdateRef.current?.()
-            })
+            scheduleDebouncedRefresh()
           }
         )
       }
@@ -160,11 +170,7 @@ export function useRealtimeJobs({
           filter: `id=eq.${orgId}`,
         },
         () => {
-          startTransition(() => {
-            router.refresh()
-            setLastUpdated(new Date())
-            onUpdateRef.current?.()
-          })
+          scheduleDebouncedRefresh()
         }
       )
     }
@@ -193,11 +199,7 @@ export function useRealtimeJobs({
               })
             }
           }
-          startTransition(() => {
-            router.refresh()
-            setLastUpdated(new Date())
-            onUpdateRef.current?.()
-          })
+          scheduleDebouncedRefresh()
         }
       )
     }
@@ -214,9 +216,12 @@ export function useRealtimeJobs({
     })
 
     return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+      }
       supabase.removeChannel(channel)
     }
-  }, [orgId, technicianId, enableToasts, router])
+  }, [orgId, technicianId, enableToasts, router, scheduleDebouncedRefresh])
 
   return {
     status,

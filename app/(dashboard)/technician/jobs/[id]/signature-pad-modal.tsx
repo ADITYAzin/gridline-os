@@ -33,6 +33,7 @@ export function SignaturePadModal({ jobId, existingSignature, disabled }: Signat
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const canvasRectRef = useRef<DOMRect | null>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   const [hasDrawn, setHasDrawn] = useState(false)
 
@@ -45,7 +46,7 @@ export function SignaturePadModal({ jobId, existingSignature, disabled }: Signat
     setHasDrawn(false)
   }
 
-  // Auto-fit canvas to mobile container width on open
+  // Auto-fit canvas to mobile container width on open & cache initial bounding rect
   useEffect(() => {
     if (open) {
       const timer = setTimeout(() => {
@@ -55,21 +56,27 @@ export function SignaturePadModal({ jobId, existingSignature, disabled }: Signat
           if (rect.width > 0) {
             canvas.width = rect.width
             canvas.height = 180
+            canvasRectRef.current = canvas.getBoundingClientRect()
           }
         }
       }, 60)
       return () => clearTimeout(timer)
+    } else {
+      canvasRectRef.current = null
     }
   }, [open])
 
-  // Touch & Mouse Drawing Handlers
+  // Touch & Mouse Drawing Handlers (Optimized: No forced reflow / getBoundingClientRect thrashing)
   const startDraw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    // Cache the bounding rect once on touch/mouse start
     const rect = canvas.getBoundingClientRect()
+    canvasRectRef.current = rect
+
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
 
@@ -78,6 +85,7 @@ export function SignaturePadModal({ jobId, existingSignature, disabled }: Signat
     ctx.strokeStyle = '#0f172a'
     ctx.lineWidth = 2.5
     ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
     setIsDrawing(true)
     setHasDrawn(true)
   }
@@ -89,7 +97,8 @@ export function SignaturePadModal({ jobId, existingSignature, disabled }: Signat
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const rect = canvas.getBoundingClientRect()
+    // Use cached rect to avoid forced synchronous layout recalculation on every touch frame
+    const rect = canvasRectRef.current || canvas.getBoundingClientRect()
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
 
@@ -234,7 +243,8 @@ export function SignaturePadModal({ jobId, existingSignature, disabled }: Signat
                       onTouchStart={startDraw}
                       onTouchMove={draw}
                       onTouchEnd={stopDraw}
-                      className="cursor-crosshair w-full h-[180px]"
+                      style={{ touchAction: 'none' }}
+                      className="cursor-crosshair w-full h-[180px] touch-none"
                     />
                   </div>
                 </div>

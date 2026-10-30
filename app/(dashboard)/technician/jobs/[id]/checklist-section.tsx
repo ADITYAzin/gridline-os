@@ -8,6 +8,7 @@ import {
   uploadJobPhotoAction,
   deleteJobPhotoAction,
 } from '@/app/actions/execution'
+import { compressImage } from '@/lib/image-compress'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -105,15 +106,18 @@ export function ChecklistSection({ items, jobId, photos = [], disabled }: Checkl
 
   // Handle photo captured from file input
   const handlePhotoCaptured = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !jobId || !activeUploadTarget) return
+    const rawFile = e.target.files?.[0]
+    if (!rawFile || !jobId || !activeUploadTarget) return
 
     const { item, index } = activeUploadTarget
     setUploadingItemId(item.id)
 
     try {
+      // Compress image client-side to save mobile bandwidth & accelerate upload up to 15x
+      const compressedFile = await compressImage(rawFile, 1200, 0.8)
+
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', compressedFile)
       formData.append('checklistItemId', item.id)
       formData.append('caption', item.item)
 

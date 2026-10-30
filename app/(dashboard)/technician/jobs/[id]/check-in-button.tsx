@@ -32,14 +32,13 @@ interface CheckInButtonProps {
 
 export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
   const [isPending, startTransition] = useTransition()
-  const [isLocating, setIsLocating] = useState(false)
-  const [isCompressing, setIsCompressing] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isCheckedIn = Boolean(attendance?.check_in_at)
-  const isBusy = isPending || isLocating || isCompressing
+  const isBusy = isPending || isProcessing
 
   // Trigger camera file input
   const handleTriggerCapture = () => {
@@ -47,51 +46,47 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
     fileInputRef.current?.click()
   }
 
-  // Handle selected camera/file photo & acquire GPS coords
+  // Handle selected camera/file photo & acquire GPS coords concurrently
   const handlePhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawFile = e.target.files?.[0]
     if (!rawFile) return
 
     setError(null)
-    setIsCompressing(true)
+    setIsProcessing(true)
 
     try {
-      // 1. Compress image client-side to save mobile bandwidth
-      const compressedFile = await compressImage(rawFile, 1200, 0.8)
-      setIsCompressing(false)
-      setIsLocating(true)
+      // 1. Kick off GPS acquisition concurrently with image compression (Eliminate Waterfall!)
+      const gpsPromise = new Promise<{ lat?: number; lng?: number }>((resolve) => {
+        if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            () => resolve({}),
+            { timeout: 4000, enableHighAccuracy: false, maximumAge: 60000 },
+          )
+        } else {
+          resolve({})
+        }
+      })
 
-      // 2. Acquire GPS coordinates
-      const executeCheckIn = (lat?: number, lng?: number) => {
-        setIsLocating(false)
-        startTransition(async () => {
-          const formData = new FormData()
-          formData.append('photo', compressedFile)
+      // 2. Compress image client-side & retrieve GPS coordinates in parallel
+      const [compressedFile, coords] = await Promise.all([
+        compressImage(rawFile, 1200, 0.8),
+        gpsPromise,
+      ])
 
-          const res = await checkInAction(jobId, lat, lng, formData)
-          if (res?.error) {
-            setError(res.error)
-          }
-        })
-      }
+      setIsProcessing(false)
 
-      if (typeof window !== 'undefined' && 'geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            executeCheckIn(pos.coords.latitude, pos.coords.longitude)
-          },
-          () => {
-            // If GPS times out or denied, proceed anyway so technician is never stranded
-            executeCheckIn()
-          },
-          { timeout: 4000, enableHighAccuracy: false, maximumAge: 60000 },
-        )
-      } else {
-        executeCheckIn()
-      }
+      startTransition(async () => {
+        const formData = new FormData()
+        formData.append('photo', compressedFile)
+
+        const res = await checkInAction(jobId, coords.lat, coords.lng, formData)
+        if (res?.error) {
+          setError(res.error)
+        }
+      })
     } catch {
-      setIsCompressing(false)
-      setIsLocating(false)
+      setIsProcessing(false)
       setError('Gagal memproses foto kehadiran. Silakan coba lagi.')
     } finally {
       if (fileInputRef.current) {
@@ -140,13 +135,9 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
             disabled={isBusy}
             className="w-full h-11 gap-2 font-bold shadow-xs bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white rounded-[8px] touch-press cursor-pointer text-xs"
           >
-            {isCompressing ? (
+            {isProcessing ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Mengompresi Foto...
-              </>
-            ) : isLocating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Mengambil Titik GPS...
+                <Loader2 className="h-4 w-4 animate-spin" /> Memproses Foto & Lokasi GPS...
               </>
             ) : isPending ? (
               <>
