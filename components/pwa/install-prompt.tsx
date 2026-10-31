@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Download, Share, X, Wrench, Sparkles } from 'lucide-react'
+import { Download, Share, X, Wrench } from 'lucide-react'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -92,66 +91,44 @@ export function InstallPrompt() {
   }
 
   return (
-    <Card className="border-primary/40 bg-gradient-to-r from-primary/10 via-card to-background shadow-md overflow-hidden relative transition-all">
-      <CardContent className="p-3.5 sm:p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <Wrench className="h-5 w-5" />
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-xs sm:text-sm">Install Aplikasi Opilines</span>
-                <span className="flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary">
-                  <Sparkles className="h-2.5 w-2.5" /> Native App
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed max-w-md">
-                Pasang ke Layar Utama (Home Screen) untuk akses cepat satu sentuhan tanpa membuka browser saat bertugas di lapangan.
-              </p>
-
-              {isIOS && !deferredPrompt && (
-                <div className="pt-2 text-[11px] text-foreground font-medium flex items-center gap-1.5">
-                  <span>Petunjuk iOS Safari:</span>
-                  <span>Tekan tombol</span>
-                  <Share className="h-3.5 w-3.5 text-primary inline" />
-                  <span>lalu pilih</span>
-                  <span className="underline font-semibold">&ldquo;Tambah ke Layar Utama&rdquo;</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <button
-            onClick={handleDismiss}
-            aria-label="Tutup saran instalasi"
-            className="text-muted-foreground hover:text-foreground p-1 -mt-1 -mr-1"
-          >
-            <X className="h-4 w-4" />
-          </button>
+    <div className="rounded-xl border border-[#007ACC]/30 bg-[#EBF5FC] px-3.5 py-2.5 flex items-center justify-between gap-3 shadow-2xs">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="h-9 w-9 rounded-lg bg-[#007ACC] text-white flex items-center justify-center shrink-0">
+          <Wrench className="h-4.5 w-4.5" />
         </div>
+        <div className="min-w-0">
+          <p className="text-xs sm:text-sm font-bold text-[#0F172A] truncate">
+            Pasang Aplikasi Opilines
+          </p>
+          <p className="text-xs text-[#475569] truncate">
+            Akses instan di layar HP
+          </p>
+        </div>
+      </div>
 
-        {deferredPrompt && (
-          <div className="mt-3 flex items-center justify-end gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDismiss}
-              className="h-8 text-xs text-muted-foreground"
-            >
-              Nanti Saja
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleInstallClick}
-              className="h-8 text-xs font-semibold gap-1.5 shadow-sm"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Install Sekarang
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      <div className="flex items-center gap-1.5 shrink-0">
+        {deferredPrompt ? (
+          <Button
+            size="sm"
+            onClick={handleInstallClick}
+            className="h-8.5 px-3 text-xs font-bold bg-[#007ACC] hover:bg-[#0062A3] text-white rounded-lg gap-1 shadow-xs cursor-pointer touch-press"
+          >
+            <Download className="h-3.5 w-3.5" />
+            <span>Pasang</span>
+          </Button>
+        ) : isIOS ? (
+          <span className="text-xs font-semibold text-[#007ACC] bg-white px-2 py-1 rounded-md border border-[#007ACC]/20">
+            Share <Share className="h-3 w-3 inline mx-0.5" /> ➔ Layar Utama
+          </span>
+        ) : null}
+        <button
+          onClick={handleDismiss}
+          aria-label="Tutup saran instalasi"
+          className="text-[#64748B] hover:text-[#0F172A] p-1.5 rounded-lg active:bg-black/5 cursor-pointer"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
   )
 }

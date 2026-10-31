@@ -1,6 +1,5 @@
 import { requireRole } from '@/lib/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { RealtimeJobsListener } from '@/components/realtime/realtime-jobs-listener'
 import { InstallPrompt } from '@/components/pwa/install-prompt'
 import { TechnicianJobList, type TechnicianJobItem } from '@/components/technician/technician-job-list'
 import { Sparkles } from 'lucide-react'
@@ -81,18 +80,15 @@ export default async function TechnicianHomePage() {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-micro font-semibold text-[#007ACC] uppercase tracking-wider flex items-center gap-1">
-                <Sparkles className="h-3 w-3" /> Siaga Aktif
+              <span className="text-xs font-bold text-[#007ACC] uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="h-3.5 w-3.5" /> Siaga Aktif
               </span>
-              <span className="text-[11px] text-[#475569] truncate">• {todayStr}</span>
+              <span className="text-xs text-[#334155] font-medium truncate">• {todayStr}</span>
             </div>
-            <h1 className="text-heading-2 font-heading text-[#0F172A] tracking-tight truncate">
+            <h1 className="text-xl font-bold font-heading text-[#0F172A] tracking-tight truncate">
               Halo, {profile.name}!
             </h1>
           </div>
-        </div>
-        <div className="shrink-0">
-          <RealtimeJobsListener technicianId={profile.id} compact={true} />
         </div>
       </header>
 

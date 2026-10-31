@@ -88,19 +88,19 @@ export function CheckOutSection({
   // Jika belum check-in di lokasi
   if (!isCheckedIn) {
     return (
-      <Card className="shadow-xs rounded-[12px] bg-muted/30 border-[#E2E8F0] overflow-hidden opacity-80">
+      <Card className="shadow-xs rounded-[12px] bg-muted/30 border-[#E2E8F0] overflow-hidden opacity-85">
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1.5">
+            <span className="text-sm text-[#475569] font-bold flex items-center gap-2">
               <LogOut className="h-4 w-4 text-muted-foreground" />
-              Kepulangan / Check-out Lapangan (Wajib)
+              Check-out Lapangan
             </span>
-            <span className="text-[10px] bg-muted text-muted-foreground font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
-              <Lock className="h-2.5 w-2.5" /> Terkunci
+            <span className="text-xs bg-muted text-[#64748B] font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <Lock className="h-3 w-3" /> Terkunci
             </span>
           </div>
-          <p className="text-[11.5px] text-muted-foreground leading-relaxed">
-            Tahap Check-out terkunci. Silakan lakukan Check-in kedatangan di lokasi terlebih dahulu.
+          <p className="text-xs sm:text-sm text-[#64748B] font-medium leading-normal">
+            Check-in kedatangan terlebih dahulu untuk membuka Check-out.
           </p>
         </CardContent>
       </Card>
@@ -112,20 +112,20 @@ export function CheckOutSection({
       <Card className="shadow-xs rounded-[12px] bg-white border-[#E2E8F0] overflow-hidden">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#475569] uppercase tracking-wider font-semibold flex items-center gap-1.5">
+            <span className="text-sm text-[#0F172A] font-bold flex items-center gap-2">
               <LogOut className="h-4 w-4 text-[#007ACC]" />
-              Kepulangan / Check-out Lapangan (Wajib)
+              Check-out Lapangan
             </span>
             {isCheckedOut ? (
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Selesai
+              <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Selesai
               </span>
             ) : isReadyForCheckout ? (
-              <span className="text-[10px] bg-emerald-500/10 text-emerald-600 font-bold px-2 py-0.5 rounded-full animate-pulse">
+              <span className="text-xs bg-emerald-500/10 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full animate-pulse">
                 Siap Check-out
               </span>
             ) : (
-              <span className="text-[10px] bg-amber-500/10 text-amber-700 font-medium px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-amber-500/10 text-amber-800 font-semibold px-2.5 py-0.5 rounded-full">
                 Menunggu Syarat
               </span>
             )}
@@ -139,10 +139,10 @@ export function CheckOutSection({
           )}
 
           {isCheckedOut ? (
-            <div className="rounded-[8px] bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 flex items-center justify-between">
+            <div className="rounded-[8px] bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span className="font-semibold">Check-out Selesai</span>
+                <span className="font-bold">Check-out Selesai</span>
               </div>
               <span className="font-mono text-emerald-900 font-bold">
                 {new Date(attendance!.check_out_at!).toLocaleTimeString('id-ID', {
@@ -155,15 +155,15 @@ export function CheckOutSection({
           ) : (
             <div className="space-y-2.5">
               {!isReadyForCheckout ? (
-                <div className="rounded-[8px] bg-amber-500/10 border border-amber-500/20 p-2.5 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
-                  <span className="text-[11.5px] leading-relaxed">
-                    Selesaikan seluruh langkah SOP, foto bukti Before/After, tanda tangan pelanggan, dan laporan kerja terlebih dahulu untuk membuka tombol Check-out.
+                <div className="rounded-[8px] bg-amber-500/10 border border-amber-500/20 p-2.5 text-xs sm:text-sm text-amber-900 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
+                  <span className="font-medium leading-normal">
+                    Lengkapi SOP, Foto, Ttd & Laporan di atas untuk Check-out.
                   </span>
                 </div>
               ) : (
-                <p className="text-[11.5px] text-emerald-800 dark:text-emerald-300 font-medium leading-relaxed">
-                  Semua syarat telah lengkap! Tekan tombol di bawah untuk mencatat kepulangan GPS dan menutup tiket pekerjaan secara resmi.
+                <p className="text-xs sm:text-sm text-emerald-800 font-semibold leading-normal">
+                  Semua syarat lengkap. Siap Check-out.
                 </p>
               )}
 
@@ -171,7 +171,7 @@ export function CheckOutSection({
                 type="button"
                 onClick={handleCheckOut}
                 disabled={disabled || isBusy || !isReadyForCheckout}
-                className={`w-full h-11 text-xs font-bold gap-2 rounded-[8px] touch-press cursor-pointer ${
+                className={`w-full h-12 text-sm font-bold gap-2 rounded-[8px] touch-press cursor-pointer ${
                   isReadyForCheckout
                     ? 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-xs'
                     : 'bg-muted text-muted-foreground hover:bg-muted cursor-not-allowed opacity-60'
@@ -183,11 +183,11 @@ export function CheckOutSection({
                   </>
                 ) : isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Menyimpan Check-out & Selesai...
+                    <Loader2 className="h-4 w-4 animate-spin" /> Menyimpan Check-out...
                   </>
                 ) : (
                   <>
-                    <MapPin className="h-4 w-4" /> Lakukan Check-out & Selesaikan Pekerjaan (GPS)
+                    <MapPin className="h-4 w-4" /> Check-out & Selesaikan Pekerjaan
                   </>
                 )}
               </Button>

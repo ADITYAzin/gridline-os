@@ -328,26 +328,16 @@ export function ChecklistSection({ items, jobId, photos = [], disabled }: Checkl
         onChange={handlePhotoCaptured}
       />
 
-      <Card className="shadow-xs rounded-[12px] bg-white border-[#E2E8F0]">
+      <Card className="shadow-xs rounded-xl bg-white border-[#E2E8F0]">
         <CardHeader className="p-4 pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xs text-[#475569] uppercase tracking-wider font-semibold flex items-center gap-2">
-              <ListChecks className="h-4 w-4 text-[#007ACC]" /> Prosedur Kerja (SOP Strict)
+            <CardTitle className="text-sm font-bold text-[#0F172A] flex items-center gap-2">
+              <ListChecks className="h-4.5 w-4.5 text-[#007ACC]" /> Prosedur Kerja (SOP)
             </CardTitle>
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-muted">
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-[#0F172A] border border-slate-200">
               {completedCount} / {checklist.length} Selesai
             </span>
           </div>
-
-          {/* Gentle Reminder Banner */}
-          {requiresPhotoCount > 0 && (
-            <div className="mt-2 p-2.5 rounded-[8px] bg-sky-50/70 border border-sky-200/80 text-[11px] text-sky-900 flex items-start gap-2">
-              <Camera className="h-4 w-4 text-[#007ACC] shrink-0 mt-0.5" />
-              <div className="leading-snug">
-                <span className="font-semibold">Langkah Wajib Foto:</span> Klik langsung pada langkah bertanda kamera untuk membuka kamera dan menyelesaikan checklist secara otomatis.
-              </div>
-            </div>
-          )}
         </CardHeader>
 
         <CardContent className="p-4 pt-2">
@@ -362,63 +352,63 @@ export function ChecklistSection({ items, jobId, photos = [], disabled }: Checkl
                 <li
                   key={item.id}
                   onClick={() => !isNa && handleToggle(item, idx)}
-                  className={`p-3 rounded-[10px] border text-xs select-none transition-all touch-press flex flex-col justify-between gap-2 ${
+                  className={`p-3.5 rounded-xl border text-sm select-none transition-all touch-press flex flex-col justify-between gap-2.5 ${
                     isDone
-                      ? 'bg-emerald-500/5 border-emerald-500/30 text-emerald-950 dark:text-emerald-200 cursor-pointer'
+                      ? 'bg-emerald-50/70 border-emerald-300 text-emerald-950 cursor-pointer'
                       : isNa
-                      ? 'bg-muted/50 border-border/80 text-muted-foreground'
-                      : 'bg-card active:bg-muted/40 border-border/60 hover:bg-muted/30 cursor-pointer'
+                      ? 'bg-slate-50 border-slate-200 text-slate-500'
+                      : 'bg-white active:bg-slate-50 border-slate-200 hover:bg-slate-50/60 cursor-pointer'
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    {/* Checkbox indicator */}
+                    {/* Checkbox indicator (Enlarged for touch target & visibility) */}
                     <div
-                      className={`h-5 w-5 rounded-[6px] border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                      className={`h-6 w-6 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                         isDone
-                          ? 'bg-emerald-500 border-emerald-500 text-white scale-105'
+                          ? 'bg-emerald-600 border-emerald-600 text-white scale-105'
                           : isNa
-                          ? 'bg-muted border-muted-foreground/30 text-muted-foreground'
+                          ? 'bg-slate-100 border-slate-300 text-slate-500'
                           : item.requires_photo
                           ? 'border-[#007ACC] bg-[#007ACC]/10 text-[#007ACC] hover:scale-105'
-                          : 'border-muted-foreground/40 bg-muted/20'
+                          : 'border-slate-300 bg-slate-50'
                       }`}
                     >
-                      {isDone && <CheckCircle2 className="h-3.5 w-3.5" />}
-                      {isNa && <span className="text-[9px] font-bold">N/A</span>}
+                      {isDone && <CheckCircle2 className="h-4 w-4" />}
+                      {isNa && <span className="text-[10px] font-bold">N/A</span>}
                       {!isDone && !isNa && item.requires_photo && (
-                        <Camera className="h-3 w-3 text-[#007ACC]" />
+                        <Camera className="h-3.5 w-3.5 text-[#007ACC]" />
                       )}
                     </div>
 
                     {/* Item Description & Badges */}
-                    <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex-1 min-w-0 space-y-1.5">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span
-                          className={`font-medium leading-snug ${
-                            isDone ? 'line-through text-muted-foreground' : isNa ? 'italic' : 'text-foreground'
+                          className={`font-semibold text-sm leading-snug ${
+                            isDone ? 'line-through text-slate-400 font-normal' : isNa ? 'italic text-slate-500' : 'text-[#0F172A]'
                           }`}
                         >
                           {item.item}
                         </span>
 
                         {item.is_critical && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-600 border border-rose-500/20 shrink-0">
-                            <AlertTriangle className="h-2.5 w-2.5" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 shrink-0">
+                            <AlertTriangle className="h-3 w-3" />
                             Kritis K3
                           </span>
                         )}
 
                         {item.requires_photo && itemPhotos.length === 0 && !isUploadingThis && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#007ACC]/10 text-[#007ACC] border border-[#007ACC]/20 shrink-0">
-                            <Camera className="h-2.5 w-2.5" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-[#007ACC]/15 text-[#007ACC] border border-[#007ACC]/30 shrink-0">
+                            <Camera className="h-3 w-3" />
                             Wajib Foto
                           </span>
                         )}
 
                         {/* Inline Uploading Indicator */}
                         {isUploadingThis && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-[#007ACC]/10 text-[#007ACC] animate-pulse shrink-0">
-                            <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-[#007ACC]/15 text-[#007ACC] animate-pulse shrink-0">
+                            <Loader2 className="h-3 w-3 animate-spin" />
                             Mengunggah...
                           </span>
                         )}
@@ -471,23 +461,23 @@ export function ChecklistSection({ items, jobId, photos = [], disabled }: Checkl
 
                       {/* Technical Hint */}
                       {item.hint && (
-                        <p className="text-[11px] text-muted-foreground/90 flex items-center gap-1 leading-tight">
-                          <Info className="h-3 w-3 text-amber-500 shrink-0" />
+                        <p className="text-xs text-[#475569] flex items-center gap-1.5 leading-snug">
+                          <Info className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                           <span>{item.hint}</span>
                         </p>
                       )}
 
                       {/* N/A Reason label if marked */}
                       {isNa && (
-                        <div className="flex items-center justify-between pt-0.5 text-[11px] text-muted-foreground bg-muted/70 px-2 py-1 rounded">
+                        <div className="flex items-center justify-between pt-0.5 text-xs text-[#334155] bg-slate-100 p-2 rounded-md">
                           <span className="truncate">Alasan N/A: {item.na_reason}</span>
                           {!disabled && (
                             <button
                               type="button"
                               onClick={(e) => handleResetItem(e, item.id)}
-                              className="text-[#007ACC] hover:underline font-medium ml-2 shrink-0 flex items-center gap-0.5"
+                              className="text-[#007ACC] hover:underline font-bold ml-2 shrink-0 flex items-center gap-1"
                             >
-                              <RotateCcw className="h-2.5 w-2.5" /> Batalkan
+                              <RotateCcw className="h-3 w-3" /> Batalkan
                             </button>
                           )}
                         </div>
@@ -499,9 +489,9 @@ export function ChecklistSection({ items, jobId, photos = [], disabled }: Checkl
                       <button
                         type="button"
                         onClick={(e) => handleOpenNaModal(e, item)}
-                        className="text-[10px] font-medium px-2 py-1 rounded border border-border/80 bg-background hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+                        className="text-xs font-bold px-2.5 py-1 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-[#475569] hover:text-[#0F172A] shrink-0 transition-colors cursor-pointer"
                       >
-                        Tandai N/A
+                        N/A
                       </button>
                     )}
                   </div>

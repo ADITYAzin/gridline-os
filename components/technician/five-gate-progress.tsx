@@ -49,23 +49,23 @@ export function FiveGateProgress({
       <CardContent className="p-3.5 space-y-2.5">
         {/* Header summary */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-foreground">Syarat Penyelesaian</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-[#0F172A]">Progres Tiket</span>
             {isCompleted ? (
-              <span className="text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                <CheckCircle2 className="h-3 w-3" /> Selesai
+              <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Selesai
               </span>
             ) : (
-              <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-0.5">
-                <Clock className="h-3 w-3 text-amber-500" /> {completedCount}/6 Lengkap
+              <span className="text-xs font-semibold text-[#475569] bg-slate-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5 text-amber-600" /> {completedCount}/6 Selesai
               </span>
             )}
           </div>
-          <span className="text-xs font-bold font-mono text-primary">{progressPercent}%</span>
+          <span className="text-sm font-bold font-mono text-[#007ACC]">{progressPercent}%</span>
         </div>
 
         {/* Visual Progress Bar */}
-        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
           <div
             className={cn(
               'h-full transition-all duration-500 ease-out rounded-full',
@@ -83,23 +83,23 @@ export function FiveGateProgress({
               <div
                 key={idx}
                 className={cn(
-                  'flex flex-col items-center justify-center p-1 rounded-md border text-center transition-all',
+                  'flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg border text-center transition-all',
                   g.done
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-2xs'
-                    : 'bg-muted/40 border-border/40 text-muted-foreground'
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-2xs'
+                    : 'bg-white border-slate-200 text-[#64748B]'
                 )}
               >
                 <div
                   className={cn(
-                    'h-4.5 w-4.5 rounded-full flex items-center justify-center mb-0.5 text-[9px]',
+                    'h-6 w-6 rounded-full flex items-center justify-center mb-1 text-xs',
                     g.done
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-muted text-muted-foreground'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-100 text-[#64748B]'
                   )}
                 >
-                  {g.done ? <CheckCircle2 className="h-2.5 w-2.5" /> : <Icon className="h-2 w-2" />}
+                  {g.done ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
                 </div>
-                <span className="text-[8.5px] font-medium leading-tight truncate max-w-full">
+                <span className="text-[11px] font-bold leading-none truncate max-w-full">
                   {g.label}
                 </span>
               </div>

@@ -98,13 +98,13 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
   }
 
   return (
-    <Card id="photo-evidence-section" className="shadow-xs rounded-[12px] bg-white border-[#E2E8F0] scroll-mt-14">
+    <Card id="photo-evidence-section" className="shadow-xs rounded-xl bg-white border-[#E2E8F0] scroll-mt-14">
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xs text-[#475569] uppercase tracking-wider font-semibold flex items-center gap-2">
-            <Camera className="h-4 w-4 text-[#007ACC]" /> Foto Bukti Pekerjaan
+          <CardTitle className="text-sm font-bold text-[#0F172A] flex items-center gap-2">
+            <Camera className="h-4.5 w-4.5 text-[#007ACC]" /> Foto Bukti Pekerjaan
           </CardTitle>
-          <span className="text-[11px] text-muted-foreground">Maks 10 foto</span>
+          <span className="text-xs text-[#64748B] font-medium">Maks 10 foto</span>
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-2 space-y-4">
@@ -118,22 +118,22 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
         />
 
         {error && (
-          <div className="rounded-[8px] bg-destructive/10 border border-destructive/20 p-2 text-xs text-destructive">
+          <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-2.5 text-xs text-destructive font-medium">
             {error}
           </div>
         )}
 
         {/* Before Photos Group */}
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold flex items-center gap-1.5">
-              <span>Foto Sebelum Pengerjaan (Before)</span>
+            <span className="text-sm font-bold text-[#0F172A] flex items-center gap-2">
+              <span>Foto Sebelum (Before)</span>
               {beforePhotos.length >= 1 ? (
-                <Badge variant="default" className="bg-emerald-600 text-[10px] h-4 px-1 gap-0.5">
-                  <Check className="h-2.5 w-2.5" /> Ada ({beforePhotos.length})
+                <Badge variant="default" className="bg-emerald-600 text-xs font-bold h-5 px-1.5 gap-0.5">
+                  <Check className="h-3 w-3" /> Ada ({beforePhotos.length})
                 </Badge>
               ) : (
-                <Badge variant="destructive" className="text-[10px] h-4 px-1">Wajib (0)</Badge>
+                <Badge variant="destructive" className="text-xs font-bold h-5 px-1.5">Wajib (0)</Badge>
               )}
             </span>
             <Button
@@ -142,12 +142,12 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
               size="sm"
               disabled={disabled || isUploading || beforePhotos.length >= 10}
               onClick={() => triggerUpload('before')}
-              className="h-9 text-xs font-semibold px-3 gap-1.5 rounded-[8px] border-[#007ACC]/40 text-[#007ACC] hover:bg-[#EBF5FC] active:bg-[#D0E8F8] touch-press cursor-pointer"
+              className="h-9.5 text-xs sm:text-sm font-bold px-3 gap-1.5 rounded-lg border-[#007ACC]/50 text-[#007ACC] hover:bg-[#EBF5FC] active:bg-[#D0E8F8] touch-press cursor-pointer"
             >
               {isUploading && activeType === 'before' ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Camera className="h-3.5 w-3.5" />
+                <Camera className="h-4 w-4" />
               )}
               {isUploading && activeType === 'before' ? 'Mengunggah...' : 'Ambil Foto'}
             </Button>
@@ -206,16 +206,16 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
         </div>
 
         {/* After Photos Group */}
-        <div className="space-y-2 pt-2 border-t border-[#E2E8F0]">
+        <div className="space-y-2.5 pt-2 border-t border-[#E2E8F0]">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold flex items-center gap-1.5">
-              <span>Foto Sesudah Pengerjaan (After)</span>
+            <span className="text-sm font-bold text-[#0F172A] flex items-center gap-2">
+              <span>Foto Sesudah (After)</span>
               {afterPhotos.length >= 1 ? (
-                <Badge variant="default" className="bg-emerald-600 text-[10px] h-4 px-1 gap-0.5">
-                  <Check className="h-2.5 w-2.5" /> Ada ({afterPhotos.length})
+                <Badge variant="default" className="bg-emerald-600 text-xs font-bold h-5 px-1.5 gap-0.5">
+                  <Check className="h-3 w-3" /> Ada ({afterPhotos.length})
                 </Badge>
               ) : (
-                <Badge variant="destructive" className="text-[10px] h-4 px-1">Wajib (0)</Badge>
+                <Badge variant="destructive" className="text-xs font-bold h-5 px-1.5">Wajib (0)</Badge>
               )}
             </span>
             <Button
@@ -224,12 +224,12 @@ export function PhotoUploadSection({ jobId, photos, disabled }: PhotoUploadSecti
               size="sm"
               disabled={disabled || isUploading || afterPhotos.length >= 10}
               onClick={() => triggerUpload('after')}
-              className="h-9 text-xs font-semibold px-3 gap-1.5 rounded-[8px] border-[#007ACC]/40 text-[#007ACC] hover:bg-[#EBF5FC] active:bg-[#D0E8F8] touch-press cursor-pointer"
+              className="h-9.5 text-xs sm:text-sm font-bold px-3 gap-1.5 rounded-lg border-[#007ACC]/50 text-[#007ACC] hover:bg-[#EBF5FC] active:bg-[#D0E8F8] touch-press cursor-pointer"
             >
               {isUploading && activeType === 'after' ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Camera className="h-3.5 w-3.5" />
+                <Camera className="h-4 w-4" />
               )}
               {isUploading && activeType === 'after' ? 'Mengunggah...' : 'Ambil Foto'}
             </Button>

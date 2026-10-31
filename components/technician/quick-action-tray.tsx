@@ -46,21 +46,21 @@ export function QuickActionTray({
         <Button
           type="button"
           onClick={openGoogleMaps}
-          className="h-11 gap-2 text-xs font-semibold bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white shadow-xs rounded-[8px] touch-press"
+          className="h-11 gap-2 text-xs sm:text-sm font-bold bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white shadow-xs rounded-lg touch-press cursor-pointer"
         >
-          <Navigation className="h-4 w-4 shrink-0" />
-          <span>Buka Google Maps</span>
+          <Navigation className="h-4.5 w-4.5 shrink-0" />
+          <span>Buka Peta</span>
         </Button>
 
         {customerPhone ? (
           <Button
             asChild
             variant="outline"
-            className="h-11 gap-2 text-xs font-semibold border-[#E2E8F0] hover:bg-slate-50 active:bg-slate-100 text-[#0F172A] rounded-[8px] touch-press"
+            className="h-11 gap-2 text-xs sm:text-sm font-bold border-[#CBD5E1] hover:bg-slate-50 active:bg-slate-100 text-[#0F172A] rounded-lg touch-press cursor-pointer"
           >
             <a href={`tel:${customerPhone}`}>
-              <Phone className="h-4 w-4 text-emerald-600 shrink-0" />
-              <span>Panggil Telepon</span>
+              <Phone className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
+              <span>Telepon</span>
             </a>
           </Button>
         ) : (
@@ -68,10 +68,10 @@ export function QuickActionTray({
             type="button"
             variant="outline"
             disabled
-            className="h-11 text-xs text-muted-foreground rounded-[8px]"
+            className="h-11 text-xs sm:text-sm text-muted-foreground rounded-lg"
           >
             <Phone className="h-4 w-4 shrink-0 mr-1.5 opacity-40" />
-            <span>Tanpa Nomor HP</span>
+            <span>Tanpa HP</span>
           </Button>
         )}
       </div>
@@ -92,7 +92,7 @@ export function QuickActionTray({
                 address,
               }}
               defaultScenario="customer_on_the_way"
-              triggerButtonText="Kirim Kabar"
+              triggerButtonText="Kirim WhatsApp"
               size="sm"
             />
           </div>
@@ -101,19 +101,18 @@ export function QuickActionTray({
         <Button
           type="button"
           variant="outline"
-          size="sm"
           onClick={handleCopyAddress}
-          className="h-9 px-3 gap-1.5 text-xs text-muted-foreground hover:text-foreground shrink-0 rounded-[8px] touch-press"
+          className="h-9 px-3 gap-1.5 text-xs font-semibold text-[#334155] hover:text-[#0F172A] shrink-0 rounded-lg touch-press border-[#CBD5E1]"
           title="Salin Alamat Lengkap"
         >
           {copied ? (
             <>
-              <Check className="h-3.5 w-3.5 text-emerald-600" />
+              <Check className="h-4 w-4 text-emerald-600" />
               <span>Tersalin</span>
             </>
           ) : (
             <>
-              <Copy className="h-3.5 w-3.5" />
+              <Copy className="h-4 w-4 text-[#475569]" />
               <span>Salin Alamat</span>
             </>
           )}

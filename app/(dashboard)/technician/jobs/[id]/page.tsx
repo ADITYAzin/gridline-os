@@ -20,7 +20,6 @@ import { TechnicianStatusBadge } from '@/components/technician/status-badge'
 import { FiveGateProgress } from '@/components/technician/five-gate-progress'
 import { QuickActionTray } from '@/components/technician/quick-action-tray'
 import { SopOperationalBanner } from '@/components/technician/sop-operational-banner'
-import { RealtimeJobsListener } from '@/components/realtime/realtime-jobs-listener'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -248,20 +247,19 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
           </Button>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="font-mono font-bold text-xs text-[#007ACC]">{job.job_number}</span>
+              <span className="font-mono font-bold text-sm text-[#007ACC]">{job.job_number}</span>
               <TechnicianStatusBadge status={job.status} />
             </div>
-            <h1 className="text-sm font-bold font-heading text-[#0F172A] truncate leading-tight">
+            <h1 className="text-base font-bold font-heading text-[#0F172A] truncate leading-tight">
               {job.service_type}
             </h1>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <RealtimeJobsListener technicianId={profile.id} compact={true} />
           {job.status === 'completed' && (
-            <Button asChild variant="outline" size="sm" className="h-9 px-2.5 gap-1.5 text-xs font-semibold text-[#007ACC] border-[#007ACC]/30 hover:bg-[#EBF5FC] rounded-[8px] shrink-0 touch-press">
+            <Button asChild variant="outline" size="sm" className="h-9 px-3 gap-1.5 text-xs font-bold text-[#007ACC] border-[#007ACC]/40 hover:bg-[#EBF5FC] rounded-lg shrink-0 touch-press">
               <Link href={`/technician/jobs/${job.id}/bap`} target="_blank">
-                <Printer className="h-3.5 w-3.5" />
+                <Printer className="h-4 w-4" />
                 <span>BAP</span>
               </Link>
             </Button>
@@ -296,30 +294,28 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
         <>
           <CheckInButton jobId={job.id} attendance={attendanceWithSignedPhoto} />
           {!hasCheckIn && (
-            <div className="p-3 rounded-[12px] bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-2.5 shadow-2xs">
-              <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
-              <span className="font-medium leading-relaxed">
-                Tahap pengerjaan (SOP, foto bukti, tanda tangan, dan laporan) terkunci. Lakukan <strong>Check-in kedatangan di lokasi</strong> terlebih dahulu untuk memulai pengerjaan.
-              </span>
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-950 text-xs sm:text-sm font-semibold flex items-center gap-2.5 shadow-2xs">
+              <AlertCircle className="h-4.5 w-4.5 shrink-0 text-amber-600" />
+              <span>Check-in di lokasi terlebih dahulu untuk membuka SOP & laporan kerja.</span>
             </div>
           )}
         </>
       )}
 
       {/* Work Order Info & Quick Navigation Action Card */}
-      <Card className="shadow-xs rounded-[12px] bg-white border-[#E2E8F0]">
+      <Card className="shadow-xs rounded-xl bg-white border-[#E2E8F0]">
         <CardHeader className="p-4 pb-2">
-          <CardTitle className="text-xs text-[#475569] uppercase tracking-wider font-semibold">
+          <CardTitle className="text-sm text-[#0F172A] font-bold">
             Pelanggan & Lokasi
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4 pt-1 space-y-3 text-xs">
+        <CardContent className="p-4 pt-1 space-y-3 text-xs sm:text-sm">
           <div className="space-y-1">
-            <span className="font-bold text-foreground text-sm block">
+            <span className="font-bold text-[#0F172A] text-base block">
               {custName || 'Pelanggan'}
             </span>
-            <div className="flex items-start gap-1.5 text-[#475569]">
-              <MapPin className="h-3.5 w-3.5 text-[#007ACC] shrink-0 mt-0.5" />
+            <div className="flex items-start gap-1.5 text-[#1E293B] font-medium">
+              <MapPin className="h-4 w-4 text-[#007ACC] shrink-0 mt-0.5" />
               <span className="leading-relaxed">{job.address}</span>
             </div>
           </div>
@@ -335,37 +331,37 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
           />
 
           {asset && (
-            <div className="rounded-[8px] border bg-[#EBF5FC]/60 border-[#D0E8F8] p-3 space-y-2 text-xs">
+            <div className="rounded-lg border bg-[#EBF5FC]/60 border-[#D0E8F8] p-3 space-y-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-[#0F172A] flex items-center gap-1.5">
+                <span className="font-bold text-[#0F172A] flex items-center gap-1.5 text-xs sm:text-sm">
                   <Wrench className="h-4 w-4 text-[#007ACC]" />
                   Aset Unit: {asset.asset_name}
                 </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-[6px] bg-[#007ACC] text-white">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-[#007ACC] text-white">
                   {asset.brand}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-[11px] text-[#475569] bg-white/80 p-2 rounded-[6px] border border-[#E2E8F0]">
-                <div>Model: <span className="font-mono font-semibold text-[#0F172A]">{asset.model_number || '-'}</span></div>
-                <div>No. Seri: <span className="font-mono font-semibold text-[#0F172A]">{asset.serial_number || '-'}</span></div>
+              <div className="grid grid-cols-2 gap-2 text-xs text-[#334155] bg-white p-2.5 rounded-md border border-[#E2E8F0] font-medium">
+                <div>Model: <span className="font-mono font-bold text-[#0F172A]">{asset.model_number || '-'}</span></div>
+                <div>No. Seri: <span className="font-mono font-bold text-[#0F172A]">{asset.serial_number || '-'}</span></div>
                 {asset.location_tag && (
-                  <div className="col-span-2">Lokasi: <span className="font-medium text-[#0F172A]">{asset.location_tag}</span></div>
+                  <div className="col-span-2">Lokasi: <span className="font-bold text-[#0F172A]">{asset.location_tag}</span></div>
                 )}
               </div>
               {asset.notes && (
-                <p className="text-[11px] text-[#475569] italic pt-0.5">
+                <p className="text-xs text-[#475569] italic pt-0.5">
                   Catatan: {asset.notes}
                 </p>
               )}
               {asset.warranty_expires_at && (
-                <div className="pt-2 border-t border-[#D0E8F8] flex items-center gap-1.5 text-[11px]">
+                <div className="pt-2 border-t border-[#D0E8F8] flex items-center gap-1.5 text-xs">
                   {new Date(asset.warranty_expires_at) >= new Date() ? (
-                    <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                      <ShieldCheck className="h-3.5 w-3.5" /> Garansi Aktif (s/d {new Date(asset.warranty_expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })})
+                    <span className="text-emerald-700 font-bold flex items-center gap-1">
+                      <ShieldCheck className="h-4 w-4" /> Garansi Aktif (s/d {new Date(asset.warranty_expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })})
                     </span>
                   ) : (
-                    <span className="text-rose-600 font-medium flex items-center gap-1">
-                      <ShieldAlert className="h-3.5 w-3.5" /> Garansi Habis ({new Date(asset.warranty_expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })})
+                    <span className="text-rose-600 font-semibold flex items-center gap-1">
+                      <ShieldAlert className="h-4 w-4" /> Garansi Habis ({new Date(asset.warranty_expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })})
                     </span>
                   )}
                 </div>

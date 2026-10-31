@@ -4,7 +4,6 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { RealtimeJobsListener } from '@/components/realtime/realtime-jobs-listener'
 import {
   calculateJobCommission,
   formatRupiah,
@@ -144,9 +143,6 @@ export default async function TechnicianCommissionsPage() {
                 : 'Rekap pencapaian tiket selesai dan ketepatan waktu'}
             </p>
           </div>
-        </div>
-        <div className="shrink-0">
-          <RealtimeJobsListener orgId={profile.orgId} technicianId={profile.id} compact={true} />
         </div>
       </header>
 

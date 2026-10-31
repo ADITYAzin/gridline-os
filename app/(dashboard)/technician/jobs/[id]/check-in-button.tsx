@@ -115,56 +115,53 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
       )}
 
       {!isCheckedIn ? (
-        <div className="rounded-[10px] bg-gradient-to-r from-[#EBF5FC] to-white border border-[#BAE6FD] p-3 shadow-2xs space-y-2">
-          <div className="flex items-center justify-between text-xs text-[#0369A1]">
-            <span className="font-semibold flex items-center gap-1.5">
+        <div className="rounded-xl bg-gradient-to-r from-[#EBF5FC] to-white border border-[#BAE6FD] p-3.5 shadow-2xs space-y-2.5">
+          <div className="flex items-center justify-between text-xs sm:text-sm text-[#0369A1]">
+            <span className="font-bold flex items-center gap-1.5">
               <Navigation className="h-4 w-4 text-[#007ACC]" />
-              Presensi Kedatangan di Lokasi
+              Presensi Kehadiran di Lokasi
             </span>
-            <span className="text-[10px] bg-[#007ACC]/10 text-[#007ACC] px-1.5 py-0.5 rounded font-medium">
+            <span className="text-xs bg-[#007ACC]/15 text-[#007ACC] px-2 py-0.5 rounded-full font-bold">
               GPS + Foto
             </span>
           </div>
-          <p className="text-[11px] text-[#475569] leading-relaxed">
-            Ambil foto kehadiran di tempat sebelum memulai.
-          </p>
 
           <Button
             type="button"
             onClick={handleTriggerCapture}
             disabled={isBusy}
-            className="w-full h-11 gap-2 font-bold shadow-xs bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white rounded-[8px] touch-press cursor-pointer text-xs"
+            className="w-full h-12 gap-2 text-sm font-bold shadow-xs bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-white rounded-lg touch-press cursor-pointer"
           >
             {isProcessing ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Memproses Foto & Lokasi GPS...
+                <Loader2 className="h-4.5 w-4.5 animate-spin" /> Memproses Foto & Lokasi GPS...
               </>
             ) : isPending ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Mencatat Kehadiran...
+                <Loader2 className="h-4.5 w-4.5 animate-spin" /> Mencatat Kehadiran...
               </>
             ) : (
               <>
-                <Camera className="h-4 w-4" /> Ambil Foto & Check-in di Lokasi
+                <Camera className="h-4.5 w-4.5" /> Ambil Foto & Check-in di Lokasi
               </>
             )}
           </Button>
         </div>
       ) : (
         /* Status Card Saat Sudah Check-in (Top Area - Tanpa Tombol Checkout) */
-        <div className="p-3 bg-emerald-50/70 rounded-[10px] border border-emerald-200/80 shadow-2xs flex items-center justify-between gap-3">
+        <div className="p-3 bg-emerald-50/80 rounded-xl border border-emerald-300 shadow-2xs flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-emerald-100 text-emerald-700">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800">
               <CheckCircle2 className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-emerald-900">Hadir di Lokasi</span>
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-sm font-bold text-emerald-950">Hadir di Lokasi</span>
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               </div>
-              <p className="text-[11px] text-[#475569] truncate">
+              <p className="text-xs text-[#334155] font-medium truncate">
                 Pukul{' '}
-                <strong className="font-mono text-[#0F172A]">
+                <strong className="font-mono text-[#0F172A] font-bold">
                   {new Date(attendance!.check_in_at!).toLocaleTimeString('id-ID', {
                     hour: '2-digit',
                     minute: '2-digit',

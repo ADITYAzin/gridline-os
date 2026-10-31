@@ -38,14 +38,14 @@ export function TechnicianBottomNav({ commissionEnabled = false }: { commissionE
             key={tab.href}
             href={tab.href}
             className={cn(
-              'flex flex-col items-center justify-center gap-1 min-w-[76px] h-12 rounded-[10px] transition-all touch-press',
+              'flex flex-col items-center justify-center gap-1 min-w-[80px] h-12 rounded-[10px] transition-all touch-press',
               tab.isActive
-                ? 'text-[#007ACC] font-semibold bg-[#EBF5FC]'
-                : 'text-[#475569] hover:text-[#0F172A] font-medium'
+                ? 'text-[#007ACC] font-bold bg-[#EBF5FC]'
+                : 'text-[#64748B] hover:text-[#0F172A] font-medium'
             )}
           >
-            <Icon className={cn('h-5 w-5', tab.isActive ? 'stroke-[2.2]' : 'stroke-[1.7]')} />
-            <span className="text-[11px] leading-none tracking-tight">{tab.label}</span>
+            <Icon className={cn('h-5 w-5', tab.isActive ? 'stroke-[2.4]' : 'stroke-[1.8]')} />
+            <span className="text-xs leading-none tracking-tight">{tab.label}</span>
           </Link>
         )
       })}
