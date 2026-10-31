@@ -25,13 +25,13 @@ export default function FiturPage() {
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#D0E8F8] bg-[#EBF5FC] px-3.5 py-1.5 text-[12px] font-semibold text-[#007ACC]">
             <Zap className="h-3.5 w-3.5" />
-            <span>KAPABILITAS SISTEM OPILINES</span>
+            <span>FITUR PLATFORM OPILINES</span>
           </div>
           <h1 className="font-heading text-[32px] sm:text-[44px] font-bold text-[#0F172A] tracking-[-0.025em] leading-[1.18]">
-            Fitur Lengkap untuk <span className="text-[#007ACC]">Efisiensi Operasional</span> Lapangan
+            Seluruh Fitur Operasional dalam <span className="text-[#007ACC]">Satu Sistem</span>
           </h1>
-          <p className="text-[15px] sm:text-[17px] text-[#475569] leading-relaxed max-w-2xl mx-auto">
-            Dirancang khusus untuk mempermudah koordinasi kantor dengan tim teknis di lokasi kerja, meminimalkan miskomunikasi, dan mempercepat penerbitan laporan.
+          <p className="text-[15px] sm:text-[16.5px] text-[#475569] leading-relaxed max-w-2xl mx-auto">
+            Otomatisasi penjadwalan teknisi, kepatuhan SOP lapangan, hingga penerbitan laporan kerja tanpa proses manual yang berulang.
           </p>
         </div>
       </section>

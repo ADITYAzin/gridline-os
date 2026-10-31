@@ -267,7 +267,7 @@ export default async function TechnicianCommissionsPage() {
         ) : (
           <div className="space-y-2">
             {items.map((job) => (
-              <Link key={job.id} href={`/technician/jobs/${job.id}`} className="block group touch-press">
+              <Link key={job.id} href={`/technician/jobs/${job.id}`} prefetch={false} className="block group touch-press">
                 <Card className="shadow-xs hover:border-[#007ACC]/40 active:bg-[#F8FAFC] transition-all rounded-[10px] bg-white border-[#E2E8F0]">
                   <CardContent className="p-3.5 flex items-center justify-between gap-3">
                     <div className="space-y-1 min-w-0">

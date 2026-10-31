@@ -1,10 +1,8 @@
-// Gridline OS — Progressive Web App Service Worker (High-Performance & Offline-Resilient)
-const CACHE_VERSION = 'gridline-os-v2'
+// Gridline OS — Progressive Web App Service Worker (High-Performance & Zero Customer Data Leakage)
+const CACHE_VERSION = 'gridline-os-v3'
 const STATIC_CACHE = `${CACHE_VERSION}-static`
-const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`
 
 const PRECACHE_ASSETS = [
-  '/',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -28,7 +26,7 @@ self.addEventListener('activate', (event) => {
       .then((keys) =>
         Promise.all(
           keys.map((key) => {
-            if (key !== STATIC_CACHE && key !== RUNTIME_CACHE) {
+            if (key !== STATIC_CACHE) {
               return caches.delete(key)
             }
           })
@@ -41,13 +39,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
 
-  // 1. Skip non-GET requests, APIs, Supabase endpoints, and Next.js Server Actions
-  if (
-    event.request.method !== 'GET' ||
-    url.pathname.startsWith('/api/') ||
-    url.origin.includes('supabase.co') ||
-    event.request.headers.get('next-action')
-  ) {
+  // 1. Only intercept GET requests for static assets (never intercept or cache authenticated HTML, RSC payloads, APIs, or Server Actions)
+  if (event.request.method !== 'GET') {
     return
   }
 
@@ -55,6 +48,7 @@ self.addEventListener('fetch', (event) => {
   if (
     url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/icons/') ||
+    url.pathname === '/manifest.webmanifest' ||
     url.hostname.includes('fonts.gstatic.com') ||
     url.hostname.includes('fonts.googleapis.com')
   ) {
@@ -73,27 +67,5 @@ self.addEventListener('fetch', (event) => {
         return cached || fetchPromise
       })
     )
-    return
-  }
-
-  // 3. Navigation Requests: Network-first with runtime cache fallback
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const copy = networkResponse.clone()
-            caches.open(RUNTIME_CACHE).then((cache) => cache.put(event.request, copy))
-          }
-          return networkResponse
-        })
-        .catch(async () => {
-          const cached = await caches.match(event.request)
-          if (cached) return cached
-          const fallback = await caches.match('/technician')
-          return fallback || caches.match('/')
-        })
-    )
-    return
   }
 })

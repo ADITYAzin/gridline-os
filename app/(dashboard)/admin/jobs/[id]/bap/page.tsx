@@ -15,28 +15,50 @@ export default async function AdminJobBapPage({ params }: PageProps) {
   const supabase = await createSupabaseServerClient()
   const admin = getSupabaseAdmin()
 
-  // 1. Fetch Job
-  const { data: job } = await supabase
-    .from('jobs')
-    .select(`
-      id,
-      job_number,
-      service_type,
-      issue,
-      instructions,
-      address,
-      priority,
-      status,
-      technician_id,
-      created_at,
-      completed_at,
-      customers(id, name, phone, email, address),
-      customer_assets(id, asset_name, brand, model_number, serial_number, location_tag, warranty_expires_at, status),
-      profiles!jobs_technician_id_fkey(id, name, phone, email)
-    `)
-    .eq('id', id)
-    .eq('org_id', profile.orgId)
-    .maybeSingle()
+  // 1. Fetch Job, Org Details, Schedules, Attendance, Checklist, Photos, Signature, Report in parallel
+  const [
+    { data: job },
+    { data: org },
+    { data: schedule },
+    { data: attendance },
+    { data: checklist },
+    { data: rawPhotos },
+    { data: signature },
+    { data: report },
+  ] = await Promise.all([
+    supabase
+      .from('jobs')
+      .select(`
+        id,
+        job_number,
+        service_type,
+        issue,
+        instructions,
+        address,
+        priority,
+        status,
+        technician_id,
+        created_at,
+        completed_at,
+        customers(id, name, phone, email, address),
+        customer_assets(id, asset_name, brand, model_number, serial_number, location_tag, warranty_expires_at, status),
+        profiles!jobs_technician_id_fkey(id, name, phone, email)
+      `)
+      .eq('id', id)
+      .eq('org_id', profile.orgId)
+      .maybeSingle(),
+    admin
+      .from('organizations')
+      .select('id, name, address, city, province, postal_code, phone, email')
+      .eq('id', profile.orgId)
+      .single(),
+    supabase.from('schedules').select('start_at, end_at').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
+    supabase.from('job_attendance').select('*').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
+    supabase.from('checklist_items').select('*').eq('job_id', id).eq('org_id', profile.orgId).order('created_at', { ascending: true }),
+    supabase.from('job_photos').select('*').eq('job_id', id).eq('org_id', profile.orgId).order('created_at', { ascending: true }),
+    supabase.from('signatures').select('*').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
+    supabase.from('work_reports').select('*').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
+  ])
 
   if (!job) {
     notFound()
@@ -47,58 +69,48 @@ export default async function AdminJobBapPage({ params }: PageProps) {
     redirect(`/admin/jobs/${id}`)
   }
 
-  // 2. Fetch Org Details, Schedules, Attendance, Checklist, Photos, Signature, Report in parallel
-  const [
-    { data: org },
-    { data: schedule },
-    { data: attendance },
-    { data: checklist },
-    { data: rawPhotos },
-    { data: signature },
-    { data: report },
-  ] = await Promise.all([
-    admin
-      .from('organizations')
-      .select('id, name, address, city, province, postal_code, phone, email')
-      .eq('id', profile.orgId)
-      .single(),
-    supabase.from('schedules').select('start_at, end_at').eq('job_id', id).maybeSingle(),
-    supabase.from('job_attendance').select('*').eq('job_id', id).maybeSingle(),
-    supabase.from('checklist_items').select('*').eq('job_id', id).order('created_at', { ascending: true }),
-    supabase.from('job_photos').select('*').eq('job_id', id).order('created_at', { ascending: true }),
-    supabase.from('signatures').select('*').eq('job_id', id).maybeSingle(),
-    supabase.from('work_reports').select('*').eq('job_id', id).maybeSingle(),
-  ])
+  // 2. Batch Generate Signed URLs for Photos and Customer Signature in a single HTTP request (with strict tenant prefix guard)
+  const isTenantStoragePath = (url?: string | null): url is string =>
+    Boolean(url && url.startsWith(`${profile.orgId}/`) && !url.includes('..'))
 
-  // 3. Generate Signed URLs for Photos (valid 2 hours)
-  const photosWithSignedUrls = await Promise.all(
-    (rawPhotos || []).map(async (photo) => {
-      const { data } = await admin.storage
-        .from(STORAGE.jobFilesBucket)
-        .createSignedUrl(photo.file_url, 7200)
-      return {
-        id: photo.id,
-        type: photo.type,
-        signed_url: data?.signedUrl || '',
-        captured_at: photo.captured_at,
-        checklist_item_id: photo.checklist_item_id,
-        caption: photo.caption,
+  const pathsToSign = new Set<string>()
+  for (const photo of rawPhotos || []) {
+    if (isTenantStoragePath(photo.file_url)) pathsToSign.add(photo.file_url)
+  }
+  if (isTenantStoragePath(signature?.signature_url)) {
+    pathsToSign.add(signature.signature_url)
+  }
+
+  const signedUrlMap = new Map<string, string>()
+  if (pathsToSign.size > 0) {
+    const { data: signedBatch } = await admin.storage
+      .from(STORAGE.jobFilesBucket)
+      .createSignedUrls(Array.from(pathsToSign), 7200)
+    for (const item of signedBatch || []) {
+      if (item.path && item.signedUrl) {
+        signedUrlMap.set(item.path, item.signedUrl)
       }
-    })
-  )
+    }
+  }
+
+  const photosWithSignedUrls = (rawPhotos || []).map((photo) => ({
+    id: photo.id,
+    type: photo.type,
+    signed_url: signedUrlMap.get(photo.file_url) || '',
+    captured_at: photo.captured_at,
+    checklist_item_id: photo.checklist_item_id,
+    caption: photo.caption,
+  }))
 
   const beforePhotos = photosWithSignedUrls.filter((p) => p.type === 'before')
   const afterPhotos = photosWithSignedUrls.filter((p) => p.type === 'after')
 
-  // 4. Generate Signed URL for Customer Signature
+  // 3. Map Signed URL for Customer Signature
   let signatureWithSignedUrl = null
   if (signature) {
-    const { data: sigData } = await admin.storage
-      .from(STORAGE.jobFilesBucket)
-      .createSignedUrl(signature.signature_url, 7200)
     signatureWithSignedUrl = {
       customer_name: signature.customer_name,
-      signed_url: sigData?.signedUrl || '',
+      signed_url: signedUrlMap.get(signature.signature_url) || '',
       signed_at: signature.signed_at,
     }
   }

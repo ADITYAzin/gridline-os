@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { TechnicianStatusBadge } from '@/components/technician/status-badge'
-import { MapPin, ArrowRight, Navigation, CheckCircle2, Wrench, Calendar, Clock } from 'lucide-react'
+import { MapPin, ArrowRight, Navigation, CheckCircle2, Wrench, Calendar, Clock, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface TechnicianJobItem {
@@ -31,6 +31,7 @@ interface TechnicianJobListProps {
 export function TechnicianJobList({ jobs }: TechnicianJobListProps) {
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('active')
   const [completedLimit, setCompletedLimit] = useState(3)
+  const [navigatingJobId, setNavigatingJobId] = useState<string | null>(null)
 
   const activeJobs = jobs.filter((j) => j.status === 'assigned' || j.status === 'on_progress')
   const completedJobs = jobs.filter((j) => j.status === 'completed')
@@ -131,9 +132,22 @@ export function TechnicianJobList({ jobs }: TechnicianJobListProps) {
                 asChild
                 className="h-11 text-xs sm:text-sm font-bold gap-1.5 bg-[#007ACC] hover:bg-[#0062A3] text-white rounded-lg shadow-sm touch-press cursor-pointer"
               >
-                <Link href={`/technician/jobs/${nextJob.id}`}>
-                  <span>Buka Tiket</span>
-                  <ArrowRight className="h-4 w-4" />
+                <Link
+                  href={`/technician/jobs/${nextJob.id}`}
+                  prefetch={false}
+                  onClick={() => setNavigatingJobId(nextJob.id)}
+                >
+                  {navigatingJobId === nextJob.id ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Membuka...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Buka Tiket</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
                 </Link>
               </Button>
             </div>
@@ -202,20 +216,37 @@ export function TechnicianJobList({ jobs }: TechnicianJobListProps) {
         </Card>
       ) : (
         <div className="space-y-2.5">
-          {displayedJobs.map((job) => (
-            <Link key={job.id} href={`/technician/jobs/${job.id}`} className="block group touch-press">
-              <Card className="shadow-xs hover:border-[#007ACC]/50 active:bg-[#F8FAFC] active:border-[#007ACC]/60 transition-all rounded-[10px] bg-white border-[#E2E8F0]">
-                <CardHeader className="p-3.5 pb-2 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold text-[#007ACC] bg-[#EBF5FC] px-1.5 py-0.5 rounded">
-                      {job.jobNumber}
-                    </span>
-                    <TechnicianStatusBadge status={job.status} />
-                  </div>
-                  <CardTitle className="text-base font-bold text-[#0F172A] group-hover:text-[#007ACC] transition-colors flex items-center justify-between">
-                    <span>{job.serviceType}</span>
-                    <ArrowRight className="h-4 w-4 text-[#64748B] group-hover:text-[#007ACC] transition-transform group-hover:translate-x-0.5" />
-                  </CardTitle>
+          {displayedJobs.map((job) => {
+            const isNavigating = navigatingJobId === job.id
+            return (
+              <Link
+                key={job.id}
+                href={`/technician/jobs/${job.id}`}
+                prefetch={false}
+                onClick={() => setNavigatingJobId(job.id)}
+                className="block group touch-press"
+              >
+                <Card
+                  className={cn(
+                    'shadow-xs hover:border-[#007ACC]/50 active:bg-[#F8FAFC] active:border-[#007ACC]/60 transition-all rounded-[10px] bg-white border-[#E2E8F0]',
+                    isNavigating && 'border-[#007ACC] bg-[#F8FAFC] opacity-80'
+                  )}
+                >
+                  <CardHeader className="p-3.5 pb-2 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold text-[#007ACC] bg-[#EBF5FC] px-1.5 py-0.5 rounded">
+                        {job.jobNumber}
+                      </span>
+                      <TechnicianStatusBadge status={job.status} />
+                    </div>
+                    <CardTitle className="text-base font-bold text-[#0F172A] group-hover:text-[#007ACC] transition-colors flex items-center justify-between">
+                      <span>{job.serviceType}</span>
+                      {isNavigating ? (
+                        <Loader2 className="h-4 w-4 text-[#007ACC] animate-spin" />
+                      ) : (
+                        <ArrowRight className="h-4 w-4 text-[#64748B] group-hover:text-[#007ACC] transition-transform group-hover:translate-x-0.5" />
+                      )}
+                    </CardTitle>
                   <CardDescription className="text-sm text-[#334155] line-clamp-2 leading-snug">
                     {job.issue}
                   </CardDescription>
@@ -264,9 +295,10 @@ export function TechnicianJobList({ jobs }: TechnicianJobListProps) {
                     </div>
                   )}
                 </CardContent>
-              </Card>
-            </Link>
-          ))}
+                </Card>
+              </Link>
+            )
+          })}
 
           {/* Slicing: Load 3 more completed jobs on demand */}
           {activeTab === 'completed' && completedJobs.length > completedLimit && (

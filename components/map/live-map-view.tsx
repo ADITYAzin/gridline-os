@@ -237,6 +237,18 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
                   }
                 }
 
+                let checkOutTime = ''
+                if (job.check_out_at) {
+                  try {
+                    const d = new Date(job.check_out_at)
+                    checkOutTime = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
+                  } catch {
+                    checkOutTime = ''
+                  }
+                }
+
+                const isCheckedOut = Boolean(job.check_out_at)
+
                 return (
                   <div
                     key={job.id}
@@ -289,14 +301,19 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
                       </span>
 
                       <div className="flex items-center gap-1.5">
-                        {isCheckedIn ? (
+                        {isCheckedOut || job.status === 'completed' ? (
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1 text-[10px]">
+                            <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
+                            {checkOutTime ? `Check-out ${checkOutTime}` : 'Selesai'}
+                          </span>
+                        ) : isCheckedIn ? (
                           <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-[10px]">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             Hadir {checkInTime}
                           </span>
                         ) : (
                           <span className="text-[10px] text-muted-foreground/70">
-                            {job.status === 'assigned' ? 'Menuju Lokasi' : job.status === 'completed' ? 'Selesai' : 'Belum Check-in'}
+                            {job.status === 'assigned' ? 'Menuju Lokasi' : 'Belum Check-in'}
                           </span>
                         )}
 

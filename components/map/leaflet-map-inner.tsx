@@ -143,6 +143,17 @@ function createPopupContent(job: MapJobItem) {
     }
   }
 
+  // Format check-out time if available
+  let checkOutDisplay = ''
+  if (job.check_out_at) {
+    try {
+      const d = new Date(job.check_out_at)
+      checkOutDisplay = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
+    } catch {
+      checkOutDisplay = 'Tercatat'
+    }
+  }
+
   return `
     <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 2px; min-width: 240px; max-width: 280px;">
       <!-- Header -->
@@ -179,7 +190,12 @@ function createPopupContent(job: MapJobItem) {
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="color: #64748B;">Kehadiran:</span>
           ${
-            isCheckedIn
+            job.check_out_at
+              ? `<span style="font-weight: 600; color: #475569; display: flex; align-items: center; gap: 4px;">
+                  <span style="display: inline-block; width: 6px; height: 6px; border-radius: 9999px; background: #64748B;"></span>
+                  Check-out ${checkOutDisplay}
+                </span>`
+              : isCheckedIn
               ? `<span style="font-weight: 600; color: #059669; display: flex; align-items: center; gap: 4px;">
                   <span style="display: inline-block; width: 6px; height: 6px; border-radius: 9999px; background: #10B981;"></span>
                   Hadir ${checkInDisplay}

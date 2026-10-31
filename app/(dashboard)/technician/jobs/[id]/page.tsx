@@ -40,6 +40,7 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
     { data: report },
     { data: schedule },
     { data: orgConfig },
+    { data: allServices },
   ] = await Promise.all([
     supabase
       .from('jobs')
@@ -62,34 +63,33 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
       .eq('org_id', profile.orgId)
       .eq('technician_id', profile.id)
       .maybeSingle(),
-    supabase.from('job_attendance').select('check_in_at, check_out_at, check_in_photo_url').eq('job_id', id).maybeSingle(),
+    supabase.from('job_attendance').select('check_in_at, check_out_at, check_in_photo_url').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
     supabase
       .from('checklist_items')
       .select('id, item, is_completed, is_na, na_reason, sop_mode, requires_photo, is_critical, hint')
       .eq('job_id', id)
+      .eq('org_id', profile.orgId)
       .order('created_at', { ascending: true }),
-    supabase.from('job_photos').select('id, type, file_url, created_at, checklist_item_id, caption').eq('job_id', id),
-    supabase.from('signatures').select('customer_name, signature_url, signed_at').eq('job_id', id).maybeSingle(),
-    supabase.from('work_reports').select('result, notes, submitted_at').eq('job_id', id).maybeSingle(),
-    supabase.from('schedules').select('start_at, end_at').eq('job_id', id).maybeSingle(),
+    supabase.from('job_photos').select('id, type, file_url, created_at, checklist_item_id, caption').eq('job_id', id).eq('org_id', profile.orgId),
+    supabase.from('signatures').select('customer_name, signature_url, signed_at').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
+    supabase.from('work_reports').select('result, notes, submitted_at').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
+    supabase.from('schedules').select('start_at, end_at').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
     supabase
       .from('organizations')
       .select('commission_enabled, commission_type, default_commission_rate, on_time_bonus_enabled, on_time_bonus_rate')
       .eq('id', profile.orgId)
       .maybeSingle(),
+    supabase
+      .from('company_services')
+      .select('name, sop_mode, sop_notes, estimated_duration_minutes, risk_level, commission_rate')
+      .eq('org_id', profile.orgId),
   ])
 
   if (!job) {
     notFound()
   }
 
-  // Fetch Service SOP Configuration & Risk Guidelines
-  const { data: serviceConfig } = await supabase
-    .from('company_services')
-    .select('sop_mode, sop_notes, estimated_duration_minutes, risk_level, commission_rate')
-    .eq('org_id', profile.orgId)
-    .eq('name', job.service_type)
-    .maybeSingle()
+  const serviceConfig = (allServices || []).find((s) => s.name === job.service_type) || null
 
   const customer = job.customers as unknown as { name: string; phone: string | null } | null
   const custName = Array.isArray(customer) ? customer[0]?.name : customer?.name
@@ -111,81 +111,67 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
 
   const admin = getSupabaseAdmin()
 
-  // Generate signed URLs for before/after photos (valid 2 hours)
-  const photosWithSignedUrls = await Promise.all(
-    (photos || []).map(async (photo) => {
-      let displayUrl = photo.file_url
-      if (
-        !photo.file_url.startsWith('http://') &&
-        !photo.file_url.startsWith('https://') &&
-        !photo.file_url.startsWith('data:image')
-      ) {
-        try {
-          const { data } = await admin.storage
-            .from(STORAGE.jobFilesBucket)
-            .createSignedUrl(photo.file_url, 7200)
-          if (data?.signedUrl) {
-            displayUrl = data.signedUrl
-          }
-        } catch {
-          // fallback
-        }
-      }
-      return {
-        ...photo,
-        display_url: displayUrl,
-      }
-    })
-  )
+  // Batch generate signed URLs in a SINGLE network request with strict multi-tenant path verification
+  const isStoragePath = (url?: string | null): url is string =>
+    Boolean(
+      url &&
+        url.startsWith(`${profile.orgId}/`) &&
+        !url.includes('..') &&
+        !url.startsWith('http://') &&
+        !url.startsWith('https://') &&
+        !url.startsWith('data:image')
+    )
 
-  // Generate signed URL for customer signature
-  let signatureWithSignedUrl: { customer_name: string; display_url?: string; signed_at: string } | null = null
-  if (signature) {
-    let displayUrl = signature.signature_url
-    if (
-      signature.signature_url &&
-      !signature.signature_url.startsWith('http://') &&
-      !signature.signature_url.startsWith('https://') &&
-      !signature.signature_url.startsWith('data:image')
-    ) {
-      try {
-        const { data: sigData } = await admin.storage
-          .from(STORAGE.jobFilesBucket)
-          .createSignedUrl(signature.signature_url, 7200)
-        if (sigData?.signedUrl) {
-          displayUrl = sigData.signedUrl
-        }
-      } catch {
-        // fallback
-      }
-    }
-    signatureWithSignedUrl = {
-      customer_name: signature.customer_name,
-      display_url: displayUrl,
-      signed_at: signature.signed_at,
+  const pathsToSign = new Set<string>()
+  for (const photo of photos || []) {
+    if (isStoragePath(photo.file_url)) {
+      pathsToSign.add(photo.file_url)
     }
   }
+  if (isStoragePath(signature?.signature_url)) {
+    pathsToSign.add(signature.signature_url)
+  }
+  if (isStoragePath(attendance?.check_in_photo_url)) {
+    pathsToSign.add(attendance.check_in_photo_url)
+  }
 
-  // Generate signed URL for attendance check-in photo if present
-  let attendanceWithSignedPhoto = attendance
-    ? {
-        ...attendance,
-        display_photo_url: null as string | null,
-      }
-    : null
-
-  if (attendance?.check_in_photo_url) {
+  const signedUrlMap = new Map<string, string>()
+  if (pathsToSign.size > 0) {
     try {
-      const { data: attData } = await admin.storage
+      const { data: signedList } = await admin.storage
         .from(STORAGE.jobFilesBucket)
-        .createSignedUrl(attendance.check_in_photo_url, 7200)
-      if (attData?.signedUrl && attendanceWithSignedPhoto) {
-        attendanceWithSignedPhoto.display_photo_url = attData.signedUrl
+        .createSignedUrls(Array.from(pathsToSign), 7200)
+      for (const item of signedList || []) {
+        if (item.path && item.signedUrl) {
+          signedUrlMap.set(item.path, item.signedUrl)
+        }
       }
     } catch {
       // fallback
     }
   }
+
+  const photosWithSignedUrls = (photos || []).map((photo) => ({
+    ...photo,
+    display_url: signedUrlMap.get(photo.file_url) || photo.file_url,
+  }))
+
+  const signatureWithSignedUrl: { customer_name: string; display_url?: string; signed_at: string } | null = signature
+    ? {
+        customer_name: signature.customer_name,
+        display_url: signedUrlMap.get(signature.signature_url) || signature.signature_url,
+        signed_at: signature.signed_at,
+      }
+    : null
+
+  const attendanceWithSignedPhoto = attendance
+    ? {
+        ...attendance,
+        display_photo_url: attendance.check_in_photo_url
+          ? signedUrlMap.get(attendance.check_in_photo_url) || null
+          : null,
+      }
+    : null
 
   // Calculate 6-Gate Completion State (supports Tri-Mode SOP and N/A)
   const hasCheckIn = Boolean(attendance?.check_in_at)

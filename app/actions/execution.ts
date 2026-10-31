@@ -14,16 +14,21 @@ export async function checkInAction(
   const profile = await requireRole('technician')
   const admin = getSupabaseAdmin()
 
-  // 1. Verify job is assigned to this technician
+  // 1. Verify job is assigned to this technician within the same organization and not locked
   const { data: job } = await admin
     .from('jobs')
     .select('id, org_id, status, technician_id')
     .eq('id', jobId)
+    .eq('org_id', profile.orgId)
     .eq('technician_id', profile.id)
-    .single()
+    .maybeSingle()
 
   if (!job) {
     return { error: 'Job tidak ditemukan atau Anda tidak ditugaskan pada pekerjaan ini.' }
+  }
+
+  if (job.status === 'completed' || job.status === 'cancelled') {
+    return { error: 'Pekerjaan ini sudah selesai atau dibatalkan dan tidak dapat diubah lagi.' }
   }
 
   const now = new Date().toISOString()
@@ -68,7 +73,8 @@ export async function checkInAction(
     admin
       .from('jobs')
       .update({ status: 'on_progress', updated_at: now })
-      .eq('id', jobId),
+      .eq('id', jobId)
+      .eq('org_id', profile.orgId),
   ])
 
   if (attResult.error) {
@@ -83,18 +89,40 @@ export async function checkInAction(
   return { success: true }
 }
 
-// Helper: Ensure technician has checked in before performing any work operations
+// Helper: Ensure job belongs to technician/org, is not locked (completed/cancelled), and technician has checked in
 async function verifyTechnicianCheckedIn(
   admin: ReturnType<typeof getSupabaseAdmin>,
   jobId: string,
   orgId: string,
+  technicianId: string,
 ) {
-  const { data: att } = await admin
-    .from('job_attendance')
-    .select('check_in_at')
-    .eq('job_id', jobId)
-    .eq('org_id', orgId)
-    .maybeSingle()
+  const [{ data: job }, { data: att }] = await Promise.all([
+    admin
+      .from('jobs')
+      .select('id, status, technician_id')
+      .eq('id', jobId)
+      .eq('org_id', orgId)
+      .eq('technician_id', technicianId)
+      .maybeSingle(),
+    admin
+      .from('job_attendance')
+      .select('check_in_at')
+      .eq('job_id', jobId)
+      .eq('org_id', orgId)
+      .maybeSingle(),
+  ])
+
+  if (!job) {
+    return {
+      error: 'Pekerjaan tidak ditemukan atau Anda tidak ditugaskan pada tiket ini.',
+    }
+  }
+
+  if (job.status === 'completed' || job.status === 'cancelled') {
+    return {
+      error: 'Tiket pekerjaan sudah dikunci (selesai/dibatalkan) demi menjaga keaslian data pelanggan.',
+    }
+  }
 
   if (!att?.check_in_at) {
     return {
@@ -109,37 +137,72 @@ export async function checkOutAction(jobId: string, latitude?: number, longitude
   const profile = await requireRole('technician')
   const admin = getSupabaseAdmin()
 
-  // 1. Verify Check-in exists
-  const { data: att } = await admin
-    .from('job_attendance')
-    .select('check_in_at, check_out_at')
-    .eq('job_id', jobId)
-    .eq('technician_id', profile.id)
-    .maybeSingle()
+  // 1. Verify Job ownership, active status, and Check-in in parallel
+  const [{ data: job }, { data: att }] = await Promise.all([
+    admin
+      .from('jobs')
+      .select('id, status')
+      .eq('id', jobId)
+      .eq('org_id', profile.orgId)
+      .eq('technician_id', profile.id)
+      .maybeSingle(),
+    admin
+      .from('job_attendance')
+      .select('check_in_at, check_out_at')
+      .eq('job_id', jobId)
+      .eq('org_id', profile.orgId)
+      .eq('technician_id', profile.id)
+      .maybeSingle(),
+  ])
+
+  if (!job) {
+    return { error: 'Pekerjaan tidak ditemukan atau Anda tidak ditugaskan pada tiket ini.' }
+  }
+
+  if (job.status === 'completed' || job.status === 'cancelled') {
+    return { error: 'Pekerjaan ini sudah selesai atau dibatalkan.' }
+  }
 
   if (!att?.check_in_at) {
     return { error: 'Tidak dapat melakukan Check-out karena Anda belum melakukan Check-in di lokasi.' }
   }
 
-  // 2. Anti-skip verification: Verify all prerequisite work is complete before allowing check-out
-  // a. Strict SOP checklist
-  const { data: pendingSop } = await admin
-    .from('checklist_items')
-    .select('id')
-    .eq('job_id', jobId)
-    .eq('sop_mode', 'strict')
-    .eq('is_completed', false)
-    .or('is_na.eq.false,is_critical.eq.true')
+  // 2. Anti-skip verification: Verify all prerequisite work is complete in parallel before allowing check-out
+  const [
+    { data: pendingSop },
+    { data: photos },
+    { count: sigCount },
+    { data: report },
+  ] = await Promise.all([
+    admin
+      .from('checklist_items')
+      .select('id')
+      .eq('job_id', jobId)
+      .eq('org_id', profile.orgId)
+      .eq('sop_mode', 'strict')
+      .eq('is_completed', false)
+      .or('is_na.eq.false,is_critical.eq.true'),
+    admin
+      .from('job_photos')
+      .select('type')
+      .eq('job_id', jobId)
+      .eq('org_id', profile.orgId),
+    admin
+      .from('signatures')
+      .select('*', { count: 'exact', head: true })
+      .eq('job_id', jobId)
+      .eq('org_id', profile.orgId),
+    admin
+      .from('work_reports')
+      .select('result')
+      .eq('job_id', jobId)
+      .eq('org_id', profile.orgId)
+      .maybeSingle(),
+  ])
 
   if (pendingSop && pendingSop.length > 0) {
     return { error: 'Gagal Check-out: Seluruh langkah SOP wajib diselesaikan terlebih dahulu.' }
   }
-
-  // b. Photos Before & After
-  const { data: photos } = await admin
-    .from('job_photos')
-    .select('type')
-    .eq('job_id', jobId)
 
   const hasBefore = (photos || []).some((p) => p.type === 'before')
   const hasAfter = (photos || []).some((p) => p.type === 'after')
@@ -147,22 +210,9 @@ export async function checkOutAction(jobId: string, latitude?: number, longitude
     return { error: 'Gagal Check-out: Minimal 1 foto Before dan 1 foto After wajib diunggah.' }
   }
 
-  // c. Customer signature
-  const { count: sigCount } = await admin
-    .from('signatures')
-    .select('*', { count: 'exact', head: true })
-    .eq('job_id', jobId)
-
   if (!sigCount || sigCount < 1) {
     return { error: 'Gagal Check-out: Tanda tangan pelanggan wajib diperoleh terlebih dahulu.' }
   }
-
-  // d. Work report
-  const { data: report } = await admin
-    .from('work_reports')
-    .select('result')
-    .eq('job_id', jobId)
-    .maybeSingle()
 
   if (!report || !report.result || report.result.trim().length < 5) {
     return { error: 'Gagal Check-out: Laporan hasil pekerjaan teknisi wajib diisi terlebih dahulu.' }
@@ -178,6 +228,7 @@ export async function checkOutAction(jobId: string, latitude?: number, longitude
       check_out_longitude: longitude || null,
     })
     .eq('job_id', jobId)
+    .eq('org_id', profile.orgId)
     .eq('technician_id', profile.id)
 
   if (attError) {
@@ -231,7 +282,7 @@ export async function toggleChecklistItemAction(itemId: string, isCompleted: boo
   }
 
   // 2. Anti-skip: Check-in is required before touching checklist
-  const checkInCheck = await verifyTechnicianCheckedIn(admin, currentItem.job_id, profile.orgId)
+  const checkInCheck = await verifyTechnicianCheckedIn(admin, currentItem.job_id, profile.orgId, profile.id)
   if (checkInCheck.error) {
     return { error: checkInCheck.error }
   }
@@ -303,7 +354,7 @@ export async function markChecklistNaAction(
   }
 
   // Anti-skip: Check-in is required before touching checklist
-  const checkInCheck = await verifyTechnicianCheckedIn(admin, item.job_id, profile.orgId)
+  const checkInCheck = await verifyTechnicianCheckedIn(admin, item.job_id, profile.orgId, profile.id)
   if (checkInCheck.error) {
     return { error: checkInCheck.error }
   }
@@ -353,7 +404,7 @@ export async function resetChecklistItemAction(
   }
 
   // Anti-skip: Check-in is required
-  const checkInCheck = await verifyTechnicianCheckedIn(admin, currentItem.job_id, profile.orgId)
+  const checkInCheck = await verifyTechnicianCheckedIn(admin, currentItem.job_id, profile.orgId, profile.id)
   if (checkInCheck.error) {
     return { error: checkInCheck.error }
   }
@@ -400,7 +451,7 @@ export async function uploadJobPhotoAction(jobId: string, type: 'before' | 'afte
   const admin = getSupabaseAdmin()
 
   // Anti-skip: Check-in is required before uploading photos
-  const checkInCheck = await verifyTechnicianCheckedIn(admin, jobId, profile.orgId)
+  const checkInCheck = await verifyTechnicianCheckedIn(admin, jobId, profile.orgId, profile.id)
   if (checkInCheck.error) {
     return { error: checkInCheck.error }
   }
@@ -576,7 +627,7 @@ export async function submitSignatureAction(jobId: string, customerName: string,
   const admin = getSupabaseAdmin()
 
   // Anti-skip: Check-in is required before asking for customer signature
-  const checkInCheck = await verifyTechnicianCheckedIn(admin, jobId, profile.orgId)
+  const checkInCheck = await verifyTechnicianCheckedIn(admin, jobId, profile.orgId, profile.id)
   if (checkInCheck.error) {
     return { error: checkInCheck.error }
   }
@@ -635,21 +686,8 @@ export async function submitWorkReportAction(
 
   const admin = getSupabaseAdmin()
 
-  // 1. Verify job is assigned to this technician
-  const { data: job } = await admin
-    .from('jobs')
-    .select('id, org_id, status, technician_id')
-    .eq('id', jobId)
-    .eq('org_id', profile.orgId)
-    .eq('technician_id', profile.id)
-    .maybeSingle()
-
-  if (!job) {
-    return { error: 'Pekerjaan tidak ditemukan atau Anda tidak ditugaskan pada pekerjaan ini.' }
-  }
-
-  // Anti-skip: Check-in is required before submitting work report
-  const checkInCheck = await verifyTechnicianCheckedIn(admin, jobId, profile.orgId)
+  // 1. Verify job ownership, active status, and check-in before submitting work report
+  const checkInCheck = await verifyTechnicianCheckedIn(admin, jobId, profile.orgId, profile.id)
   if (checkInCheck.error) {
     return { error: checkInCheck.error }
   }
@@ -684,6 +722,7 @@ export async function submitWorkReportAction(
   revalidatePath('/admin')
   revalidatePath('/admin/dispatch')
   revalidatePath('/admin/technicians')
+  revalidatePath('/admin/map')
 
   return { success: true }
 }
@@ -716,6 +755,7 @@ export async function completeJobAction(jobId: string) {
       .from('job_attendance')
       .select('check_in_at, check_out_at')
       .eq('job_id', jobId)
+      .eq('org_id', profile.orgId)
       .maybeSingle()
 
     if (!att?.check_in_at) {
@@ -727,6 +767,7 @@ export async function completeJobAction(jobId: string) {
         .from('job_attendance')
         .update({ check_out_at: now })
         .eq('job_id', jobId)
+        .eq('org_id', profile.orgId)
     }
   }
 
@@ -756,6 +797,7 @@ export async function completeJobAction(jobId: string) {
   revalidatePath('/admin')
   revalidatePath('/admin/dispatch')
   revalidatePath('/admin/technicians')
+  revalidatePath('/admin/map')
 
   return { success: true }
 }

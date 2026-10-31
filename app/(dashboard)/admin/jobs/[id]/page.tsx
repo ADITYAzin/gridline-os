@@ -7,6 +7,7 @@ import { STORAGE } from '@/lib/constants'
 import { AssignmentCard } from './assignment-card'
 import { CancellationDialog } from './cancellation-dialog'
 import { CompletionReviewCard } from './completion-review-card'
+import { AttendanceCard } from './attendance-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -76,13 +77,13 @@ export default async function JobDetailPage({ params }: PageProps) {
       .eq('id', id)
       .eq('org_id', profile.orgId)
       .maybeSingle(),
-    supabase.from('schedules').select('start_at, end_at').eq('job_id', id).maybeSingle(),
-    supabase.from('checklist_items').select('*').eq('job_id', id).order('created_at', { ascending: true }),
-    supabase.from('job_photos').select('*').eq('job_id', id),
-    supabase.from('signatures').select('*').eq('job_id', id).maybeSingle(),
-    supabase.from('work_reports').select('*').eq('job_id', id).maybeSingle(),
+    supabase.from('schedules').select('start_at, end_at').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
+    supabase.from('checklist_items').select('*').eq('job_id', id).eq('org_id', profile.orgId).order('created_at', { ascending: true }),
+    supabase.from('job_photos').select('*').eq('job_id', id).eq('org_id', profile.orgId),
+    supabase.from('signatures').select('*').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
+    supabase.from('work_reports').select('*').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
     supabase.from('profiles').select('id, name').eq('org_id', profile.orgId).eq('role', 'technician').order('name'),
-    supabase.from('job_attendance').select('check_in_at, check_out_at').eq('job_id', id).maybeSingle(),
+    supabase.from('job_attendance').select('*').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
   ])
 
   if (!job) {
@@ -113,62 +114,65 @@ export default async function JobDetailPage({ params }: PageProps) {
 
   const admin = getSupabaseAdmin()
 
-  // Generate signed URLs for before/after photos (valid 2 hours)
-  const photosWithSignedUrls = await Promise.all(
-    (photos || []).map(async (photo) => {
-      let displayUrl = photo.file_url
-      if (
-        !photo.file_url.startsWith('http://') &&
-        !photo.file_url.startsWith('https://') &&
-        !photo.file_url.startsWith('data:image')
-      ) {
-        try {
-          const { data } = await admin.storage
-            .from(STORAGE.jobFilesBucket)
-            .createSignedUrl(photo.file_url, 7200)
-          if (data?.signedUrl) {
-            displayUrl = data.signedUrl
-          }
-        } catch {
-          // fallback to raw path
+  // Batch generate signed URLs in a SINGLE network request with strict multi-tenant path verification
+  const isStoragePath = (url?: string | null): url is string =>
+    Boolean(
+      url &&
+        url.startsWith(`${profile.orgId}/`) &&
+        !url.includes('..') &&
+        !url.startsWith('http://') &&
+        !url.startsWith('https://') &&
+        !url.startsWith('data:image')
+    )
+
+  const pathsToSign = new Set<string>()
+  for (const photo of photos || []) {
+    if (isStoragePath(photo.file_url)) {
+      pathsToSign.add(photo.file_url)
+    }
+  }
+  if (isStoragePath(signature?.signature_url)) {
+    pathsToSign.add(signature.signature_url)
+  }
+  if (isStoragePath(attendance?.check_in_photo_url)) {
+    pathsToSign.add(attendance.check_in_photo_url)
+  }
+
+  const signedUrlMap = new Map<string, string>()
+  if (pathsToSign.size > 0) {
+    try {
+      const { data: signedList } = await admin.storage
+        .from(STORAGE.jobFilesBucket)
+        .createSignedUrls(Array.from(pathsToSign), 7200)
+      for (const item of signedList || []) {
+        if (item.path && item.signedUrl) {
+          signedUrlMap.set(item.path, item.signedUrl)
         }
       }
-      return {
-        ...photo,
-        display_url: displayUrl,
-      }
-    })
-  )
+    } catch {
+      // fallback
+    }
+  }
+
+  const photosWithSignedUrls = (photos || []).map((photo) => ({
+    ...photo,
+    display_url: signedUrlMap.get(photo.file_url) || photo.file_url,
+  }))
 
   const beforePhotos = photosWithSignedUrls.filter((p) => p.type === 'before')
   const afterPhotos = photosWithSignedUrls.filter((p) => p.type === 'after')
 
-  // Generate signed URL for customer signature
-  let signatureWithSignedUrl: { customer_name: string; display_url: string; signed_at: string } | null = null
-  if (signature) {
-    let displayUrl = signature.signature_url
-    if (
-      !signature.signature_url.startsWith('http://') &&
-      !signature.signature_url.startsWith('https://') &&
-      !signature.signature_url.startsWith('data:image')
-    ) {
-      try {
-        const { data: sigData } = await admin.storage
-          .from(STORAGE.jobFilesBucket)
-          .createSignedUrl(signature.signature_url, 7200)
-        if (sigData?.signedUrl) {
-          displayUrl = sigData.signedUrl
-        }
-      } catch {
-        // fallback to raw path
+  const signatureWithSignedUrl: { customer_name: string; display_url: string; signed_at: string } | null = signature
+    ? {
+        customer_name: signature.customer_name,
+        display_url: signedUrlMap.get(signature.signature_url) || signature.signature_url,
+        signed_at: signature.signed_at,
       }
-    }
-    signatureWithSignedUrl = {
-      customer_name: signature.customer_name,
-      display_url: displayUrl,
-      signed_at: signature.signed_at,
-    }
-  }
+    : null
+
+  const attendancePhotoSignedUrl: string | null = attendance?.check_in_photo_url
+    ? signedUrlMap.get(attendance.check_in_photo_url) || null
+    : null
 
   const completedChecklistCount = (checklist || []).filter((c) => c.is_completed).length
   const totalChecklistCount = (checklist || []).length
@@ -329,6 +333,14 @@ export default async function JobDetailPage({ params }: PageProps) {
               )}
             </CardContent>
           </Card>
+
+          {/* Attendance & Presence Widget (Check-in & Check-out) */}
+          <AttendanceCard
+            attendance={attendance}
+            technicianName={assignedTech?.name}
+            jobStatus={job.status}
+            photoSignedUrl={attendancePhotoSignedUrl}
+          />
 
           {/* SOP Checklist Status */}
           <Card className="shadow-xs">

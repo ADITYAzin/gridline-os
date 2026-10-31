@@ -23,8 +23,8 @@ export async function GET(
     const supabase = await createSupabaseServerClient()
     const admin = getSupabaseAdmin()
 
-    // 1. Fetch Job
-    const { data: job, error: jobError } = await supabase
+    // 1. Fetch Job with strict org_id and role-based ownership check
+    let jobQuery = supabase
       .from('jobs')
       .select(`
         id,
@@ -44,16 +44,13 @@ export async function GET(
       `)
       .eq('id', id)
       .eq('org_id', profile.orgId)
-      .maybeSingle()
 
-    if (jobError || !job) {
-      return new NextResponse('Dokumen BAP tidak ditemukan atau tiket belum selesai', {
-        status: 404,
-      })
+    if (profile.role === 'technician') {
+      jobQuery = jobQuery.eq('technician_id', profile.id)
     }
 
-    // 2. Fetch parallel data
     const [
+      { data: job, error: jobError },
       { data: org },
       { data: schedule },
       { data: attendance },
@@ -62,48 +59,69 @@ export async function GET(
       { data: signature },
       { data: report },
     ] = await Promise.all([
+      jobQuery.maybeSingle(),
       admin
         .from('organizations')
         .select('id, name, address, city, province, postal_code, phone, email')
         .eq('id', profile.orgId)
         .single(),
-      supabase.from('schedules').select('start_at, end_at').eq('job_id', id).maybeSingle(),
-      supabase.from('job_attendance').select('*').eq('job_id', id).maybeSingle(),
-      supabase.from('checklist_items').select('*').eq('job_id', id).order('created_at', { ascending: true }),
-      supabase.from('job_photos').select('*').eq('job_id', id).order('created_at', { ascending: true }),
-      supabase.from('signatures').select('*').eq('job_id', id).maybeSingle(),
-      supabase.from('work_reports').select('*').eq('job_id', id).maybeSingle(),
+      supabase.from('schedules').select('start_at, end_at').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
+      supabase.from('job_attendance').select('*').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
+      supabase.from('checklist_items').select('*').eq('job_id', id).eq('org_id', profile.orgId).order('created_at', { ascending: true }),
+      supabase.from('job_photos').select('*').eq('job_id', id).eq('org_id', profile.orgId).order('created_at', { ascending: true }),
+      supabase.from('signatures').select('*').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
+      supabase.from('work_reports').select('*').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
     ])
 
-    // 3. Generate Signed URLs for Photos (valid 2 hours)
-    const photosWithSignedUrls = await Promise.all(
-      (rawPhotos || []).map(async (photo) => {
-        const { data } = await admin.storage
-          .from(STORAGE.jobFilesBucket)
-          .createSignedUrl(photo.file_url, 7200)
-        return {
-          id: photo.id,
-          type: photo.type,
-          signed_url: data?.signedUrl || '',
-          captured_at: photo.captured_at,
-          checklist_item_id: photo.checklist_item_id,
-          caption: photo.caption,
-        }
+    if (jobError || !job || job.status !== 'completed') {
+      return new NextResponse('Dokumen BAP tidak ditemukan atau tiket belum selesai', {
+        status: 404,
       })
-    )
+    }
+
+    // 2. Batch Generate Signed URLs for Photos and Customer Signature (with strict tenant prefix guard)
+    const isTenantStoragePath = (url?: string | null): url is string =>
+      Boolean(url && url.startsWith(`${profile.orgId}/`) && !url.includes('..'))
+
+    const pathsToSign = new Set<string>()
+    for (const photo of rawPhotos || []) {
+      if (isTenantStoragePath(photo.file_url)) {
+        pathsToSign.add(photo.file_url)
+      }
+    }
+    if (isTenantStoragePath(signature?.signature_url)) {
+      pathsToSign.add(signature.signature_url)
+    }
+
+    const signedUrlMap = new Map<string, string>()
+    if (pathsToSign.size > 0) {
+      const { data: signedBatch } = await admin.storage
+        .from(STORAGE.jobFilesBucket)
+        .createSignedUrls(Array.from(pathsToSign), 7200)
+      for (const item of signedBatch || []) {
+        if (item.path && item.signedUrl) {
+          signedUrlMap.set(item.path, item.signedUrl)
+        }
+      }
+    }
+
+    const photosWithSignedUrls = (rawPhotos || []).map((photo) => ({
+      id: photo.id,
+      type: photo.type,
+      signed_url: signedUrlMap.get(photo.file_url) || '',
+      captured_at: photo.captured_at,
+      checklist_item_id: photo.checklist_item_id,
+      caption: photo.caption,
+    }))
 
     const beforePhotos = photosWithSignedUrls.filter((p) => p.type === 'before')
     const afterPhotos = photosWithSignedUrls.filter((p) => p.type === 'after')
 
-    // 4. Generate Signed URL for Customer Signature
     let signatureWithSignedUrl = null
     if (signature?.signature_url) {
-      const { data: sigData } = await admin.storage
-        .from(STORAGE.jobFilesBucket)
-        .createSignedUrl(signature.signature_url, 7200)
       signatureWithSignedUrl = {
         customer_name: signature.customer_name,
-        signed_url: sigData?.signedUrl || '',
+        signed_url: signedUrlMap.get(signature.signature_url) || '',
         signed_at: signature.signed_at,
       }
     }
