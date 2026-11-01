@@ -104,6 +104,7 @@ export default async function JobDetailPage({ params }: PageProps) {
   } | null
   const asset = (Array.isArray(job.customer_assets) ? job.customer_assets[0] : job.customer_assets) as AssetType
   const isLocked = job.status === 'completed' || job.status === 'cancelled'
+  const isAssignmentLocked = isLocked || job.status === 'on_progress'
 
   const scheduleDateStr = schedule?.start_at
     ? new Date(schedule.start_at).toLocaleDateString('id-ID', { dateStyle: 'long' })
@@ -755,7 +756,8 @@ export default async function JobDetailPage({ params }: PageProps) {
             currentTechId={job.technician_id}
             currentSchedule={schedule}
             technicians={technicians || []}
-            isLocked={isLocked}
+            isLocked={isAssignmentLocked}
+            status={job.status}
           />
 
           {/* Decision #4 Completion Gate Review Card */}

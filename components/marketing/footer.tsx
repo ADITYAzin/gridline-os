@@ -20,12 +20,6 @@ export function MarketingFooter() {
             <p className="text-[13.5px] text-[#475569] leading-relaxed max-w-sm">
               Satu operating system terpusat untuk perusahaan jasa teknis di Indonesia. Dari penugasan teknisi, verifikasi SOP lapangan, hingga Berita Acara Pekerjaan (BAP) otomatis.
             </p>
-            <div className="pt-2">
-              <span className="inline-flex items-center gap-2 rounded-[6px] bg-[#F1F5F9] border border-[#E2E8F0] px-2.5 py-1 text-[11px] font-medium text-[#475569]">
-                <span className="h-2 w-2 rounded-full bg-[#10B981]" />
-                Server Lokal Indonesia (Latensi Rendah)
-              </span>
-            </div>
           </div>
 
           {/* Nav Col 1: Produk */}

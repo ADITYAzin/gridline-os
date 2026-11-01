@@ -74,11 +74,19 @@ export function CheckOutSection({
         (pos) => {
           executeWithCoords(pos.coords.latitude, pos.coords.longitude)
         },
-        () => {
-          // If GPS fails or times out, proceed immediately so technician is not blocked
-          executeWithCoords()
+        (highErr) => {
+          console.warn('High accuracy GPS error on checkout, falling back:', highErr.message)
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              executeWithCoords(pos.coords.latitude, pos.coords.longitude)
+            },
+            () => {
+              executeWithCoords()
+            },
+            { timeout: 8000, enableHighAccuracy: false, maximumAge: 300000 }
+          )
         },
-        { timeout: 4000, enableHighAccuracy: false, maximumAge: 60000 },
+        { timeout: 10000, enableHighAccuracy: true, maximumAge: 60000 },
       )
     } else {
       executeWithCoords()

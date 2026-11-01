@@ -63,7 +63,7 @@ export default async function TechnicianJobDetailPage({ params }: PageProps) {
       .eq('org_id', profile.orgId)
       .eq('technician_id', profile.id)
       .maybeSingle(),
-    supabase.from('job_attendance').select('check_in_at, check_out_at, check_in_photo_url').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
+    supabase.from('job_attendance').select('check_in_at, check_out_at, check_in_photo_url, check_in_latitude, check_in_longitude').eq('job_id', id).eq('org_id', profile.orgId).maybeSingle(),
     supabase
       .from('checklist_items')
       .select('id, item, is_completed, is_na, na_reason, sop_mode, requires_photo, is_critical, hint')

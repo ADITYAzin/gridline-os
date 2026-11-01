@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { UserCheck, Calendar, Clock, AlertTriangle, Check, Loader2 } from 'lucide-react'
+import { UserCheck, Calendar, Clock, AlertTriangle, Check, Loader2, Lock } from 'lucide-react'
 
 interface TechOption {
   id: string
@@ -29,6 +29,7 @@ interface AssignmentCardProps {
   } | null
   technicians: TechOption[]
   isLocked: boolean
+  status?: string
 }
 
 export function AssignmentCard({
@@ -37,6 +38,7 @@ export function AssignmentCard({
   currentSchedule,
   technicians,
   isLocked,
+  status,
 }: AssignmentCardProps) {
   const [techId, setTechId] = useState(currentTechId || '')
   const defaultDate = currentSchedule
@@ -78,12 +80,31 @@ export function AssignmentCard({
   return (
     <Card className="shadow-xs">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <UserCheck className="h-4 w-4 text-primary" />
-          Jadwal & Teknisi
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <UserCheck className="h-4 w-4 text-primary" />
+            Jadwal & Teknisi
+          </CardTitle>
+          {status === 'on_progress' && (
+            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <Lock className="h-3 w-3" /> Sedang Dikerjakan
+            </span>
+          )}
+          {(status === 'completed' || status === 'cancelled') && (
+            <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex items-center gap-1">
+              <Lock className="h-3 w-3" /> Dikunci
+            </span>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-3.5 text-xs">
+        {status === 'on_progress' && (
+          <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-xs text-emerald-900 dark:text-emerald-200 flex items-start gap-2">
+            <Lock className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+            <span>Pekerjaan sedang berlangsung di lokasi. Penugasan teknisi dan jadwal dikunci demi konsistensi data operasional.</span>
+          </div>
+        )}
+
         {error && (
           <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-2.5 text-xs font-medium text-destructive flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />

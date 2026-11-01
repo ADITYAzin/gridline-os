@@ -217,6 +217,25 @@ export async function assignJobAction(
   const profile = await requireRole('admin')
   const admin = getSupabaseAdmin()
 
+  const { data: currentJob } = await admin
+    .from('jobs')
+    .select('status, org_id')
+    .eq('id', jobId)
+    .eq('org_id', profile.orgId)
+    .single()
+
+  if (!currentJob) {
+    return { error: 'Pekerjaan tidak ditemukan.' }
+  }
+
+  if (currentJob.status === 'on_progress') {
+    return { error: 'Tidak dapat mengubah jadwal atau teknisi karena pekerjaan sedang dikerjakan di lokasi.' }
+  }
+
+  if (currentJob.status === 'completed' || currentJob.status === 'cancelled') {
+    return { error: 'Pekerjaan ini sudah selesai atau dibatalkan dan tidak dapat dijadwalkan ulang.' }
+  }
+
   const startAt = new Date(`${scheduleDate}T${startTime}:00`).toISOString()
   const endAt = new Date(`${scheduleDate}T${endTime}:00`).toISOString()
 
@@ -244,8 +263,7 @@ export async function assignJobAction(
   }
 
   // Update job status to assigned if currently pending
-  const { data: currentJob } = await admin.from('jobs').select('status').eq('id', jobId).single()
-  const newStatus = currentJob?.status === 'pending' ? 'assigned' : currentJob?.status
+  const newStatus = currentJob.status === 'pending' ? 'assigned' : currentJob.status
 
   await admin
     .from('jobs')

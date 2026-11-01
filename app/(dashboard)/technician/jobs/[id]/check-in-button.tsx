@@ -27,6 +27,8 @@ interface CheckInButtonProps {
     check_out_at: string | null
     check_in_photo_url?: string | null
     display_photo_url?: string | null
+    check_in_latitude?: number | null
+    check_in_longitude?: number | null
   } | null
 }
 
@@ -46,6 +48,37 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
     fileInputRef.current?.click()
   }
 
+  // Helper to acquire GPS coordinates with multiple fallbacks
+  const getGpsCoordinates = (): Promise<{ lat?: number; lng?: number }> => {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined' || !('geolocation' in navigator)) {
+        return resolve({})
+      }
+
+      // Try High Accuracy with 10s timeout
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        },
+        (highErr) => {
+          console.warn('High accuracy GPS error, trying low accuracy fallback:', highErr.message)
+          // Fallback to low accuracy / cellular / wifi triangulation
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+            },
+            (lowErr) => {
+              console.warn('GPS position acquisition failed:', lowErr.message)
+              resolve({})
+            },
+            { timeout: 8000, enableHighAccuracy: false, maximumAge: 300000 }
+          )
+        },
+        { timeout: 10000, enableHighAccuracy: true, maximumAge: 60000 }
+      )
+    })
+  }
+
   // Handle selected camera/file photo & acquire GPS coords concurrently
   const handlePhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawFile = e.target.files?.[0]
@@ -55,23 +88,10 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
     setIsProcessing(true)
 
     try {
-      // 1. Kick off GPS acquisition concurrently with image compression (Eliminate Waterfall!)
-      const gpsPromise = new Promise<{ lat?: number; lng?: number }>((resolve) => {
-        if (typeof window !== 'undefined' && 'geolocation' in navigator) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-            () => resolve({}),
-            { timeout: 4000, enableHighAccuracy: false, maximumAge: 60000 },
-          )
-        } else {
-          resolve({})
-        }
-      })
-
-      // 2. Compress image client-side & retrieve GPS coordinates in parallel
+      // 1. Kick off GPS acquisition and image compression concurrently
       const [compressedFile, coords] = await Promise.all([
         compressImage(rawFile, 1200, 0.8),
-        gpsPromise,
+        getGpsCoordinates(),
       ])
 
       setIsProcessing(false)
@@ -191,9 +211,13 @@ export function CheckInButton({ jobId, attendance }: CheckInButtonProps) {
                 </div>
               </button>
             </div>
+          ) : attendance?.check_in_latitude != null ? (
+            <span className="text-[10px] text-emerald-700 font-medium bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <MapPin className="h-3 w-3" /> GPS Tercatat
+            </span>
           ) : (
-            <span className="text-[10px] text-emerald-700 font-medium bg-emerald-100 px-2 py-0.5 rounded-full">
-              GPS Tercatat
+            <span className="text-[10px] text-amber-700 font-medium bg-amber-100 px-2 py-0.5 rounded-full">
+              Hadir
             </span>
           )}
         </div>
