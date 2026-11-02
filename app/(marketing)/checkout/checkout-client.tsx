@@ -448,7 +448,7 @@ export function CheckoutClient() {
           <div className="flex items-center gap-2 rounded-[10px] border border-[#D0E8F8] bg-[#EBF5FC]/70 px-3.5 py-2 text-[12px] text-[#0F172A]">
             <ShieldCheck className="h-4 w-4 text-[#007ACC] shrink-0" />
             <div>
-              <span className="font-semibold block leading-tight">Midtrans Secure Checkout</span>
+              <span className="font-semibold block leading-tight">Opilines Checkout</span>
             </div>
           </div>
         </div>
