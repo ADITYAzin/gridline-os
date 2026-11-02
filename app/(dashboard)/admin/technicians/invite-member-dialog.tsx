@@ -129,7 +129,7 @@ export function InviteMemberDialog() {
               <p className="text-[11px] text-muted-foreground pt-0.5">
                 {role === 'technician'
                   ? 'Hanya dapat melihat pekerjaan yang ditugaskan kepadanya.'
-                  : 'Dapat melihat ringkasan performa dan laporan tim.'}
+                  : 'Dapat melihat ringkasan performa tim teknisi dan laporan operasional.'}
               </p>
             </div>
 

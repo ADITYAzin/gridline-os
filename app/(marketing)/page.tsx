@@ -356,7 +356,7 @@ export default function MarketingHomePage() {
                 Performance & SLA Monitoring
               </h3>
               <p className="text-[13px] text-[#64748B] leading-relaxed">
-                Pantau batas waktu SLA dan produktivitas teknisi secara real-time guna menjaga kepuasan klien.
+                Pantau batas waktu SLA dan performa tim teknisi secara real-time guna menjaga kepuasan klien.
               </p>
             </div>
 

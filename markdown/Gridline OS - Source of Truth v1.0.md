@@ -106,7 +106,7 @@ Perusahaan menghadapi masalah:
 6. Foto/evidence pekerjaan tersebar.
 7. Laporan pekerjaan tidak terstruktur.
 8. Owner sulit mendapatkan operational visibility secara cepat.
-9. Performa teknisi sulit diukur secara konsisten.
+9. Performa tim teknisi sulit diukur secara konsisten.
 
 ---
 
@@ -195,7 +195,7 @@ Mengetahui kondisi operasional tanpa harus mengecek pekerjaan satu per satu.
 
 ### Owner
 
-> Owner membutuhkan dashboard operasional yang memberikan informasi aktual agar dapat mengetahui performa tim dan mengambil keputusan dengan cepat.
+> Owner membutuhkan dashboard operasional yang memberikan informasi aktual agar dapat mengetahui performa tim teknisi dan mengambil keputusan dengan cepat.
 
 ---
 
@@ -221,7 +221,7 @@ Mengetahui kondisi operasional tanpa harus mengecek pekerjaan satu per satu.
 
 ### Owner
 
-> **HMW memberikan owner visibility terhadap pekerjaan, SLA, dan performa teknisi secara aktual sehingga keputusan operasional dapat dibuat berdasarkan data?**
+> **HMW memberikan owner visibility terhadap pekerjaan, SLA, dan performa tim teknisi secara aktual sehingga keputusan operasional dapat dibuat berdasarkan data?**
 
 ### Overall
 

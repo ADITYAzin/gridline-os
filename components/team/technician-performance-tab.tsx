@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -20,8 +21,11 @@ export function TechnicianPerformanceTab({ metrics }: TechnicianPerformanceTabPr
       : 0
 
   // Sorted by total completed descending
-  const sortedByCompleted = [...metrics].sort((a, b) => b.totalCompleted - a.totalCompleted)
-  const topPerformer = sortedByCompleted[0]
+  const sortedByCompleted = useMemo(() => {
+    return [...metrics].sort((a, b) => b.totalCompleted - a.totalCompleted)
+  }, [metrics])
+
+  const topPerformer = [...metrics].sort((a, b) => b.totalCompleted - a.totalCompleted)[0]
 
   return (
     <div className="space-y-6">
@@ -92,21 +96,25 @@ export function TechnicianPerformanceTab({ metrics }: TechnicianPerformanceTabPr
 
       {/* Leaderboard & Detailed Table */}
       <Card className="shadow-sm overflow-hidden">
-        <CardHeader className="border-b bg-muted/20 py-4 px-6 flex flex-row items-center justify-between">
+        <CardHeader className="border-b bg-muted/20 py-4 px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <CardTitle className="text-base font-bold flex items-center gap-2">
               <Flame className="h-4 w-4 text-orange-500" />
               Peringkat & Produktivitas Tim Lapangan
             </CardTitle>
             <CardDescription className="text-xs mt-0.5">
-              Evaluasi kinerja teknisi berdasarkan jumlah pekerjaan tuntas, durasi, dan SLA.
+              Evaluasi performa tim teknisi berdasarkan jumlah pekerjaan tuntas, durasi, dan SLA.
             </CardDescription>
+          </div>
+
+          <div className="text-xs text-muted-foreground font-medium">
+            Total {sortedByCompleted.length} teknisi
           </div>
         </CardHeader>
 
-        {metrics.length === 0 ? (
+        {sortedByCompleted.length === 0 ? (
           <div className="p-8 text-center text-xs text-muted-foreground">
-            Belum ada teknisi terdaftar untuk dihitung performanya.
+            Tidak ada teknisi yang sesuai.
           </div>
         ) : (
           <Table>

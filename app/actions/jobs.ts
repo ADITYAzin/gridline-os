@@ -24,6 +24,7 @@ const createJobSchema = z.object({
   address: z.string().min(5, 'Alamat servis minimal 5 karakter'),
   priority: z.enum(['low', 'medium', 'high']),
   technicianId: postgresUuid('Teknisi yang dipilih tidak valid').optional().or(z.literal('')),
+  technicianIds: z.string().optional().or(z.literal('')),
   scheduleDate: z.string().optional().or(z.literal('')),
   startTime: z.string().optional().or(z.literal('')),
   endTime: z.string().optional().or(z.literal('')),
@@ -46,6 +47,49 @@ const DEFAULT_SOP_FALLBACK: string[] = [
 export async function createJobAction(prevState: JobActionState, formData: FormData): Promise<JobActionState> {
   const profile = await requireRole('admin')
 
+  // Parse technician assignments (support up to 4 technicians)
+  const rawTechIds = (formData.get('technicianIds') as string)?.trim() || ''
+  let parsedTechIds: string[] = []
+  if (rawTechIds) {
+    try {
+      const arr = JSON.parse(rawTechIds)
+      if (Array.isArray(arr)) {
+        parsedTechIds = arr
+          .filter((id) => typeof id === 'string' && POSTGRES_UUID_REGEX.test(id.trim()))
+          .map((id) => id.trim())
+      }
+    } catch {
+      parsedTechIds = rawTechIds
+        .split(',')
+        .map((s) => s.trim())
+        .filter((id) => POSTGRES_UUID_REGEX.test(id))
+    }
+  }
+
+  // Deduplicate technician IDs while preserving order (first = lead)
+  parsedTechIds = Array.from(new Set(parsedTechIds))
+
+  const singleTechId = (formData.get('technicianId') as string)?.trim() || ''
+  if (parsedTechIds.length === 0 && singleTechId && POSTGRES_UUID_REGEX.test(singleTechId)) {
+    parsedTechIds = [singleTechId]
+  }
+
+  // Validate maximum 4 technicians
+  if (parsedTechIds.length > 4) {
+    return {
+      error: 'Maksimal 4 teknisi yang dapat ditugaskan untuk satu tiket.',
+      fields: {
+        customerId: (formData.get('customerId') as string) || '',
+        serviceType: (formData.get('serviceType') as string) || '',
+        issue: (formData.get('issue') as string) || '',
+        address: (formData.get('address') as string) || '',
+        priority: (formData.get('priority') as string) || 'medium',
+      },
+    }
+  }
+
+  const leadTechnicianId = parsedTechIds[0] || undefined
+
   const rawData = {
     customerId: (formData.get('customerId') as string)?.trim(),
     assetId: (formData.get('assetId') as string)?.trim() || undefined,
@@ -54,7 +98,8 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
     instructions: (formData.get('instructions') as string) || undefined,
     address: formData.get('address') as string,
     priority: formData.get('priority') as 'low' | 'medium' | 'high',
-    technicianId: (formData.get('technicianId') as string)?.trim() || undefined,
+    technicianId: leadTechnicianId,
+    technicianIds: JSON.stringify(parsedTechIds),
     scheduleDate: (formData.get('scheduleDate') as string) || undefined,
     startTime: (formData.get('startTime') as string) || undefined,
     endTime: (formData.get('endTime') as string) || undefined,
@@ -68,7 +113,8 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
     instructions: (formData.get('instructions') as string) || '',
     address: (formData.get('address') as string) || '',
     priority: (formData.get('priority') as string) || 'medium',
-    technicianId: (formData.get('technicianId') as string) || '',
+    technicianId: leadTechnicianId || '',
+    technicianIds: JSON.stringify(parsedTechIds),
     scheduleDate: (formData.get('scheduleDate') as string) || '',
     startTime: (formData.get('startTime') as string) || '',
     endTime: (formData.get('endTime') as string) || '',
@@ -99,6 +145,21 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
   const hasAssignment = Boolean(parsed.data.technicianId && parsed.data.scheduleDate && parsed.data.startTime && parsed.data.endTime)
   const initialStatus = hasAssignment ? 'assigned' : 'pending'
 
+  // Prepend assigned team header if multiple technicians (2 to 4) are selected
+  let instructionsText = parsed.data.instructions?.trim() || null
+  if (parsedTechIds.length > 1) {
+    const { data: techProfiles } = await admin
+      .from('profiles')
+      .select('id, name')
+      .in('id', parsedTechIds)
+
+    const techMap = new Map(techProfiles?.map((tp) => [tp.id, tp.name]) || [])
+    const teamSummary = `[Tim Teknisi (${parsedTechIds.length}): ${parsedTechIds
+      .map((id, i) => `${techMap.get(id) || 'Teknisi'}${i === 0 ? ' (Lead)' : ''}`)
+      .join(', ')}]`
+    instructionsText = instructionsText ? `${teamSummary}\n\n${instructionsText}` : teamSummary
+  }
+
   // 2. Insert Job
   const { data: job, error: jobError } = await admin
     .from('jobs')
@@ -110,7 +171,7 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
       created_by: profile.id,
       service_type: parsed.data.serviceType.trim(),
       issue: parsed.data.issue.trim(),
-      instructions: parsed.data.instructions?.trim() || null,
+      instructions: instructionsText,
       address: parsed.data.address.trim(),
       priority: parsed.data.priority,
       status: initialStatus,
@@ -175,6 +236,29 @@ export async function createJobAction(prevState: JobActionState, formData: FormD
   if (hasAssignment) {
     const startAt = new Date(`${parsed.data.scheduleDate}T${parsed.data.startTime}:00`).toISOString()
     const endAt = new Date(`${parsed.data.scheduleDate}T${parsed.data.endTime}:00`).toISOString()
+
+    // Cek bentrok jadwal untuk SEMUA teknisi yang ditugaskan (maks. 4 teknisi)
+    if (parsedTechIds.length > 0) {
+      const { data: conflicts } = await admin
+        .from('schedules')
+        .select('technician_id, profiles!schedules_technician_id_fkey(name)')
+        .in('technician_id', parsedTechIds)
+        .lt('start_at', endAt)
+        .gt('end_at', startAt)
+
+      if (conflicts && conflicts.length > 0) {
+        // Rollback job yang sudah dibuat
+        await admin.from('jobs').delete().eq('id', job.id)
+        type ProfileName = { name: string }
+        const rawProf = conflicts[0]?.profiles
+        const profObj = (Array.isArray(rawProf) ? rawProf[0] : rawProf) as ProfileName | null
+        const techName = profObj?.name || 'Teknisi'
+        return {
+          error: `Bentrok Jadwal: Teknisi "${techName}" sudah memiliki jadwal pekerjaan lain pada rentang waktu ini.`,
+          fields: fieldValues,
+        }
+      }
+    }
 
     const { error: schedError } = await admin.from('schedules').insert({
       org_id: profile.orgId,

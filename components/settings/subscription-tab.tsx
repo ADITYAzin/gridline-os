@@ -5,6 +5,7 @@ import {
   Calendar,
   CalendarCheck,
   Check,
+  X,
   Clock,
   Download,
   Receipt,
@@ -136,7 +137,7 @@ export function SubscriptionTab({
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/15 border border-white/10 text-white/90">
                 <Users className="h-3.5 w-3.5 text-cyan-200" />
                 <span>Kapasitas:</span>
-                <strong>10 Teknisi</strong>
+                <strong>{currentTier === 'starter' ? '5 Teknisi' : '12 Teknisi'}</strong>
               </div>
             </div>
           </div>
@@ -216,20 +217,60 @@ export function SubscriptionTab({
 
                 <ul className="space-y-1.5 text-muted-foreground text-[11px] pt-2 border-t border-border/50">
                   <li className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span>Hingga 3 Teknisi Lapangan</span>
+                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 font-bold" />
+                    <span>Akses 5 Teknisi + 1 Akun Admin</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span>1 Akun Admin / Dispatcher</span>
+                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 font-bold" />
+                    <span>Manajemen tiket kerja tanpa batas</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span>Tiket Servis Tanpa Batas</span>
+                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 font-bold" />
+                    <span>Presensi teknisi (GPS & Foto Selfie)</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span>BAP Digital & Tanda Tangan</span>
+                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 font-bold" />
+                    <span>SOP operasional standar bawaan</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 font-bold" />
+                    <span>Dokumentasi kerja 5 foto per tiket</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 font-bold" />
+                    <span>BAP digital & tanda tangan digital pelanggan</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 font-bold" />
+                    <span>Riwayat servis pelanggan & monitoring SLA</span>
+                  </li>
+
+                  <li className="pt-1.5 border-t border-border/40 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Belum Termasuk di Starter:
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-400">
+                    <X className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                    <span>Peta pemantauan lokasi teknisi (Live Map)</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-400">
+                    <X className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                    <span>Manajemen cuti & perizinan presensi</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-400">
+                    <X className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                    <span>Custom SOP Builder</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-400">
+                    <X className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                    <span>Riwayat servis unit aset (No. Seri/Mesin)</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-400">
+                    <X className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                    <span>Pesan kabar pelanggan via WhatsApp</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-400">
+                    <X className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                    <span>Manajemen komisi teknisi otomatis</span>
                   </li>
                 </ul>
               </div>
@@ -249,8 +290,6 @@ export function SubscriptionTab({
 
             {/* 2. Professional (Featured Upscale Recommendation) */}
             <div className="p-4 rounded-xl border-2 border-[#007ACC] bg-[#EBF5FC]/30 space-y-3 flex flex-col justify-between relative shadow-xs">
-              
-
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <h4 className="font-heading font-bold text-sm text-[#007ACC]">Professional</h4>
@@ -265,25 +304,53 @@ export function SubscriptionTab({
                 </div>
 
                 <p className="text-[11px] text-muted-foreground">
-                  Pilihan standar tim 4–10 teknisi berkembang.
+                  Pilihan standar tim armada hingga 12 teknisi.
                 </p>
 
                 <ul className="space-y-1.5 text-foreground text-[11px] pt-2 border-t border-[#007ACC]/20 font-medium">
                   <li className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-[#007ACC] shrink-0 font-bold" />
-                    <span>Hingga 10 Teknisi Lapangan</span>
+                    <span>Akses 12 Teknisi, 1 Admin, & 1 Owner</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-[#007ACC] shrink-0 font-bold" />
-                    <span>3 Akun Admin / Dispatcher</span>
+                    <span>Manajemen tiket kerja tanpa batas</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-[#007ACC] shrink-0 font-bold" />
-                    <span>Notifikasi WhatsApp 1-Klik</span>
+                    <span>Presensi GPS & Selfie + Manajemen Izin/Cuti</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-[#007ACC] shrink-0 font-bold" />
-                    <span>Database Riwayat Mesin & SLA</span>
+                    <span>Peta pemantauan lokasi teknisi (Live Map)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-[#007ACC] shrink-0 font-bold" />
+                    <span>Custom SOP Builder (Bebas buat alur kerja)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-[#007ACC] shrink-0 font-bold" />
+                    <span>Dokumentasi kerja hingga 10 foto per tiket</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-[#007ACC] shrink-0 font-bold" />
+                    <span>BAP digital & tanda tangan digital pelanggan</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-[#007ACC] shrink-0 font-bold" />
+                    <span>Riwayat servis unit aset (No. Seri / Mesin)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-[#007ACC] shrink-0 font-bold" />
+                    <span>Monitoring SLA & performa tim teknisi</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-[#007ACC] shrink-0 font-bold" />
+                    <span>Pesan kabar pelanggan via WhatsApp 1-Klik</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-[#007ACC] shrink-0 font-bold" />
+                    <span>Manajemen komisi teknisi otomatis</span>
                   </li>
                 </ul>
               </div>
@@ -317,25 +384,29 @@ export function SubscriptionTab({
                 </div>
 
                 <p className="text-[11px] text-muted-foreground">
-                  Kontraktor dan armada lebih dari 10 teknisi.
+                  Kontraktor dan armada lebih dari 12 teknisi.
                 </p>
 
                 <ul className="space-y-1.5 text-muted-foreground text-[11px] pt-2 border-t border-border/50">
                   <li className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span>Kuota Teknisi & Admin Unlimited</span>
+                    <span>Akses kustom teknisi, admin, dan owner</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span>Kustom Kop Surat & Logo BAP</span>
+                    <span>Monitoring SLA & performa tim teknisi</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span>Dedicated Account Manager 24/7</span>
+                    <span>Peta pemantauan & Custom SOP Builder</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span>Integrasi API Database Internal</span>
+                    <span>Riwayat servis unit aset & komisi</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                    <span>Pesan kabar WhatsApp</span>
                   </li>
                 </ul>
               </div>

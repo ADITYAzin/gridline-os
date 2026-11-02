@@ -154,6 +154,16 @@ function createPopupContent(job: MapJobItem) {
     }
   }
 
+  let scheduleDisplay = ''
+  if (job.scheduled_start) {
+    try {
+      const d = new Date(job.scheduled_start)
+      scheduleDisplay = `${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} • ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`
+    } catch {
+      scheduleDisplay = ''
+    }
+  }
+
   return `
     <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 2px; min-width: 240px; max-width: 280px;">
       <!-- Header -->
@@ -165,6 +175,16 @@ function createPopupContent(job: MapJobItem) {
           ${statusInfo.label}
         </span>
       </div>
+
+      ${
+        scheduleDisplay
+          ? `<!-- Schedule -->
+          <div style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #0369A1; font-weight: 600; margin-bottom: 6px; background: #F0F9FF; padding: 2.5px 6px; border-radius: 4px; border: 1px solid #BAE6FD;">
+            <span>🗓️</span>
+            <span>Jadwal: ${scheduleDisplay}</span>
+          </div>`
+          : ''
+      }
 
       <!-- Service Type -->
       <div style="font-size: 12px; font-weight: 700; color: #0F172A; margin-bottom: 2px; line-height: 1.3;">

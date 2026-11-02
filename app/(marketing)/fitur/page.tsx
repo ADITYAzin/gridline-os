@@ -296,7 +296,7 @@ export default function FiturPage() {
               Performance & SLA Monitoring
             </h2>
             <p className="text-[14.5px] text-[#475569] leading-relaxed">
-              Pantau kepatuhan batas waktu layanan (<em>Service Level Agreement</em>), progres tiket secara <em>live</em>, dan metrik performa individu teknisi guna menjaga kepuasan klien.
+              Pantau kepatuhan batas waktu layanan (<em>Service Level Agreement</em>), progres tiket secara <em>live</em>, dan metrik performa tim teknisi guna menjaga kepuasan klien.
             </p>
             <ul className="space-y-2.5 text-[13.5px] text-[#475569] pt-1">
               <li className="flex items-center gap-2">

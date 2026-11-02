@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -25,6 +26,10 @@ export function TechnicianCommissionTab({
   services = [],
 }: TechnicianCommissionTabProps) {
   const isEnabled = settings.commission_enabled
+
+  const filteredMetrics = useMemo(() => {
+    return metrics
+  }, [metrics])
 
   const totalCommissionAll = metrics.reduce((acc, m) => acc + m.totalCommission, 0)
   const totalBaseCommissionAll = metrics.reduce((acc, m) => acc + m.totalBaseCommission, 0)
@@ -178,7 +183,7 @@ export function TechnicianCommissionTab({
 
           {/* Commission Table per Technician */}
           <Card className="shadow-xs overflow-hidden">
-            <CardHeader className="border-b bg-muted/20 py-4 px-6 flex flex-row items-center justify-between">
+            <CardHeader className="border-b bg-muted/20 py-4 px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <Coins className="h-4 w-4 text-amber-500" />
@@ -188,14 +193,17 @@ export function TechnicianCommissionTab({
                   Rincian komisi per teknisi dari tiket yang telah selesai.
                 </CardDescription>
               </div>
-              <Badge variant="outline" className="text-xs">
-                {settings.commission_type === 'service_based' ? 'Sesuai Layanan' : 'Tarif Flat'}
-              </Badge>
+
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs shrink-0">
+                  {settings.commission_type === 'service_based' ? 'Sesuai Layanan' : 'Tarif Flat'}
+                </Badge>
+              </div>
             </CardHeader>
 
-            {metrics.length === 0 ? (
+            {filteredMetrics.length === 0 ? (
               <div className="p-8 text-center text-xs text-muted-foreground">
-                Belum ada data teknisi terdaftar.
+                Tidak ada teknisi yang sesuai.
               </div>
             ) : (
               <Table>
@@ -222,7 +230,7 @@ export function TechnicianCommissionTab({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {metrics.map((m) => (
+                  {filteredMetrics.map((m) => (
                     <TableRow key={m.technicianId} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors group">
                       <TableCell className="px-4 py-2 align-middle">
                         <div className="font-semibold text-xs text-[#0F172A]">{m.name}</div>

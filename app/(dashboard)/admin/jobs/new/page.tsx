@@ -17,7 +17,7 @@ export default async function NewJobPage({ searchParams }: PageProps) {
   // Fetch customers, technicians, assets, and active company services in parallel
   const [{ data: customers }, { data: techs }, { data: assets }, { data: services }] = await Promise.all([
     supabase.from('customers').select('id, name, address, phone').eq('org_id', profile.orgId).order('name'),
-    supabase.from('profiles').select('id, name').eq('org_id', profile.orgId).eq('role', 'technician').order('name'),
+    supabase.from('profiles').select('id, name, phone, email').eq('org_id', profile.orgId).eq('role', 'technician').order('name'),
     supabase.from('customer_assets').select('id, customer_id, asset_name, brand, model_number, serial_number, location_tag').eq('org_id', profile.orgId).order('asset_name'),
     supabase.from('company_services').select('id, name, description, default_price').eq('org_id', profile.orgId).eq('is_active', true).order('name'),
   ])

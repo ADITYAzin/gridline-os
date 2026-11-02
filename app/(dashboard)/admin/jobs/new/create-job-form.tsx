@@ -15,16 +15,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Plus, AlertCircle, Calendar, Clock, UserCheck, RotateCcw, CheckCircle2, Wrench } from 'lucide-react'
+import { Loader2, Plus, AlertCircle, Calendar, Clock, UserCheck, UserPlus, RotateCcw, CheckCircle2, Wrench, X, Crown, Users } from 'lucide-react'
 import { CreateCustomerDialog } from '@/app/(dashboard)/admin/customers/create-customer-dialog'
 import { AssetDialog } from '@/components/customers/asset-dialog'
 import { toast } from 'sonner'
 import { CustomerSearchSelect, type CustomerOption } from './customer-select'
-
-interface TechOption {
-  id: string
-  name: string
-}
+import { AssignTechniciansModal, type TechOption } from './assign-technicians-modal'
+import { Badge } from '@/components/ui/badge'
 
 export interface AssetOption {
   id: string
@@ -61,6 +58,7 @@ interface FormFields {
   instructions: string
   address: string
   technicianId: string
+  technicianIds: string[]
   scheduleDate: string
   startTime: string
   endTime: string
@@ -109,6 +107,7 @@ export function CreateJobForm({
     instructions: '',
     address: initialCustomer?.address || '',
     technicianId: '',
+    technicianIds: [],
     scheduleDate: '',
     startTime: '09:00',
     endTime: '11:00',
@@ -127,6 +126,12 @@ export function CreateJobForm({
       }
     }
 
+    const techIds: string[] = Array.isArray(savedData.technicianIds)
+      ? savedData.technicianIds
+      : savedData.technicianId
+      ? [savedData.technicianId]
+      : []
+
     return {
       customerId: defaultCustomerId || savedData.customerId || '',
       assetId: defaultAssetId || savedData.assetId || '',
@@ -135,7 +140,8 @@ export function CreateJobForm({
       issue: savedData.issue || '',
       instructions: savedData.instructions || '',
       address: (defaultCustomerId ? initialCustomer?.address : savedData.address) || initialCustomer?.address || '',
-      technicianId: savedData.technicianId || '',
+      technicianId: techIds[0] || '',
+      technicianIds: techIds,
       scheduleDate: savedData.scheduleDate || '',
       startTime: savedData.startTime || '09:00',
       endTime: savedData.endTime || '11:00',
@@ -165,6 +171,18 @@ export function CreateJobForm({
       const res = await createJobAction(prevState, formData)
       if (res.error && res.fields) {
         setFormValues((prev) => {
+          let updatedTechIds = prev.technicianIds
+          if (res.fields?.technicianIds) {
+            try {
+              const parsed = JSON.parse(res.fields.technicianIds)
+              if (Array.isArray(parsed)) updatedTechIds = parsed
+            } catch {
+              // ignore
+            }
+          } else if (res.fields?.technicianId) {
+            updatedTechIds = [res.fields.technicianId]
+          }
+
           const updated: FormFields = {
             ...prev,
             customerId: res.fields?.customerId || prev.customerId,
@@ -174,7 +192,8 @@ export function CreateJobForm({
             issue: res.fields?.issue ?? prev.issue,
             instructions: res.fields?.instructions ?? prev.instructions,
             address: res.fields?.address ?? prev.address,
-            technicianId: res.fields?.technicianId ?? prev.technicianId,
+            technicianId: updatedTechIds[0] || '',
+            technicianIds: updatedTechIds,
             scheduleDate: res.fields?.scheduleDate ?? prev.scheduleDate,
             startTime: res.fields?.startTime ?? prev.startTime,
             endTime: res.fields?.endTime ?? prev.endTime,
@@ -197,6 +216,23 @@ export function CreateJobForm({
     },
     initialState
   )
+
+  const handleTechniciansChange = (ids: string[]) => {
+    const limitedIds = ids.slice(0, 4)
+    setFormValues((prev) => {
+      const updated: FormFields = {
+        ...prev,
+        technicianId: limitedIds[0] || '',
+        technicianIds: limitedIds,
+      }
+      try {
+        sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(updated))
+      } catch {
+        // ignore
+      }
+      return updated
+    })
+  }
 
   // Helper to update specific field and auto-save draft
   const updateField = <K extends keyof FormFields>(key: K, value: FormFields[K]) => {
@@ -566,42 +602,179 @@ export function CreateJobForm({
         {/* Right 1 Col: Scheduling & Assignment */}
         <div className="space-y-6">
           <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <UserCheck className="h-4 w-4 text-primary" />
-                Penugasan & Jadwal (Opsional)
-              </CardTitle>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 text-primary" />
+                  Penugasan Teknisi
+                </CardTitle>
+                {formValues.technicianIds.length > 0 && (
+                  <Badge variant="secondary" className="text-[11px] font-semibold">
+                    {formValues.technicianIds.length}/4 Teknisi
+                  </Badge>
+                )}
+              </div>
               <CardDescription className="text-xs">
-                Dapat ditentukan sekarang atau dibiarkan kosong untuk dijadwalkan nanti.
+                Tugaskan 1 hingga maksimal 4 teknisi lapangan untuk tiket ini.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-              <div className="space-y-1.5">
-                <Label htmlFor="technicianId" className="text-xs font-medium text-[#475569]">Teknisi Bertugas</Label>
-                <input type="hidden" name="technicianId" value={formValues.technicianId} />
-                <Select
-                  value={formValues.technicianId || 'none'}
-                  onValueChange={(val) => updateField('technicianId', val === 'none' ? '' : val)}
-                >
-                  <SelectTrigger className="h-9 text-xs w-full">
-                    <SelectValue placeholder="Pilih teknisi yang ditugaskan" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none" className="text-xs">Belum ditugaskan</SelectItem>
-                    {technicians.map((t) => (
-                      <SelectItem key={t.id} value={t.id} className="text-xs">
-                        {t.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <input type="hidden" name="technicianId" value={formValues.technicianId} />
+              <input type="hidden" name="technicianIds" value={JSON.stringify(formValues.technicianIds)} />
+
+              {/* Technician Assignment Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium text-[#475569]">
+                    Teknisi Bertugas (Maks. 4)
+                  </Label>
+                  <AssignTechniciansModal
+                    technicians={technicians}
+                    selectedIds={formValues.technicianIds}
+                    onSelect={handleTechniciansChange}
+                    maxTechnicians={4}
+                    trigger={
+                      <button
+                        type="button"
+                        className="text-xs text-primary hover:underline font-medium flex items-center gap-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-sm"
+                      >
+                        <Plus className="h-3 w-3" />
+                        {formValues.technicianIds.length === 0 ? 'Pilih Teknisi' : 'Ubah Tim'}
+                      </button>
+                    }
+                  />
+                </div>
+
+                {formValues.technicianIds.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-4 text-center space-y-2.5">
+                    <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                      <UserPlus className="h-4 w-4" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-semibold text-slate-700">Belum Ada Teknisi Ditugaskan</p>
+                      <p className="text-[11px] text-slate-500">
+                        Tiket dapat dibuat tanpa teknisi (status Pending) atau pilih hingga 4 teknisi.
+                      </p>
+                    </div>
+                    <AssignTechniciansModal
+                      technicians={technicians}
+                      selectedIds={formValues.technicianIds}
+                      onSelect={handleTechniciansChange}
+                      maxTechnicians={4}
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs gap-1.5 font-medium border-slate-300 hover:border-primary hover:text-primary"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Pilih Teknisi (Maks. 4)
+                        </Button>
+                      }
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="space-y-1.5">
+                      {formValues.technicianIds.map((id, index) => {
+                        const tech = technicians.find((t) => t.id === id)
+                        const isLead = index === 0
+                        return (
+                          <div
+                            key={id}
+                            className="flex items-center justify-between p-2 rounded-xl border border-slate-200/80 bg-white hover:border-slate-300 transition-colors gap-2"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div
+                                className={`h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                                  isLead
+                                    ? 'bg-primary/10 text-primary border border-primary/25'
+                                    : 'bg-slate-100 text-slate-600'
+                                }`}
+                              >
+                                {tech?.name ? tech.name.substring(0, 2).toUpperCase() : 'TK'}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-semibold text-slate-900 truncate">
+                                    {tech?.name || 'Teknisi'}
+                                  </span>
+                                  {isLead ? (
+                                    <Badge className="h-4 px-1 text-[9px] font-semibold bg-primary/10 text-primary border-primary/20 hover:bg-primary/10 flex items-center gap-0.5">
+                                      <Crown className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />
+                                      Lead
+                                    </Badge>
+                                  ) : (
+                                    <Badge
+                                      variant="outline"
+                                      className="h-4 px-1 text-[9px] text-slate-500 border-slate-200"
+                                    >
+                                      Anggota #{index + 1}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-[10.5px] text-slate-500 truncate mt-0.5">
+                                  {tech?.phone || tech?.email || 'Teknisi Lapangan'}
+                                </p>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newIds = formValues.technicianIds.filter((tId) => tId !== id)
+                                handleTechniciansChange(newIds)
+                              }}
+                              className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0"
+                              title="Hapus teknisi ini"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[11px] text-slate-500">
+                        {formValues.technicianIds.length < 4
+                          ? `Bisa tambah ${4 - formValues.technicianIds.length} teknisi lagi`
+                          : 'Maksimal 4 teknisi tercapai'}
+                      </span>
+
+                      {formValues.technicianIds.length < 4 && (
+                        <AssignTechniciansModal
+                          technicians={technicians}
+                          selectedIds={formValues.technicianIds}
+                          onSelect={handleTechniciansChange}
+                          maxTechnicians={4}
+                          trigger={
+                            <button
+                              type="button"
+                              className="text-[11px] font-medium text-primary hover:underline flex items-center gap-1"
+                            >
+                              + Tambah Teknisi
+                            </button>
+                          }
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {formValues.technicianId && (
-                <>
+              {/* Schedule Section appears if at least 1 technician is assigned */}
+              {formValues.technicianIds.length > 0 && (
+                <div className="pt-3 border-t space-y-3">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+                    <Calendar className="h-3.5 w-3.5 text-primary" />
+                    <span>Jadwal Pengerjaan</span>
+                  </div>
+
                   <div className="space-y-1.5">
-                    <Label htmlFor="scheduleDate" className="flex items-center gap-1.5 text-xs font-medium text-[#475569]">
-                      <Calendar className="h-3.5 w-3.5" /> Tanggal Pengerjaan
+                    <Label htmlFor="scheduleDate" className="text-xs font-medium text-[#475569]">
+                      Tanggal Pengerjaan *
                     </Label>
                     <Input
                       id="scheduleDate"
@@ -609,7 +782,7 @@ export function CreateJobForm({
                       type="date"
                       value={formValues.scheduleDate}
                       onChange={(e) => updateField('scheduleDate', e.target.value)}
-                      required={Boolean(formValues.technicianId)}
+                      required={formValues.technicianIds.length > 0}
                       disabled={isPending}
                       className="h-9 text-xs"
                     />
@@ -618,7 +791,7 @@ export function CreateJobForm({
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1.5">
                       <Label htmlFor="startTime" className="text-xs flex items-center gap-1 font-medium text-[#475569]">
-                        <Clock className="h-3 w-3" /> Jam Mulai
+                        <Clock className="h-3 w-3" /> Jam Mulai *
                       </Label>
                       <Input
                         id="startTime"
@@ -626,14 +799,14 @@ export function CreateJobForm({
                         type="time"
                         value={formValues.startTime}
                         onChange={(e) => updateField('startTime', e.target.value)}
-                        required={Boolean(formValues.technicianId)}
+                        required={formValues.technicianIds.length > 0}
                         disabled={isPending}
                         className="h-9 text-xs"
                       />
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="endTime" className="text-xs flex items-center gap-1 font-medium text-[#475569]">
-                        <Clock className="h-3 w-3" /> Jam Selesai
+                        <Clock className="h-3 w-3" /> Jam Selesai *
                       </Label>
                       <Input
                         id="endTime"
@@ -641,13 +814,13 @@ export function CreateJobForm({
                         type="time"
                         value={formValues.endTime}
                         onChange={(e) => updateField('endTime', e.target.value)}
-                        required={Boolean(formValues.technicianId)}
+                        required={formValues.technicianIds.length > 0}
                         disabled={isPending}
                         className="h-9 text-xs"
                       />
                     </div>
                   </div>
-                </>
+                </div>
               )}
             </CardContent>
             <CardFooter className="flex flex-col gap-2 pt-2">

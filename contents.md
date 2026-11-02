@@ -46,7 +46,7 @@
 
 
 5. **Performance & SLA Monitoring**
-* *Detail:* Pantau kepatuhan batas waktu layanan (*Service Level Agreement*), progres tiket secara *live*, dan metrik performa individu teknisi guna menjaga kepuasan klien.
+* *Detail:* Pantau kepatuhan batas waktu layanan (*Service Level Agreement*), progres tiket secara *live*, dan metrik performa tim teknisi guna menjaga kepuasan klien.
 
 6. **FAQ**
 "Seputar pertanyaan terkait produk kami"

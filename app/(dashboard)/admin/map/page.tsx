@@ -44,6 +44,10 @@ export default async function AdminMapPage() {
         check_out_at,
         check_out_latitude,
         check_out_longitude
+      ),
+      schedules (
+        start_at,
+        end_at
       )
     `)
     .eq('org_id', profile.orgId)
@@ -90,11 +94,19 @@ export default async function AdminMapPage() {
       ? (rawAtt.length > 0 ? rawAtt[rawAtt.length - 1] : null)
       : (rawAtt || null)
 
+    const rawSched = j.schedules
+    const latestSched: any = Array.isArray(rawSched)
+      ? (rawSched.length > 0 ? rawSched[0] : null)
+      : (rawSched || null)
+
     const checkInAt = latestAttendance?.check_in_at || null
     const checkOutAt = latestAttendance?.check_out_at || null
     const checkInPhotoUrl = latestAttendance?.check_in_photo_url
       ? signedUrlMap.get(latestAttendance.check_in_photo_url) || null
       : null
+
+    const scheduledStart = latestSched?.start_at || null
+    const scheduledEnd = latestSched?.end_at || null
 
     // If technician checked in with GPS coordinates, prioritize attendance coordinates
     const lat = latestAttendance?.check_in_latitude != null
@@ -126,6 +138,8 @@ export default async function AdminMapPage() {
       check_in_at: checkInAt,
       check_out_at: checkOutAt,
       check_in_photo_url: checkInPhotoUrl,
+      scheduled_start: scheduledStart,
+      scheduled_end: scheduledEnd,
     }
   })
 

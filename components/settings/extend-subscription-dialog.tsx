@@ -194,7 +194,7 @@ export function ExtendSubscriptionDialog({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Paket Starter (3 Teknisi)
+              Paket Starter (5 Teknisi)
             </button>
             <button
               type="button"
@@ -205,7 +205,7 @@ export function ExtendSubscriptionDialog({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Paket Professional (10 Teknisi)
+              Paket Professional (12 Teknisi)
             </button>
           </div>
 

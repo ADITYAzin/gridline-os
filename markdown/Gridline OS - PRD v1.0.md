@@ -83,7 +83,7 @@ FieldOps ditujukan untuk mengatasi masalah operasional berikut:
 6. Foto/evidence pekerjaan tersebar.
 7. Laporan pekerjaan tidak terstruktur.
 8. Owner sulit mendapatkan operational visibility secara cepat.
-9. Performa teknisi sulit diukur secara konsisten.
+9. Performa tim teknisi sulit diukur secara konsisten.
 
 ---
 

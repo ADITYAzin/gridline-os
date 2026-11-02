@@ -1,15 +1,14 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import {
   MapPin,
   Search,
-  RefreshCw,
   Camera,
-  Maximize2,
-  CheckCircle2,
+  X,
+  Calendar,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -39,6 +38,8 @@ export interface MapJobItem {
   check_in_at?: string | null
   check_out_at?: string | null
   check_in_photo_url?: string | null
+  scheduled_start?: string | null
+  scheduled_end?: string | null
 }
 
 interface LiveMapViewProps {
@@ -58,7 +59,7 @@ const LeafletMap = dynamic(() => import('./leaflet-map-inner'), {
 })
 
 const STATUS_FILTERS = [
-  { value: 'all', label: 'Semua Tiket' },
+  { value: 'all', label: 'Semua Status' },
   { value: 'on_progress', label: 'Hadir di Lokasi', color: 'bg-emerald-500' },
   { value: 'assigned', label: 'Ditugaskan', color: 'bg-primary' },
   { value: 'pending', label: 'Belum Ada Teknisi', color: 'bg-amber-500' },
@@ -69,6 +70,7 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
+  const [now, setNow] = useState<Date>(() => new Date())
   const [previewPhoto, setPreviewPhoto] = useState<{
     url: string
     jobNumber: string
@@ -82,6 +84,14 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
     enableToasts: true,
   })
 
+  // Synchronize client date with user's device clock periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(new Date())
+    }, 60000)
+    return () => clearInterval(interval)
+  }, [])
+
   // Normalize jobs and exclude cancelled jobs
   const activeJobs = useMemo(() => {
     return jobs
@@ -93,31 +103,71 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
       }))
   }, [jobs])
 
-  // Filter jobs based on search & status
-  const filteredJobs = useMemo(() => {
+  // Filter jobs: Hanya menampilkan hari ini dan lusa sesuai dengan tanggal & waktu pengguna
+  // untuk mencegah tumpukan tiket lama/tidak penting
+  const nearTermJobs = useMemo(() => {
+    const userYear = now.getFullYear()
+    const userMonth = now.getMonth()
+    const userDate = now.getDate()
+    const midnightUserToday = new Date(userYear, userMonth, userDate).getTime()
+
     return activeJobs.filter((job) => {
-      // Status filter
-      if (statusFilter !== 'all' && job.status !== statusFilter) {
-        return false
+      // Tiket yang sedang dikerjakan di lokasi (on_progress) selalu ditampilkan
+      if (job.status === 'on_progress') {
+        return true
       }
 
-      // Search query
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim()
-        const matchesNumber = job.job_number.toLowerCase().includes(query)
-        const matchesCustomer = job.customer_name.toLowerCase().includes(query)
-        const matchesAddress = job.address.toLowerCase().includes(query)
-        const matchesTech = (job.technician_name || '').toLowerCase().includes(query)
-        const matchesService = job.service_type.toLowerCase().includes(query)
+      const dateStr = job.scheduled_start || job.check_in_at || job.created_at
+      const dateObj = new Date(dateStr)
+      if (isNaN(dateObj.getTime())) return false
 
-        if (!matchesNumber && !matchesCustomer && !matchesAddress && !matchesTech && !matchesService) {
+      const jobYear = dateObj.getFullYear()
+      const jobMonth = dateObj.getMonth()
+      const jobDate = dateObj.getDate()
+      const midnightJobDate = new Date(jobYear, jobMonth, jobDate).getTime()
+
+      const diffDays = Math.round((midnightJobDate - midnightUserToday) / (24 * 3600 * 1000))
+
+      // Hanya tampilkan hari ini (0), besok (1), dan lusa (2)
+      return diffDays >= 0 && diffDays <= 2
+    })
+  }, [activeJobs, now])
+
+  // Further filter by status & search query
+  const filteredJobs = useMemo(() => {
+    return nearTermJobs
+      .filter((job) => {
+        // Status filter
+        if (statusFilter !== 'all' && job.status !== statusFilter) {
           return false
         }
-      }
 
-      return true
-    })
-  }, [activeJobs, statusFilter, searchQuery])
+        // Search query
+        if (searchQuery.trim()) {
+          const query = searchQuery.toLowerCase().trim()
+          const matchesNumber = job.job_number.toLowerCase().includes(query)
+          const matchesCustomer = job.customer_name.toLowerCase().includes(query)
+          const matchesAddress = job.address.toLowerCase().includes(query)
+          const matchesTech = (job.technician_name || '').toLowerCase().includes(query)
+          const matchesService = job.service_type.toLowerCase().includes(query)
+
+          if (!matchesNumber && !matchesCustomer && !matchesAddress && !matchesTech && !matchesService) {
+            return false
+          }
+        }
+
+        return true
+      })
+      .sort((a, b) => {
+        // Active jobs currently on-progress come first
+        if (a.status === 'on_progress' && b.status !== 'on_progress') return -1
+        if (b.status === 'on_progress' && a.status !== 'on_progress') return 1
+
+        const timeA = new Date(a.scheduled_start || a.check_in_at || a.created_at).getTime()
+        const timeB = new Date(b.scheduled_start || b.check_in_at || b.created_at).getTime()
+        return timeA - timeB
+      })
+  }, [nearTermJobs, statusFilter, searchQuery])
 
   // Get jobs that have valid GPS coordinates for the map
   const mappedJobs = useMemo(() => {
@@ -125,6 +175,8 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
       (job) => job.latitude != null && job.longitude != null && !isNaN(job.latitude) && !isNaN(job.longitude)
     )
   }, [filteredJobs])
+
+  const hiddenOlderCount = activeJobs.length - nearTermJobs.length
 
   return (
     <div className="space-y-4">
@@ -158,8 +210,18 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari no tiket, pelanggan, teknisi, alamat..."
-            className="pl-8.5 h-8.5 text-xs bg-card"
+            className="pl-8.5 pr-8 h-8.5 text-xs bg-card"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded transition-colors"
+              title="Hapus pencarian"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Status Filter Badges */}
@@ -168,8 +230,8 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
             const isSelected = statusFilter === filter.value
             const count =
               filter.value === 'all'
-                ? activeJobs.length
-                : activeJobs.filter((j) => j.status === filter.value).length
+                ? nearTermJobs.length
+                : nearTermJobs.filter((j) => j.status === filter.value).length
 
             return (
               <button
@@ -208,9 +270,15 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
         {/* Left Side: Job List Sidebar */}
         <div className="lg:col-span-4 h-full flex flex-col rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
           <div className="p-3 border-b bg-muted/20 flex items-center justify-between shrink-0">
-            <span className="text-xs font-semibold text-foreground">
-              Daftar Tiket
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-foreground">
+                Daftar Tiket
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                Hari Ini & Lusa
+              </span>
+            </div>
             <span className="text-[11px] text-muted-foreground">
               {filteredJobs.length} tiket ({mappedJobs.length} di peta)
             </span>
@@ -218,8 +286,27 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
 
           <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
             {filteredJobs.length === 0 ? (
-              <div className="text-center py-12 px-4 text-xs text-muted-foreground">
-                Tidak ada tiket yang sesuai.
+              <div className="text-center py-12 px-4 text-xs text-muted-foreground space-y-2">
+                <p className="font-semibold text-foreground">Tidak ada tiket aktif untuk hari ini dan lusa.</p>
+                <p className="text-[11px] text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                  Daftar tiket otomatis hanya menampilkan pekerjaan hari ini hingga lusa sesuai tanggal & waktu perangkat Anda untuk mencegah tumpukan.
+                </p>
+                {hiddenOlderCount > 0 && (
+                  <p className="text-[10.5px] text-slate-400 pt-1">
+                    ({hiddenOlderCount} tiket lampau otomatis disaring keluar)
+                  </p>
+                )}
+                {searchQuery && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSearchQuery('')}
+                    className="mt-2 text-xs h-7"
+                  >
+                    Reset Pencarian
+                  </Button>
+                )}
               </div>
             ) : (
               filteredJobs.map((job) => {
@@ -249,6 +336,21 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
 
                 const isCheckedOut = Boolean(job.check_out_at)
 
+                // Label Hari Ini / Besok / Lusa
+                let scheduleTag = ''
+                const dateStr = job.scheduled_start || job.check_in_at || job.created_at
+                const dateObj = new Date(dateStr)
+                if (!isNaN(dateObj.getTime())) {
+                  const midnightUserToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+                  const midnightJob = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()).getTime()
+                  const diff = Math.round((midnightJob - midnightUserToday) / 86400000)
+                  const time = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                  if (diff === 0) scheduleTag = `Hari Ini • ${time}`
+                  else if (diff === 1) scheduleTag = `Besok • ${time}`
+                  else if (diff === 2) scheduleTag = `Lusa • ${time}`
+                  else scheduleTag = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+                }
+
                 return (
                   <div
                     key={job.id}
@@ -262,11 +364,19 @@ export function LiveMapView({ jobs, orgId }: LiveMapViewProps) {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="font-mono text-xs font-bold text-primary">
-                        {job.job_number}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono text-xs font-bold text-primary">
+                          {job.job_number}
+                        </span>
+                        {scheduleTag && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border/60">
+                            {scheduleTag}
+                          </span>
+                        )}
+                      </div>
+
                       <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${
                           job.status === 'on_progress'
                             ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
                             : job.status === 'assigned'

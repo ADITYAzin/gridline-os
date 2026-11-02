@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Check, HelpCircle, ArrowRight, MessageSquare, ShieldCheck, Zap } from 'lucide-react'
+import { Check, X, HelpCircle, ArrowRight, MessageSquare, Zap } from 'lucide-react'
 
 export default function PricingPage() {
   return (
@@ -48,28 +48,71 @@ export default function PricingPage() {
 
               <div className="border-t border-[#F1F5F9] pt-6 space-y-3">
                 <span className="text-[12px] font-semibold uppercase tracking-wider text-[#0F172A] block">
-                  Cakupan Paket:
+                  Fitur yang Didapatkan:
                 </span>
-                <ul className="space-y-2.5 text-[13px] text-[#475569]">
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-[#10B981] shrink-0" />
-                    <span>Hingga <strong>3 Teknisi Lapangan</strong></span>
+                <ul className="space-y-2.5 text-[13px]">
+                  <li className="flex items-center gap-2.5 text-[#475569]">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0 font-bold" />
+                    <span>Akses <strong>5 Teknisi Lapangan</strong> dan <strong>1 Akun Admin</strong></span>
                   </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-[#10B981] shrink-0" />
-                    <span>1 Akun Admin / Dispatcher</span>
+                  <li className="flex items-center gap-2.5 text-[#475569]">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0 font-bold" />
+                    <span>Manajemen tiket kerja <em>(Work Order)</em> tanpa batas</span>
                   </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-[#10B981] shrink-0" />
-                    <span>Tiket Pekerjaan (Jobs) Tanpa Batas</span>
+                  <li className="flex items-center gap-2.5 text-[#475569]">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0 font-bold" />
+                    <span>Presensi kehadiran teknisi berbasis <strong>GPS & Foto Selfie</strong></span>
                   </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-[#10B981] shrink-0" />
-                    <span>SOP Foto Before & After</span>
+                  <li className="flex items-center gap-2.5 text-[#475569]">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0 font-bold" />
+                    <span>Checklist <strong>SOP operasional standar</strong> bawaan</span>
                   </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-[#10B981] shrink-0" />
-                    <span>BAP Digital & Tanda Tangan Klien</span>
+                  <li className="flex items-center gap-2.5 text-[#475569]">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0 font-bold" />
+                    <span>Dokumentasi bukti kerja (hingga <strong>5 Foto per tiket</strong>)</span>
+                  </li>
+                  <li className="flex items-center gap-2.5 text-[#475569]">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0 font-bold" />
+                    <span><strong>BAP digital</strong> & tanda tangan digital pelanggan</span>
+                  </li>
+                  <li className="flex items-center gap-2.5 text-[#475569]">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0 font-bold" />
+                    <span>Riwayat servis kontak pelanggan</span>
+                  </li>
+                  <li className="flex items-center gap-2.5 text-[#475569]">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0 font-bold" />
+                    <span>Monitoring <strong>SLA & performa tim teknisi</strong></span>
+                  </li>
+
+                  {/* Fitur Pro yang belum ada di Starter */}
+                  <li className="pt-2 border-t border-[#F1F5F9]/80">
+                    <span className="text-[11px] font-semibold text-[#94A3B8] uppercase tracking-wider block mb-2">
+                      Belum Termasuk di Starter:
+                    </span>
+                  </li>
+                  <li className="flex items-center gap-2.5 text-[#94A3B8]">
+                    <X className="h-4 w-4 text-[#CBD5E1] shrink-0" />
+                    <span>Peta pemantauan lokasi teknisi <em>(Live Map)</em></span>
+                  </li>
+                  <li className="flex items-center gap-2.5 text-[#94A3B8]">
+                    <X className="h-4 w-4 text-[#CBD5E1] shrink-0" />
+                    <span>Manajemen cuti & perizinan presensi</span>
+                  </li>
+                  <li className="flex items-center gap-2.5 text-[#94A3B8]">
+                    <X className="h-4 w-4 text-[#CBD5E1] shrink-0" />
+                    <span>Custom SOP Builder <em>(Buat checklist bebas)</em></span>
+                  </li>
+                  <li className="flex items-center gap-2.5 text-[#94A3B8]">
+                    <X className="h-4 w-4 text-[#CBD5E1] shrink-0" />
+                    <span>Riwayat servis unit aset pelanggan <em>(No. Seri / Mesin)</em></span>
+                  </li>
+                  <li className="flex items-center gap-2.5 text-[#94A3B8]">
+                    <X className="h-4 w-4 text-[#CBD5E1] shrink-0" />
+                    <span>Pesan kabar pelanggan via WhatsApp <em>(1-Klik)</em></span>
+                  </li>
+                  <li className="flex items-center gap-2.5 text-[#94A3B8]">
+                    <X className="h-4 w-4 text-[#CBD5E1] shrink-0" />
+                    <span>Manajemen & kalkulasi komisi teknisi otomatis</span>
                   </li>
                 </ul>
               </div>
@@ -87,8 +130,8 @@ export default function PricingPage() {
 
           {/* Plan 2: Pro (Featured) */}
           <div className="rounded-[16px] border-2 border-[#007ACC] bg-[#FFFFFF] p-8 space-y-6 flex flex-col justify-between shadow-[0_8px_30px_rgb(0,122,204,0.08)] relative">
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-              <span className="bg-[#007ACC] text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">
+            <div className="absolute -top-3.5 left-[48%] -translate-x-[46%]">
+              <span className="w-full bg-[#007ACC] text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">
                 Paling Direkomendasikan
               </span>
             </div>
@@ -99,7 +142,7 @@ export default function PricingPage() {
                   Professional
                 </h3>
                 <p className="text-[13px] text-[#64748B] mt-1">
-                  Pilihan utama perusahaan jasa dengan tim 4–10 teknisi.
+                  Pilihan utama perusahaan jasa dengan tim armada hingga 12 teknisi.
                 </p>
               </div>
 
@@ -116,32 +159,52 @@ export default function PricingPage() {
 
               <div className="border-t border-[#F1F5F9] pt-6 space-y-3">
                 <span className="text-[12px] font-semibold uppercase tracking-wider text-[#0F172A] block">
-                  Semua Fitur Starter, Ditambah:
+                  Seluruh Fitur Paket Pro:
                 </span>
                 <ul className="space-y-2.5 text-[13px] text-[#475569]">
                   <li className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-[#007ACC] shrink-0 font-bold" />
-                    <span>Hingga <strong>10 Teknisi Lapangan</strong></span>
+                    <span>Akses <strong>12 Teknisi Lapangan</strong>, <strong>1 Admin</strong>, & <strong>1 Owner</strong></span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-[#007ACC] shrink-0 font-bold" />
-                    <span>3 Akun Admin / Dispatcher</span>
+                    <span>Manajemen tiket kerja <em>(Work Order)</em> tanpa batas</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-[#007ACC] shrink-0 font-bold" />
-                    <span><strong>WhatsApp Notification 1-Klik</strong></span>
+                    <span>Presensi kehadiran (Selfie + GPS) <strong>dan perizinan cuti</strong></span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-[#007ACC] shrink-0 font-bold" />
-                    <span>Database Riwayat Mesin Klien & Garansi</span>
+                    <span><strong>Peta pemantauan lokasi teknisi</strong> secara real-time <em>(Live Map)</em></span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-[#007ACC] shrink-0 font-bold" />
-                    <span>Export Rekap Excel & Laporan SLA</span>
+                    <span><strong>Custom SOP Builder</strong> (Bebas buat checklist per jenis servis)</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-[#007ACC] shrink-0 font-bold" />
-                    <span>Bantuan Onboarding Tim via Video Call</span>
+                    <span>Dokumentasi bukti kerja hingga <strong>10 Foto per tiket</strong></span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-[#007ACC] shrink-0 font-bold" />
+                    <span><strong>BAP digital</strong> & tanda tangan digital pelanggan</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-[#007ACC] shrink-0 font-bold" />
+                    <span>Riwayat servis <strong>unit aset pelanggan</strong> <em>(No. Seri / Mesin)</em></span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-[#007ACC] shrink-0 font-bold" />
+                    <span>Monitoring <strong>SLA & performa tim teknisi</strong></span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-[#007ACC] shrink-0 font-bold" />
+                    <span><strong>Pesan kabar WhatsApp</strong> ke pelanggan <em>(1-Klik)</em></span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-[#007ACC] shrink-0 font-bold" />
+                    <span><strong>Manajemen komisi teknisi</strong> & kalkulasi otomatis</span>
                   </li>
                 </ul>
               </div>
@@ -166,7 +229,7 @@ export default function PricingPage() {
                   Enterprise
                 </h3>
                 <p className="text-[13px] text-[#64748B] mt-1">
-                  Untuk kontraktor besar dengan armada lebih dari 10 teknisi.
+                  Untuk kontraktor besar dengan armada lebih dari 12 teknisi.
                 </p>
               </div>
 
@@ -181,28 +244,52 @@ export default function PricingPage() {
 
               <div className="border-t border-[#F1F5F9] pt-6 space-y-3">
                 <span className="text-[12px] font-semibold uppercase tracking-wider text-[#0F172A] block">
-                  Layanan Khusus:
+                  Fitur Paket:
                 </span>
                 <ul className="space-y-2.5 text-[13px] text-[#475569]">
                   <li className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-[#10B981] shrink-0" />
-                    <span>Kuota Teknisi & Admin Tidak Terbatas</span>
+                    <span>Akses kustom teknisi, admin, dan owner</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-[#10B981] shrink-0" />
-                    <span>Kustom Format Kop Surat & Logo BAP</span>
+                    <span>Monitoring SLA & performa tim teknisi</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-[#10B981] shrink-0" />
-                    <span>Dedicated Account Manager</span>
+                    <span>Manajemen tiket kerja</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-[#10B981] shrink-0" />
-                    <span>Pendampingan Training On-Site / Khusus</span>
+                    <span>Presensi kehadiran (Selfie + GPS) dan perizinan</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-[#10B981] shrink-0" />
-                    <span>Jaminan SLA Ketersediaan Server 99.9%</span>
+                    <span>Peta pemantauan teknisi</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0" />
+                    <span>Custom SOP Builder</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0" />
+                    <span>Dokumentasi kerja tanpa batasan foto</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0" />
+                    <span>BAP & tanda tangan digital</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0" />
+                    <span>Riwayat servis unit aset pelanggan</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0" />
+                    <span>Pesan kabar WhatsApp</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-[#10B981] shrink-0" />
+                    <span>Manajemen komisi teknisi</span>
                   </li>
                 </ul>
               </div>
@@ -221,7 +308,146 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* FAQ Section */}
+      {/* Plan Comparison Table */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto space-y-3 mb-10">
+          <h2 className="font-heading text-[24px] sm:text-[32px] font-bold text-[#0F172A] tracking-tight">
+            Perbandingan Fitur Lengkap
+          </h2>
+          <p className="text-[14px] sm:text-[15px] text-[#475569]">
+            Perbandingan fitur antara paket Starter, Professional, dan Enterprise.
+          </p>
+        </div>
+
+        <div className="overflow-x-auto rounded-[16px] border border-[#E2E8F0] bg-white shadow-xs">
+          <table className="w-full text-left border-collapse text-[13px]">
+            <thead>
+              <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                <th className="p-4 sm:p-5 font-semibold text-[#0F172A] w-2/5">Fitur</th>
+                <th className="p-4 sm:p-5 font-semibold text-[#0F172A] text-center w-1/5">Starter</th>
+                <th className="p-4 sm:p-5 font-bold text-[#007ACC] text-center w-1/5 bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  Professional
+                </th>
+                <th className="p-4 sm:p-5 font-semibold text-[#0F172A] text-center w-1/5">Enterprise</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#F1F5F9] text-[#334155]">
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">Akses pengguna</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center font-medium">5 teknisi dan 1 admin</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center font-bold text-[#007ACC] bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  12 teknisi, 1 admin, dan 1 owner
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center font-medium">Kustom</td>
+              </tr>
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">Monitoring SLA & performa tim teknisi</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+                <td className="px-4 sm:px-5 py-3.5 text-center bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  <Check className="h-4 w-4 text-[#007ACC] mx-auto stroke-[3]" />
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+              </tr>
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">Manajemen tiket kerja</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+                <td className="px-4 sm:px-5 py-3.5 text-center bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  <Check className="h-4 w-4 text-[#007ACC] mx-auto stroke-[3]" />
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+              </tr>
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">Presensi kehadiran (Selfie + GPS)</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+                <td className="px-4 sm:px-5 py-3.5 text-center bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  <Check className="h-4 w-4 text-[#007ACC] mx-auto stroke-[3]" />
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+              </tr>
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">Presensi perizinan</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><X className="h-4 w-4 text-[#CBD5E1] mx-auto" /></td>
+                <td className="px-4 sm:px-5 py-3.5 text-center font-bold text-[#007ACC] bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  <Check className="h-4 w-4 text-[#007ACC] mx-auto stroke-[3]" />
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+              </tr>
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">Peta pemantauan teknisi</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><X className="h-4 w-4 text-[#CBD5E1] mx-auto" /></td>
+                <td className="px-4 sm:px-5 py-3.5 text-center font-bold text-[#007ACC] bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  <Check className="h-4 w-4 text-[#007ACC] mx-auto stroke-[3]" />
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+              </tr>
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">SOP standar</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+                <td className="px-4 sm:px-5 py-3.5 text-center bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  <Check className="h-4 w-4 text-[#007ACC] mx-auto stroke-[3]" />
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+              </tr>
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">Custom SOP Builder</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><X className="h-4 w-4 text-[#CBD5E1] mx-auto" /></td>
+                <td className="px-4 sm:px-5 py-3.5 text-center font-bold text-[#007ACC] bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  <Check className="h-4 w-4 text-[#007ACC] mx-auto stroke-[3]" />
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+              </tr>
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">Dokumentasi kerja (Foto per tiket)</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center font-medium">5 Foto per tiket</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center font-bold text-[#007ACC] bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  10 Foto per tiket
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center font-medium">Tanpa batas foto</td>
+              </tr>
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">BAP & tanda tangan digital</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+                <td className="px-4 sm:px-5 py-3.5 text-center bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  <Check className="h-4 w-4 text-[#007ACC] mx-auto stroke-[3]" />
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+              </tr>
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">Riwayat servis pelanggan</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+                <td className="px-4 sm:px-5 py-3.5 text-center bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  <Check className="h-4 w-4 text-[#007ACC] mx-auto stroke-[3]" />
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+              </tr>
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">Riwayat servis unit aset pelanggan</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><X className="h-4 w-4 text-[#CBD5E1] mx-auto" /></td>
+                <td className="px-4 sm:px-5 py-3.5 text-center font-bold text-[#007ACC] bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  <Check className="h-4 w-4 text-[#007ACC] mx-auto stroke-[3]" />
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+              </tr>
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">Pesan kabar WhatsApp</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><X className="h-4 w-4 text-[#CBD5E1] mx-auto" /></td>
+                <td className="px-4 sm:px-5 py-3.5 text-center font-bold text-[#007ACC] bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  <Check className="h-4 w-4 text-[#007ACC] mx-auto stroke-[3]" />
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+              </tr>
+              <tr>
+                <td className="px-4 sm:px-5 py-3.5 font-medium text-[#0F172A]">Manajemen komisi teknisi</td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><X className="h-4 w-4 text-[#CBD5E1] mx-auto" /></td>
+                <td className="px-4 sm:px-5 py-3.5 text-center font-bold text-[#007ACC] bg-[#007ACC]/5 border-x border-[#007ACC]/20">
+                  <Check className="h-4 w-4 text-[#007ACC] mx-auto stroke-[3]" />
+                </td>
+                <td className="px-4 sm:px-5 py-3.5 text-center"><Check className="h-4 w-4 text-[#10B981] mx-auto" /></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
       <section className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         <div className="text-center space-y-3 mb-10">
           <h2 className="font-heading text-[24px] sm:text-[30px] font-bold text-[#0F172A]">
