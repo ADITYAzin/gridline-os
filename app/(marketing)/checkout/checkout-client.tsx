@@ -449,7 +449,6 @@ export function CheckoutClient() {
             <ShieldCheck className="h-4 w-4 text-[#007ACC] shrink-0" />
             <div>
               <span className="font-semibold block leading-tight">Midtrans Secure Checkout</span>
-              <span className="text-[11px] text-[#475569]">Enkripsi TLS 256-Bit & PCI-DSS Level 1</span>
             </div>
           </div>
         </div>

@@ -295,7 +295,7 @@ export default function TermsAndConditionsPage() {
                 <div className="flex items-start gap-2.5">
                   <Phone className="h-4 w-4 text-[#007ACC] shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-medium text-[#0F172A] block">+62 812-3456-7890</span>
+                    <span className="font-medium text-[#0F172A] block">+62 888-777-1117</span>
                     <span className="text-[12px] text-[#64748B]">WhatsApp Resmi Customer Care</span>
                   </div>
                 </div>

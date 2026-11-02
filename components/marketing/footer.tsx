@@ -22,7 +22,7 @@ export function MarketingFooter() {
             </p>
             <div className="pt-1 text-[12px] text-[#64748B] space-y-1">
               <p>Email Resmi: <span className="font-medium text-[#0F172A]">billing@opilines.id</span></p>
-              <p>Layanan Pelanggan: <span className="font-medium text-[#0F172A]">+62 812-3456-7890</span></p>
+              <p>Layanan Pelanggan: <span className="font-medium text-[#0F172A]">+62 888-777-1117</span></p>
             </div>
           </div>
 
