@@ -4,10 +4,10 @@ import Image from 'next/image'
 export function MarketingFooter() {
   return (
     <footer className="border-t border-[#E2E8F0] bg-[#FFFFFF]">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-8">
           {/* Brand Col */}
-          <div className="md:col-span-2 space-y-4">
+          <div className="md:col-span-2 space-y-3.5">
             <Link href="/" className="inline-block">
               <Image
                 src="/images/opilines-logo.png"
@@ -17,14 +17,18 @@ export function MarketingFooter() {
                 className="h-auto w-[130px] object-contain"
               />
             </Link>
-            <p className="text-[13.5px] text-[#475569] leading-relaxed max-w-sm">
+            <p className="text-[13px] text-[#475569] leading-relaxed max-w-sm">
               Satu operating system terpusat untuk perusahaan jasa teknis di Indonesia. Dari penugasan teknisi, verifikasi SOP lapangan, hingga Berita Acara Pekerjaan (BAP) otomatis.
             </p>
+            <div className="pt-1 text-[12px] text-[#64748B] space-y-1">
+              <p>Email Resmi: <span className="font-medium text-[#0F172A]">billing@opilines.id</span></p>
+              <p>Layanan Pelanggan: <span className="font-medium text-[#0F172A]">+62 812-3456-7890</span></p>
+            </div>
           </div>
 
           {/* Nav Col 1: Produk */}
-          <div className="space-y-4">
-            <h4 className="font-heading text-[13px] font-semibold uppercase tracking-[0.04em] text-[#0F172A]">
+          <div className="space-y-3.5">
+            <h4 className="font-heading text-[12.5px] font-semibold uppercase tracking-[0.04em] text-[#0F172A]">
               Produk
             </h4>
             <ul className="space-y-2 text-[13px] text-[#475569]">
@@ -45,47 +49,52 @@ export function MarketingFooter() {
               </li>
               <li>
                 <Link href="/fitur#assets" className="hover:text-[#007ACC] transition-colors">
-                  Riwayat Servis & Aset
+                  Riwayat Servis &amp; Aset
                 </Link>
               </li>
             </ul>
           </div>
 
           {/* Nav Col 2: Solusi Bisnis */}
-          <div className="space-y-4">
-            <h4 className="font-heading text-[13px] font-semibold uppercase tracking-[0.04em] text-[#0F172A]">
+          <div className="space-y-3.5">
+            <h4 className="font-heading text-[12.5px] font-semibold uppercase tracking-[0.04em] text-[#0F172A]">
               Solusi Industri
             </h4>
             <ul className="space-y-2 text-[13px] text-[#475569]">
               <li>
-                <span className="text-[#64748B]">Servis AC & HVAC</span>
+                <span className="text-[#64748B]">Servis AC &amp; HVAC</span>
               </li>
               <li>
                 <span className="text-[#64748B]">Maintenance Gedung</span>
               </li>
               <li>
-                <span className="text-[#64748B]">Instalasi CCTV & Keamanan</span>
+                <span className="text-[#64748B]">Instalasi CCTV &amp; Keamanan</span>
               </li>
               <li>
-                <span className="text-[#64748B]">Elektrikal & Jaringan ISP</span>
+                <span className="text-[#64748B]">Elektrikal &amp; Jaringan ISP</span>
               </li>
             </ul>
           </div>
 
-          {/* Nav Col 3: Perusahaan & Akses */}
-          <div className="space-y-4">
-            <h4 className="font-heading text-[13px] font-semibold uppercase tracking-[0.04em] text-[#0F172A]">
-              Bantuan & Akses
+          {/* Nav Col 3: Langganan & Akses */}
+          <div className="space-y-3.5">
+            <h4 className="font-heading text-[12.5px] font-semibold uppercase tracking-[0.04em] text-[#0F172A]">
+              Langganan &amp; Akses
             </h4>
             <ul className="space-y-2 text-[13px] text-[#475569]">
               <li>
                 <Link href="/pricing" className="hover:text-[#007ACC] transition-colors">
-                  Paket & Biaya Langganan
+                  Harga Paket (IDR)
+                </Link>
+              </li>
+              <li>
+                <Link href="/checkout" className="hover:text-[#007ACC] transition-colors">
+                  Halaman Checkout
                 </Link>
               </li>
               <li>
                 <Link href="/demo" className="hover:text-[#007ACC] transition-colors">
-                  Jadwalkan Demo Langsung
+                  Jadwalkan Demo
                 </Link>
               </li>
               <li>
@@ -93,9 +102,33 @@ export function MarketingFooter() {
                   Masuk ke Portal
                 </Link>
               </li>
+            </ul>
+          </div>
+
+          {/* Nav Col 4: Legal & Kepatuhan */}
+          <div className="space-y-3.5">
+            <h4 className="font-heading text-[12.5px] font-semibold uppercase tracking-[0.04em] text-[#0F172A]">
+              Legal &amp; Kebijakan
+            </h4>
+            <ul className="space-y-2 text-[13px] text-[#475569]">
               <li>
-                <Link href="/register" className="hover:text-[#007ACC] transition-colors font-medium text-[#007ACC]">
-                  Daftar Akun Baru
+                <Link href="/terms" className="hover:text-[#007ACC] transition-colors">
+                  Syarat &amp; Ketentuan
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms#refund" className="hover:text-[#007ACC] transition-colors">
+                  Kebijakan Refund &amp; Batal
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms#privacy" className="hover:text-[#007ACC] transition-colors">
+                  Privasi &amp; Keamanan Data
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms#pembayaran" className="hover:text-[#007ACC] transition-colors">
+                  Informasi Pembayaran
                 </Link>
               </li>
             </ul>
@@ -103,14 +136,18 @@ export function MarketingFooter() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-16 pt-8 border-t border-[#E2E8F0] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-12 pt-6 border-t border-[#E2E8F0] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[12px] text-[#94A3B8]">
-            © {new Date().getFullYear()} Opilines. All rights reserved. Dirancang untuk operasional teknisi Indonesia.
+            © {new Date().getFullYear()} Opilines Indonesia. All rights reserved. Transaksi resmi dalam Rupiah (IDR).
           </p>
-          <div className="flex items-center gap-6 text-[12px] text-[#64748B]">
-            <span>Standar Keamanan Enkripsi End-to-End</span>
+          <div className="flex flex-wrap items-center gap-4 text-[12px] text-[#64748B]">
+            <span>Enkripsi TLS 256-Bit</span>
             <span>•</span>
-            <span>B2B Field Service Management</span>
+            <span>Midtrans PCI-DSS Level 1</span>
+            <span>•</span>
+            <Link href="/terms" className="hover:text-[#007ACC] transition-colors">
+              Syarat &amp; Ketentuan
+            </Link>
           </div>
         </div>
       </div>

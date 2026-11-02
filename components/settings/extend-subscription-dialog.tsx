@@ -19,71 +19,13 @@ import {
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { extendSubscriptionAction } from '@/app/actions/organization'
+import {
+  getPeriodOptions,
+  formatRupiah,
+  type ExtensionPeriodOption,
+} from '@/lib/pricing'
 
-export interface ExtensionPeriodOption {
-  months: number
-  title: string
-  pricePerMonth: number
-  totalPrice: number
-  discountPercent: number
-  discountAmount: number
-  badge?: string
-  isPopular?: boolean
-}
-
-const TIER_PRICING: Record<string, { monthly: number; annual: number }> = {
-  starter: { monthly: 299000, annual: 249000 },
-  pro: { monthly: 699000, annual: 599000 },
-}
-
-function getPeriodOptions(tier: string): ExtensionPeriodOption[] {
-  const isStarter = tier.toLowerCase() === 'starter'
-  const rates = isStarter ? TIER_PRICING.starter : TIER_PRICING.pro
-
-  const oneMo = rates.monthly
-  const threeMoRate = Math.round(rates.monthly * 0.95)
-  const sixMoRate = Math.round(rates.monthly * 0.9)
-  const twelveMoRate = rates.annual
-
-  return [
-    {
-      months: 1,
-      title: '1 Bulan',
-      pricePerMonth: oneMo,
-      totalPrice: oneMo,
-      discountPercent: 0,
-      discountAmount: 0,
-    },
-    {
-      months: 3,
-      title: '3 Bulan',
-      pricePerMonth: threeMoRate,
-      totalPrice: threeMoRate * 3,
-      discountPercent: 5,
-      discountAmount: rates.monthly * 3 - threeMoRate * 3,
-      badge: 'Hemat 5%',
-    },
-    {
-      months: 6,
-      title: '6 Bulan',
-      pricePerMonth: sixMoRate,
-      totalPrice: sixMoRate * 6,
-      discountPercent: 10,
-      discountAmount: rates.monthly * 6 - sixMoRate * 6,
-      badge: 'Hemat 10%',
-    },
-    {
-      months: 12,
-      title: '12 Bulan',
-      pricePerMonth: twelveMoRate,
-      totalPrice: twelveMoRate * 12,
-      discountPercent: 20,
-      discountAmount: rates.monthly * 12 - twelveMoRate * 12,
-      badge: 'Hemat 20%',
-      isPopular: true,
-    },
-  ]
-}
+export type { ExtensionPeriodOption }
 
 export interface ExtendSubscriptionDialogProps {
   open: boolean
@@ -92,14 +34,6 @@ export interface ExtendSubscriptionDialogProps {
   targetTier?: string
   currentExpiryDate: Date
   onExtendSuccess: (newExpiryDate: Date, monthsAdded: number, appliedTier?: string) => void
-}
-
-function formatRupiah(amount: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(amount)
 }
 
 function formatDate(date: Date): string {
@@ -119,17 +53,19 @@ export function ExtendSubscriptionDialog({
   onExtendSuccess,
 }: ExtendSubscriptionDialogProps) {
   const initialTier = targetTier || (currentTier === 'trial' ? 'pro' : currentTier)
-  const [activeTier, setActiveTier] = React.useState<string>(initialTier)
+  const [tierOverride, setTierOverride] = React.useState<string | null>(null)
+  const activeTier = tierOverride ?? initialTier
+  const setActiveTier = setTierOverride
   const [selectedMonths, setSelectedMonths] = React.useState<number>(12)
   const [paymentMethod, setPaymentMethod] = React.useState<string>('bca_va')
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false)
 
-  // Sync if targetTier changes when modal opens
-  React.useEffect(() => {
-    if (open) {
-      setActiveTier(targetTier || (currentTier === 'trial' ? 'pro' : currentTier))
+  const handleDialogChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setTierOverride(null)
     }
-  }, [open, targetTier, currentTier])
+    onOpenChange(nextOpen)
+  }
 
   const periodOptions = React.useMemo(() => getPeriodOptions(activeTier), [activeTier])
 
@@ -164,7 +100,7 @@ export function ExtendSubscriptionDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-5 sm:p-6">
         <DialogHeader className="space-y-1 pb-2 border-b border-border/50">
           <div className="flex items-center gap-2">

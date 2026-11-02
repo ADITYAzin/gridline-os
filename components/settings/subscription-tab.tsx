@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { formatRupiah, TIER_PRICING } from '@/lib/pricing'
 
 export interface SubscriptionTabProps {
   currentTier: string
@@ -28,14 +29,6 @@ export interface SubscriptionTabProps {
   isExpiringSoon: boolean
   isExpired: boolean
   onOpenExtendDialog: (targetTier?: string) => void
-}
-
-function formatRupiah(amount: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(amount)
 }
 
 function formatDate(date: Date): string {
@@ -207,7 +200,9 @@ export function SubscriptionTab({
                 </div>
 
                 <div className="flex items-baseline gap-1">
-                  <span className="text-base font-bold text-foreground">Rp 249.000</span>
+                  <span className="text-base font-bold text-foreground">
+                    {formatRupiah(TIER_PRICING.starter.annual)}
+                  </span>
                   <span className="text-[11px] text-muted-foreground">/ bulan</span>
                 </div>
 
@@ -299,7 +294,9 @@ export function SubscriptionTab({
                 </div>
 
                 <div className="flex items-baseline gap-1">
-                  <span className="text-base font-bold text-foreground">Rp 599.000</span>
+                  <span className="text-base font-bold text-foreground">
+                    {formatRupiah(TIER_PRICING.pro.annual)}
+                  </span>
                   <span className="text-[11px] text-muted-foreground">/ bulan</span>
                 </div>
 
