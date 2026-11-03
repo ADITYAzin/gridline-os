@@ -23,7 +23,7 @@ export const getSessionProfile = cache(
       error,
     } = await supabase.auth.getUser()
 
-    if (error || !user) {
+    if (error || !user || user.user_metadata?.otp_verified === false) {
       return null
     }
 

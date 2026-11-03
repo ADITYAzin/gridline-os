@@ -123,9 +123,10 @@ export async function signInAction(prevState: ActionState, formData: FormData): 
   }
 
   const supabase = await createSupabaseServerClient()
+  const targetEmail = existingProfile.email || normalizedEmail
 
   const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-    email: existingProfile.email || normalizedEmail,
+    email: targetEmail,
     password: parsed.data.password,
   })
 
@@ -134,6 +135,15 @@ export async function signInAction(prevState: ActionState, formData: FormData): 
       error: 'Password yang Anda masukkan salah.',
       fields: { email: normalizedEmail },
     }
+  }
+
+  // Ensure newly registered accounts have completed email OTP verification before entering dashboard
+  if (authData.user.user_metadata?.otp_verified === false) {
+    await supabase.auth.signOut()
+    if (!isSendRateLimited(normalizedEmail)) {
+      await dispatchAuthOtpEmail(targetEmail, existingProfile.name, 'register')
+    }
+    redirect(`/verify-otp?type=register&email=${encodeURIComponent(targetEmail)}`)
   }
 
   const targetRole = (existingProfile.role as Role) || 'admin'
@@ -155,17 +165,44 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
   }
 
   const normalizedEmail = parsed.data.email.toLowerCase().trim()
+  const admin = getSupabaseAdmin()
 
   // 0. Check if email is already registered in database before creating anything
   const existingProfile = await findRegisteredProfileByEmail(normalizedEmail)
   if (existingProfile) {
+    const { data: existingAuth } = await admin.auth.admin.getUserById(existingProfile.id)
+
+    // If user previously registered with this email but hasn't verified OTP yet, allow resuming verification
+    if (existingAuth?.user?.user_metadata?.otp_verified === false) {
+      await admin.auth.admin.updateUserById(existingProfile.id, {
+        password: parsed.data.password,
+        user_metadata: {
+          ...existingAuth.user.user_metadata,
+          name: parsed.data.name.trim(),
+          otp_verified: false,
+        },
+      })
+      await admin
+        .from('profiles')
+        .update({ name: parsed.data.name.trim() })
+        .eq('id', existingProfile.id)
+      await admin
+        .from('organizations')
+        .update({ name: parsed.data.companyName.trim() })
+        .eq('id', existingProfile.org_id)
+
+      if (!isSendRateLimited(normalizedEmail)) {
+        await dispatchAuthOtpEmail(normalizedEmail, parsed.data.name.trim(), 'register')
+      }
+
+      redirect(`/verify-otp?type=register&email=${encodeURIComponent(normalizedEmail)}`)
+    }
+
     return {
       error: 'Email sudah terdaftar di sistem kami. Silakan masuk atau gunakan email lain.',
       fields: { companyName, name, email: normalizedEmail },
     }
   }
-
-  const admin = getSupabaseAdmin()
 
   // 1. Create Organization
   const { data: org, error: orgError } = await admin
@@ -184,15 +221,22 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
     }
   }
 
-  // 2. Create Auth User
-  const { data: userData, error: userError } = await admin.auth.admin.createUser({
+  // 2. Create Auth User & Generate Signup OTP Token
+  const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const { data: linkData, error: userError } = await admin.auth.admin.generateLink({
+    type: 'signup',
     email: normalizedEmail,
     password: parsed.data.password,
-    email_confirm: true,
-    user_metadata: { name: parsed.data.name.trim() },
+    options: {
+      data: {
+        name: parsed.data.name.trim(),
+        otp_verified: false,
+      },
+      redirectTo: `${origin}/verify-email?status=success`,
+    },
   })
 
-  if (userError || !userData.user) {
+  if (userError || !linkData?.user) {
     // Rollback org creation
     await admin.from('organizations').delete().eq('id', org.id)
     return {
@@ -205,7 +249,7 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
   const { error: profileError } = await admin
     .from('profiles')
     .insert({
-      id: userData.user.id,
+      id: linkData.user.id,
       org_id: org.id,
       name: parsed.data.name.trim(),
       email: normalizedEmail,
@@ -213,7 +257,7 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
     })
 
   if (profileError) {
-    await admin.auth.admin.deleteUser(userData.user.id)
+    await admin.auth.admin.deleteUser(linkData.user.id)
     await admin.from('organizations').delete().eq('id', org.id)
     return {
       error: 'Gagal membuat profil admin: ' + profileError.message,
@@ -221,14 +265,34 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
     }
   }
 
-  // 4. Sign in session cookies on client side
-  const supabase = await createSupabaseServerClient()
-  await supabase.auth.signInWithPassword({
-    email: normalizedEmail,
-    password: parsed.data.password,
-  })
+  // 4. Send 6-digit OTP verification email via Resend
+  const hashedToken = linkData.properties?.hashed_token
+  const otpCode = linkData.properties?.email_otp
+  const verifyLink = hashedToken
+    ? `${origin}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=signup&next=${encodeURIComponent('/verify-email?status=success')}`
+    : linkData.properties?.action_link
 
-  redirect('/admin')
+  if (otpCode) {
+    const html = generateVerifyOtpEmailHtml({
+      userName: parsed.data.name.trim(),
+      otpCode,
+      verifyLink,
+      expiresInMinutes: 60,
+    })
+
+    await sendTransactionalEmail({
+      to: normalizedEmail,
+      subject: 'Kode Verifikasi OTP Pendaftaran - Opilines',
+      html,
+    })
+    otpSendTimestamps.set(normalizedEmail, Date.now())
+  } else {
+    await dispatchAuthOtpEmail(normalizedEmail, parsed.data.name.trim(), 'register')
+    otpSendTimestamps.set(normalizedEmail, Date.now())
+  }
+
+  // 5. Redirect to OTP verification page to confirm email ownership
+  redirect(`/verify-otp?type=register&email=${encodeURIComponent(normalizedEmail)}`)
 }
 
 export async function acceptInviteAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
@@ -507,6 +571,15 @@ export async function verifyOtpAction(
   }
 
   clearVerifyRateLimit(targetEmail)
+
+  const admin = getSupabaseAdmin()
+  await admin.auth.admin.updateUserById(existingProfile.id, {
+    email_confirm: true,
+    user_metadata: {
+      name: existingProfile.name,
+      otp_verified: true,
+    },
+  })
 
   if (type === 'reset') {
     redirect(`/reset-password?email=${encodeURIComponent(targetEmail)}`)
