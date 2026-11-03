@@ -19,24 +19,23 @@ export function AcceptInviteForm({ token, email, role, orgName }: AcceptInviteFo
   const [showPassword, setShowPassword] = useState(false)
 
   return (
-    <div className="w-full max-w-[440px] rounded-[12px] bg-[#FFFFFF] border border-[#E2E8F0] shadow-[0px_1px_2px_0px_rgba(15,23,42,0.05)] p-6 sm:p-7 transition-all hover:border-[#CBD5E1] hover:shadow-[0px_4px_6px_-1px_rgba(15,23,42,0.08),0px_2px_4px_-2px_rgba(15,23,42,0.04)]">
-      {/* Header section - Compact */}
+    <div className="w-full max-w-[420px] rounded-[12px] bg-[#FFFFFF] border border-[#E2E8F0] shadow-[0px_1px_2px_0px_rgba(15,23,42,0.05)] p-6 sm:p-7 transition-all hover:border-[#CBD5E1] hover:shadow-[0px_4px_6px_-1px_rgba(15,23,42,0.08),0px_2px_4px_-2px_rgba(15,23,42,0.04)]">
+      {/* Header */}
       <div className="text-center space-y-1 pb-3.5 border-b border-[#F1F5F9]">
         <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#EBF5FC] border border-[#D0E8F8] text-[#007ACC] shadow-sm mb-2">
           <UserCheck className="h-5 w-5" />
         </div>
         <h1 className="font-heading text-[22px] sm:text-[24px] font-semibold text-[#0F172A] tracking-[-0.015em]">
-          Undangan Bergabung
+          Aktivasi Akun Tim
         </h1>
-        <p className="text-[13.5px] text-[#475569] font-normal leading-[18px]">
-          Anda diundang ke organisasi <span className="font-semibold text-[#0F172A]">{orgName}</span>
+        <p className="text-[13.5px] text-[#475569]">
+          Bergabung ke <span className="font-semibold text-[#0F172A]">{orgName}</span>
         </p>
 
-        {/* Status Badge */}
         <div className="pt-1.5 flex justify-center">
           <div className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-[6px] bg-[#F0F9FF] border border-[#0EA5E9]/20 text-[#0369A1] text-[12px] font-medium capitalize">
             <span className="h-1.5 w-1.5 rounded-full bg-[#0EA5E9]" />
-            <span>Peran: {role}</span>
+            <span>{role}</span>
           </div>
         </div>
       </div>
@@ -46,19 +45,19 @@ export function AcceptInviteForm({ token, email, role, orgName }: AcceptInviteFo
 
         {/* Error Alert */}
         {state?.error && (
-          <div className="rounded-[8px] bg-[#FEF2F2] border border-[#EF4444]/30 p-3 flex items-start gap-2 text-[#B91C1C] text-[12.5px] font-medium leading-snug">
-            <AlertCircle className="h-4 w-4 text-[#EF4444] shrink-0 mt-0.5" />
+          <div className="rounded-[8px] bg-[#FEF2F2] border border-[#EF4444]/30 p-3 flex items-center gap-2 text-[#B91C1C] text-[12.5px] font-medium">
+            <AlertCircle className="h-4 w-4 text-[#EF4444] shrink-0" />
             <span>{state.error}</span>
           </div>
         )}
 
-        {/* Invited Email (Disabled/Read-only) */}
+        {/* Invited Email */}
         <div className="space-y-1">
           <label
             htmlFor="email"
-            className="block text-[12px] font-medium text-[#475569] tracking-[0.01em]"
+            className="block text-[12px] font-medium text-[#475569]"
           >
-            Email Terdaftar
+            Email
           </label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#94A3B8]">
@@ -81,9 +80,9 @@ export function AcceptInviteForm({ token, email, role, orgName }: AcceptInviteFo
         <div className="space-y-1">
           <label
             htmlFor="name"
-            className="block text-[12px] font-medium text-[#475569] tracking-[0.01em]"
+            className="block text-[12px] font-medium text-[#475569]"
           >
-            Nama Lengkap Anda
+            Nama Lengkap
           </label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#94A3B8]">
@@ -94,7 +93,7 @@ export function AcceptInviteForm({ token, email, role, orgName }: AcceptInviteFo
               name="name"
               type="text"
               required
-              placeholder="Masukkan nama lengkap"
+              placeholder="Nama lengkap Anda"
               defaultValue={state?.fields?.name}
               disabled={isPending}
               className="w-full h-10 rounded-[8px] border border-[#E2E8F0] bg-[#FFFFFF] pl-9 pr-3 text-[14px] text-[#0F172A] placeholder:text-[#94A3B8] transition-all focus:border-[#007ACC] focus:ring-4 focus:ring-[#007ACC]/15 outline-none disabled:bg-[#F1F5F9] disabled:cursor-not-allowed"
@@ -106,9 +105,9 @@ export function AcceptInviteForm({ token, email, role, orgName }: AcceptInviteFo
         <div className="space-y-1">
           <label
             htmlFor="password"
-            className="block text-[12px] font-medium text-[#475569] tracking-[0.01em]"
+            className="block text-[12px] font-medium text-[#475569]"
           >
-            Tentukan Kata Sandi Baru
+            Password
           </label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#94A3B8]">
@@ -129,7 +128,7 @@ export function AcceptInviteForm({ token, email, role, orgName }: AcceptInviteFo
               onClick={() => setShowPassword(!showPassword)}
               tabIndex={-1}
               className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#94A3B8] hover:text-[#475569] transition-colors focus:outline-none"
-              aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+              aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -137,20 +136,20 @@ export function AcceptInviteForm({ token, email, role, orgName }: AcceptInviteFo
         </div>
 
         {/* Submit Button */}
-        <div className="pt-2">
+        <div className="pt-1.5">
           <button
             type="submit"
             disabled={isPending}
-            className="w-full h-10 rounded-[8px] bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-[#FFFFFF] text-[14px] font-medium tracking-normal flex items-center justify-center gap-2 shadow-[0px_1px_2px_0px_rgba(15,23,42,0.05)] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-[#007ACC]/25 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+            className="w-full h-10 rounded-[8px] bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-[#FFFFFF] text-[14px] font-medium flex items-center justify-center gap-2 shadow-[0px_1px_2px_0px_rgba(15,23,42,0.05)] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-[#007ACC]/25 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
           >
             {isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin text-white" />
-                <span>Mengaktifkan Akun...</span>
+                <span>Mengaktifkan...</span>
               </>
             ) : (
               <>
-                <span>Aktifkan Akun & Masuk</span>
+                <span>Aktifkan Akun</span>
                 <ArrowRight className="h-4 w-4" />
               </>
             )}
@@ -160,12 +159,12 @@ export function AcceptInviteForm({ token, email, role, orgName }: AcceptInviteFo
         {/* Footer Link */}
         <div className="pt-3 text-center border-t border-[#F1F5F9]">
           <p className="text-[13px] text-[#475569]">
-            Bukan akun Anda?{' '}
+            Sudah punya akun?{' '}
             <Link
               href="/login"
-              className="font-semibold text-[#007ACC] hover:text-[#0062A3] hover:underline transition-colors focus:outline-none focus-visible:underline"
+              className="font-semibold text-[#007ACC] hover:text-[#0062A3] hover:underline transition-colors"
             >
-              Kembali ke Login
+              Masuk
             </Link>
           </p>
         </div>

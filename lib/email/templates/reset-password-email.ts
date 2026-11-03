@@ -1,15 +1,53 @@
 interface ResetPasswordEmailData {
   userName?: string
   resetLink: string
+  otpCode?: string
   expiresInMinutes?: number
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 export function generateResetPasswordEmailHtml({
   userName,
   resetLink,
+  otpCode,
   expiresInMinutes = 60,
 }: ResetPasswordEmailData): string {
-  const greeting = userName ? `Halo ${userName},` : 'Halo,'
+  const safeName = userName ? escapeHtml(userName.trim()) : ''
+  const greeting = safeName ? `Halo ${safeName},` : 'Halo,'
+  const safeOtp = otpCode ? escapeHtml(otpCode.trim()) : ''
+
+  const otpSection = safeOtp
+    ? `
+              <!-- 6-Digit OTP Box -->
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 24px 0;">
+                <tr>
+                  <td align="center" style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 20px;">
+                    <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
+                      Kode Verifikasi OTP
+                    </p>
+                    <div style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 30px; font-weight: 700; letter-spacing: 8px; color: #0f172a; padding-left: 8px;">
+                      ${safeOtp}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 22px; color: #475569; text-align: center;">
+                Masukkan 6 digit kode di atas pada halaman verifikasi OTP, atau klik tombol di bawah untuk langsung mereset password:
+              </p>
+`
+    : `
+              <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 24px; color: #334155;">
+                Klik tombol di bawah ini untuk membuat password baru:
+              </p>
+`
 
   return `
 <!DOCTYPE html>
@@ -42,15 +80,15 @@ export function generateResetPasswordEmailHtml({
               <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 24px; color: #334155;">
                 ${greeting}
               </p>
-              <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 24px; color: #334155;">
-                Kami menerima permintaan untuk mereset kata sandi akun Opilines Anda. Klik tombol di bawah ini untuk membuat kata sandi baru:
+              <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 24px; color: #334155;">
+                Kami menerima permintaan untuk mereset password akun Opilines Anda.
               </p>
-
+              ${otpSection}
               <!-- CTA Button -->
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 28px 0;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 24px 0;">
                 <tr>
                   <td align="center">
-                    <a href="${resetLink}" style="display: inline-block; background-color: #2563eb; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 8px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);">
+                    <a href="${resetLink}" style="display: inline-block; background-color: #007ACC; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 12px 28px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 122, 204, 0.2);">
                       Reset Password Akun
                     </a>
                   </td>
@@ -58,16 +96,16 @@ export function generateResetPasswordEmailHtml({
               </table>
 
               <p style="margin: 0 0 20px 0; font-size: 13px; line-height: 20px; color: #64748b;">
-                Tautan reset ini berlaku selama <strong>${expiresInMinutes} menit</strong> dan hanya dapat digunakan satu kali.
+                Kode dan tautan pemulihan ini berlaku selama <strong>${expiresInMinutes} menit</strong> dan hanya dapat digunakan satu kali. Jangan bagikan kode ini kepada siapa pun.
               </p>
 
               <!-- Alternative Link -->
               <div style="padding-top: 20px; border-top: 1px solid #e2e8f0;">
                 <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748b;">
-                  Jika tombol tidak bisa diklik, salin dan tempel link berikut ke browser Anda:
+                  Jika tombol tidak bisa diklik, salin dan tempel tautan berikut ke browser Anda:
                 </p>
-                <p style="margin: 0; font-size: 12px; word-break: break-all; color: #2563eb;">
-                  <a href="${resetLink}" style="color: #2563eb; text-decoration: underline;">${resetLink}</a>
+                <p style="margin: 0; font-size: 12px; word-break: break-all; color: #007ACC;">
+                  <a href="${resetLink}" style="color: #007ACC; text-decoration: underline;">${resetLink}</a>
                 </p>
               </div>
             </td>
@@ -77,7 +115,7 @@ export function generateResetPasswordEmailHtml({
           <tr>
             <td style="padding: 24px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
               <p style="margin: 0 0 6px 0; font-size: 12px; color: #94a3b8;">
-                Jika Anda tidak merasa meminta reset kata sandi, abaikan email ini dengan aman.
+                Jika Anda tidak meminta reset password, abaikan email ini dengan aman.
               </p>
               <p style="margin: 0; font-size: 11px; color: #cbd5e1;">
                 &copy; Opilines — Field Service Management

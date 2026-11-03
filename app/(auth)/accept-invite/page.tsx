@@ -7,7 +7,7 @@ import { AlertTriangle, ArrowLeft } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Aktivasi Undangan — Opilines',
-  description: 'Terima undangan tim dan aktifkan akun Opilines Anda',
+  description: 'Terima undangan tim dan aktifkan akun Opilines',
 }
 
 interface PageProps {
@@ -19,25 +19,25 @@ export default async function AcceptInvitePage({ searchParams }: PageProps) {
 
   if (!token) {
     return (
-      <div className="w-full max-w-[440px] rounded-[12px] bg-[#FFFFFF] border border-[#E2E8F0] shadow-[0px_1px_2px_0px_rgba(15,23,42,0.05)] p-6 sm:p-8 text-center space-y-4">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[10px] bg-[#FEF2F2] border border-[#FECACA] text-[#EF4444] shadow-sm">
-          <AlertTriangle className="h-6 w-6" />
+      <div className="w-full max-w-[420px] rounded-[12px] bg-[#FFFFFF] border border-[#E2E8F0] shadow-[0px_1px_2px_0px_rgba(15,23,42,0.05)] p-6 sm:p-7 text-center space-y-4">
+        <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-[10px] bg-[#FEF2F2] border border-[#FECACA] text-[#EF4444]">
+          <AlertTriangle className="h-5 w-5" />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <h1 className="font-heading text-[20px] font-semibold text-[#0F172A] tracking-[-0.015em]">
-            Token Undangan Tidak Ditemukan
+            Tautan Tidak Valid
           </h1>
-          <p className="text-[13px] text-[#475569] leading-relaxed">
-            Tautan undangan tidak memiliki parameter token yang valid. Silakan periksa kembali tautan yang dikirimkan ke email Anda.
+          <p className="text-[13.5px] text-[#475569]">
+            Token undangan tidak ditemukan. Periksa kembali tautan di email Anda.
           </p>
         </div>
         <div className="pt-2">
           <Link
             href="/login"
-            className="w-full h-10 rounded-[8px] bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-[#FFFFFF] text-[14px] font-medium flex items-center justify-center gap-2 shadow-[0px_1px_2px_0px_rgba(15,23,42,0.05)] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-[#007ACC]/25"
+            className="w-full h-10 rounded-[8px] bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-[#FFFFFF] text-[14px] font-medium flex items-center justify-center gap-2 shadow-[0px_1px_2px_0px_rgba(15,23,42,0.05)] transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>Kembali ke Halaman Masuk</span>
+            <span>Kembali ke Login</span>
           </Link>
         </div>
       </div>
@@ -59,27 +59,27 @@ export default async function AcceptInvitePage({ searchParams }: PageProps) {
 
   if (!isValid) {
     return (
-      <div className="w-full max-w-[440px] rounded-[12px] bg-[#FFFFFF] border border-[#E2E8F0] shadow-[0px_1px_2px_0px_rgba(15,23,42,0.05)] p-6 sm:p-8 text-center space-y-4">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[10px] bg-[#FEF2F2] border border-[#FECACA] text-[#EF4444] shadow-sm">
-          <AlertTriangle className="h-6 w-6" />
+      <div className="w-full max-w-[420px] rounded-[12px] bg-[#FFFFFF] border border-[#E2E8F0] shadow-[0px_1px_2px_0px_rgba(15,23,42,0.05)] p-6 sm:p-7 text-center space-y-4">
+        <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-[10px] bg-[#FEF2F2] border border-[#FECACA] text-[#EF4444]">
+          <AlertTriangle className="h-5 w-5" />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <h1 className="font-heading text-[20px] font-semibold text-[#0F172A] tracking-[-0.015em]">
-            Undangan Tidak Berlaku
+            Undangan Kedaluwarsa
           </h1>
-          <p className="text-[13px] text-[#475569] leading-relaxed">
+          <p className="text-[13.5px] text-[#475569]">
             {isUsed
-              ? 'Tautan undangan ini sudah pernah diaktivasi sebelumnya. Silakan langsung masuk menggunakan akun Anda.'
-              : 'Tautan undangan ini telah kedaluwarsa (berlaku 24 jam) atau tidak valid. Hubungi Administrator perusahaan Anda untuk meminta tautan undangan baru.'}
+              ? 'Undangan ini sudah digunakan. Silakan masuk ke akun Anda.'
+              : 'Masa berlaku undangan telah habis. Hubungi Admin untuk undangan baru.'}
           </p>
         </div>
         <div className="pt-2">
           <Link
             href="/login"
-            className="w-full h-10 rounded-[8px] bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-[#FFFFFF] text-[14px] font-medium flex items-center justify-center gap-2 shadow-[0px_1px_2px_0px_rgba(15,23,42,0.05)] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-[#007ACC]/25"
+            className="w-full h-10 rounded-[8px] bg-[#007ACC] hover:bg-[#0062A3] active:bg-[#004F82] text-[#FFFFFF] text-[14px] font-medium flex items-center justify-center gap-2 shadow-[0px_1px_2px_0px_rgba(15,23,42,0.05)] transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>Kembali ke Halaman Masuk</span>
+            <span>Kembali ke Login</span>
           </Link>
         </div>
       </div>

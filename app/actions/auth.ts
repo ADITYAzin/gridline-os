@@ -9,6 +9,39 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { roleHome, type Role } from '@/lib/rbac'
 import { sendTransactionalEmail } from '@/lib/email/client'
 import { generateResetPasswordEmailHtml } from '@/lib/email/templates/reset-password-email'
+import { generateVerifyOtpEmailHtml } from '@/lib/email/templates/verify-otp-email'
+
+const OTP_SEND_COOLDOWN_MS = 55_000
+const OTP_VERIFY_WINDOW_MS = 5 * 60_000
+const OTP_MAX_VERIFY_ATTEMPTS = 5
+
+const otpSendTimestamps = new Map<string, number>()
+const otpVerifyAttempts = new Map<string, { count: number; resetAt: number }>()
+
+function isSendRateLimited(email: string): boolean {
+  const now = Date.now()
+  const lastSent = otpSendTimestamps.get(email)
+  if (lastSent && now - lastSent < OTP_SEND_COOLDOWN_MS) {
+    return true
+  }
+  otpSendTimestamps.set(email, now)
+  return false
+}
+
+function checkVerifyRateLimit(email: string): boolean {
+  const now = Date.now()
+  const entry = otpVerifyAttempts.get(email)
+  if (!entry || now > entry.resetAt) {
+    otpVerifyAttempts.set(email, { count: 1, resetAt: now + OTP_VERIFY_WINDOW_MS })
+    return false
+  }
+  entry.count += 1
+  return entry.count > OTP_MAX_VERIFY_ATTEMPTS
+}
+
+function clearVerifyRateLimit(email: string): void {
+  otpVerifyAttempts.delete(email)
+}
 
 const signInSchema = z.object({
   email: z.string().email('Email tidak valid'),
@@ -29,16 +62,22 @@ const acceptInviteSchema = z.object({
 })
 
 const requestResetSchema = z.object({
-  email: z.string().email('Email tidak valid'),
+  email: z.string().email('Format email tidak valid'),
+})
+
+const verifyOtpSchema = z.object({
+  email: z.string().email('Format email tidak valid'),
+  code: z.string().regex(/^\d{6}$/, 'Kode OTP harus 6 digit angka'),
+  type: z.enum(['reset', 'register', 'login']).default('reset'),
 })
 
 const updatePasswordSchema = z
   .object({
-    password: z.string().min(6, 'Password minimal 6 karakter'),
-    confirmPassword: z.string().min(6, 'Konfirmasi password minimal 6 karakter'),
+    password: z.string().min(6, 'Minimal 6 karakter'),
+    confirmPassword: z.string().min(6, 'Minimal 6 karakter'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Konfirmasi password tidak cocok',
+    message: 'Password tidak cocok',
     path: ['confirmPassword'],
   })
 
@@ -251,59 +290,194 @@ export async function signOutAction() {
   redirect('/login')
 }
 
+async function dispatchAuthOtpEmail(
+  normalizedEmail: string,
+  type: 'reset' | 'register' | 'login'
+): Promise<void> {
+  const admin = getSupabaseAdmin()
+  const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('name')
+    .eq('email', normalizedEmail)
+    .maybeSingle()
+
+  if (type === 'reset') {
+    const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+      type: 'recovery',
+      email: normalizedEmail,
+      options: {
+        redirectTo: `${origin}/reset-password`,
+      },
+    })
+
+    if (!linkError && linkData?.properties) {
+      const hashedToken = linkData.properties.hashed_token
+      const otpCode = linkData.properties.email_otp
+      const callbackLink = hashedToken
+        ? `${origin}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=recovery&next=/reset-password`
+        : linkData.properties.action_link
+
+      const html = generateResetPasswordEmailHtml({
+        userName: profile?.name,
+        resetLink: callbackLink,
+        otpCode,
+        expiresInMinutes: 60,
+      })
+
+      await sendTransactionalEmail({
+        to: normalizedEmail,
+        subject: 'Kode OTP & Tautan Reset Password - Opilines',
+        html,
+      })
+    }
+    return
+  }
+
+  // For register / login OTP verification
+  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+    type: 'magiclink',
+    email: normalizedEmail,
+    options: {
+      redirectTo: `${origin}/verify-email?status=success`,
+    },
+  })
+
+  if (!linkError && linkData?.properties?.email_otp) {
+    const hashedToken = linkData.properties.hashed_token
+    const nextPath = type === 'register' ? '/verify-email?status=success' : '/admin'
+    const verifyLink = hashedToken
+      ? `${origin}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=magiclink&next=${encodeURIComponent(nextPath)}`
+      : linkData.properties.action_link
+
+    const html = generateVerifyOtpEmailHtml({
+      userName: profile?.name,
+      otpCode: linkData.properties.email_otp,
+      verifyLink,
+      expiresInMinutes: 60,
+    })
+
+    await sendTransactionalEmail({
+      to: normalizedEmail,
+      subject: 'Kode Verifikasi OTP - Opilines',
+      html,
+    })
+  }
+}
+
 export async function requestPasswordResetAction(
   prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const email = formData.get('email') as string
+  const email = (formData.get('email') as string)?.trim() || ''
   const parsed = requestResetSchema.safeParse({ email })
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message || 'Email tidak valid', fields: { email } }
   }
 
-  const admin = getSupabaseAdmin()
-  const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const normalizedEmail = parsed.data.email.toLowerCase()
 
-  // Generate recovery link via Supabase Auth Admin
-  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
-    type: 'recovery',
-    email: parsed.data.email.toLowerCase().trim(),
-    options: {
-      redirectTo: `${origin}/reset-password`,
-    },
-  })
-
-  // To prevent user enumeration attacks, if user does not exist, return success
-  if (linkError || !linkData.properties?.action_link) {
-    return {
-      success: true,
-      message: 'Jika email Anda terdaftar, tautan reset kata sandi telah dikirimkan ke kotak masuk Anda.',
-    }
+  if (!isSendRateLimited(normalizedEmail)) {
+    await dispatchAuthOtpEmail(normalizedEmail, 'reset')
   }
-
-  // Get user profile name if exists
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('name')
-    .eq('email', parsed.data.email.toLowerCase().trim())
-    .maybeSingle()
-
-  const html = generateResetPasswordEmailHtml({
-    userName: profile?.name,
-    resetLink: linkData.properties.action_link,
-    expiresInMinutes: 60,
-  })
-
-  await sendTransactionalEmail({
-    to: parsed.data.email.toLowerCase().trim(),
-    subject: 'Instruksi Reset Password - Opilines',
-    html,
-  })
 
   return {
     success: true,
-    message: 'Jika email Anda terdaftar, tautan reset kata sandi telah dikirimkan ke kotak masuk Anda.',
+    message: 'Kode verifikasi dan tautan pemulihan telah dikirim.',
+    fields: { email: normalizedEmail },
   }
+}
+
+export async function verifyOtpAction(
+  prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const email = ((formData.get('email') as string) || '').trim().toLowerCase()
+  const code = ((formData.get('code') as string) || '').trim()
+  const type = ((formData.get('type') as string) || 'reset') as 'reset' | 'register' | 'login'
+
+  const parsed = verifyOtpSchema.safeParse({ email, code, type })
+  if (!parsed.success) {
+    return {
+      error: parsed.error.issues[0]?.message || 'Kode OTP harus 6 digit',
+      fields: { email, code, type },
+    }
+  }
+
+  if (checkVerifyRateLimit(parsed.data.email)) {
+    return {
+      error: 'Terlalu banyak percobaan gagal. Tunggu 5 menit atau kirim ulang kode baru.',
+      fields: { email: parsed.data.email, code: '', type },
+    }
+  }
+
+  const supabase = await createSupabaseServerClient()
+  const primaryOtpType = type === 'reset' ? 'recovery' : type === 'register' ? 'signup' : 'email'
+
+  let { data: authData, error } = await supabase.auth.verifyOtp({
+    email: parsed.data.email,
+    token: parsed.data.code,
+    type: primaryOtpType,
+  })
+
+  // Fallback for magiclink / email OTP when resending verification for an existing auth user
+  if (error && type !== 'reset') {
+    const fallbackResult = await supabase.auth.verifyOtp({
+      email: parsed.data.email,
+      token: parsed.data.code,
+      type: 'magiclink',
+    })
+    authData = fallbackResult.data
+    error = fallbackResult.error
+  }
+
+  if (error) {
+    return {
+      error: 'Kode OTP salah atau sudah kedaluwarsa',
+      fields: { email: parsed.data.email, code: '', type },
+    }
+  }
+
+  clearVerifyRateLimit(parsed.data.email)
+
+  if (type === 'reset') {
+    redirect(`/reset-password?email=${encodeURIComponent(parsed.data.email)}`)
+  }
+
+  if (type === 'register') {
+    await supabase.auth.signOut()
+    redirect('/login?verified=success')
+  }
+
+  if (authData?.user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', authData.user.id)
+      .maybeSingle()
+
+    const targetRole = (profile?.role as Role) || 'admin'
+    redirect(roleHome[targetRole])
+  }
+
+  redirect('/admin')
+}
+
+export async function resendOtpAction(email: string, type: 'reset' | 'register' | 'login' = 'reset') {
+  const parsed = requestResetSchema.safeParse({ email: email?.trim() })
+  if (!parsed.success) {
+    return { success: false, error: 'Email tidak valid' }
+  }
+
+  const normalizedEmail = parsed.data.email.toLowerCase()
+  if (isSendRateLimited(normalizedEmail)) {
+    return { success: false, error: 'Tunggu beberapa saat sebelum meminta kode baru.' }
+  }
+
+  await dispatchAuthOtpEmail(normalizedEmail, type)
+  clearVerifyRateLimit(normalizedEmail)
+  return { success: true }
 }
 
 export async function updatePasswordAction(
@@ -324,8 +498,11 @@ export async function updatePasswordAction(
   })
 
   if (error) {
-    return { error: 'Gagal memperbarui kata sandi: ' + error.message }
+    return { error: 'Sesi pemulihan tidak ditemukan atau sudah kedaluwarsa' }
   }
+
+  // Sign out recovery session so user authenticates cleanly with new credentials
+  await supabase.auth.signOut()
 
   redirect('/login?reset=success')
 }

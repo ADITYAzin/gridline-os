@@ -6,6 +6,15 @@ interface InviteEmailData {
   expiresInHours?: number
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export function generateInviteEmailHtml({
   inviterName,
   organizationName,
@@ -13,12 +22,14 @@ export function generateInviteEmailHtml({
   inviteLink,
   expiresInHours = 24,
 }: InviteEmailData): string {
+  const safeInviter = escapeHtml(inviterName.trim())
+  const safeOrg = escapeHtml(organizationName.trim())
   const roleName =
     role === 'technician'
       ? 'Teknisi Lapangan (Technician)'
       : role === 'admin'
       ? 'Administrator'
-      : role
+      : escapeHtml(role)
 
   return `
 <!DOCTYPE html>
@@ -58,7 +69,7 @@ export function generateInviteEmailHtml({
                 Halo,
               </p>
               <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 24px; color: #334155;">
-                <strong>${inviterName}</strong> telah mengundang Anda untuk bergabung ke dalam organisasi <strong>${organizationName}</strong> di sistem Opilines sebagai <strong>${roleName}</strong>.
+                <strong>${safeInviter}</strong> telah mengundang Anda untuk bergabung ke dalam organisasi <strong>${safeOrg}</strong> di sistem Opilines sebagai <strong>${roleName}</strong>.
               </p>
 
               <!-- Role Info Box -->
@@ -102,7 +113,7 @@ export function generateInviteEmailHtml({
           <tr>
             <td style="padding: 24px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
               <p style="margin: 0 0 6px 0; font-size: 12px; color: #94a3b8;">
-                Email ini dikirim otomatis oleh sistem Opilines untuk ${organizationName}.
+                Email ini dikirim otomatis oleh sistem Opilines untuk ${safeOrg}.
               </p>
               <p style="margin: 0; font-size: 11px; color: #cbd5e1;">
                 Jika Anda merasa tidak mengenali pengundang ini, abaikan pesan ini.
