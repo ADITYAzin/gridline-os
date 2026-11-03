@@ -36,17 +36,38 @@ export async function createInviteAction(prevState: InviteActionState, formData:
   }
 
   const admin = getSupabaseAdmin()
+  const normalizedEmail = parsed.data.email.toLowerCase().trim()
 
-  // Check if profile with email already exists in org
+  // Check if profile with email already exists in database
   const { data: existingUser } = await admin
     .from('profiles')
-    .select('id')
-    .eq('org_id', profile.orgId)
-    .eq('email', parsed.data.email.toLowerCase().trim())
+    .select('id, org_id')
+    .ilike('email', normalizedEmail)
+    .limit(1)
     .maybeSingle()
 
   if (existingUser) {
-    return { error: 'Pengguna dengan email ini sudah terdaftar di organisasi Anda.' }
+    if (existingUser.org_id === profile.orgId) {
+      return { error: 'Pengguna dengan email ini sudah terdaftar di organisasi Anda.' }
+    }
+    return { error: 'Email ini sudah terdaftar pada akun lain di sistem.' }
+  }
+
+  // Check if there is already an active unused invite for this email in the org
+  const { data: activeInvite } = await admin
+    .from('invite_tokens')
+    .select('id')
+    .eq('org_id', profile.orgId)
+    .ilike('email', normalizedEmail)
+    .is('used_at', null)
+    .gt('expires_at', new Date().toISOString())
+    .limit(1)
+    .maybeSingle()
+
+  if (activeInvite) {
+    return {
+      error: 'Undangan aktif untuk email ini sudah ada. Gunakan fitur Kirim Ulang pada daftar undangan.',
+    }
   }
 
   // Fetch organization name for email branding
@@ -270,7 +291,8 @@ export async function importTechniciansAction(
     const { data: existingProfile } = await admin
       .from('profiles')
       .select('id')
-      .eq('email', email)
+      .ilike('email', email)
+      .limit(1)
       .maybeSingle()
 
     if (existingProfile) {
@@ -521,8 +543,9 @@ export async function updateTechnicianAction(
     const { data: existingUser } = await admin
       .from('profiles')
       .select('id')
-      .eq('email', newEmail)
+      .ilike('email', newEmail)
       .neq('id', targetTech.id)
+      .limit(1)
       .maybeSingle()
 
     if (existingUser) {

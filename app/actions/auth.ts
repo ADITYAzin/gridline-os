@@ -88,8 +88,20 @@ export type ActionState = {
   fields?: Record<string, string>
 }
 
+async function findRegisteredProfileByEmail(normalizedEmail: string) {
+  const admin = getSupabaseAdmin()
+  const { data } = await admin
+    .from('profiles')
+    .select('id, name, email, role, org_id')
+    .ilike('email', normalizedEmail)
+    .limit(1)
+    .maybeSingle()
+
+  return data
+}
+
 export async function signInAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
-  const email = formData.get('email') as string
+  const email = ((formData.get('email') as string) || '').trim().toLowerCase()
   const password = formData.get('password') as string
 
   const parsed = signInSchema.safeParse({ email, password })
@@ -100,35 +112,38 @@ export async function signInAction(prevState: ActionState, formData: FormData): 
     }
   }
 
+  const normalizedEmail = parsed.data.email.toLowerCase()
+  const existingProfile = await findRegisteredProfileByEmail(normalizedEmail)
+
+  if (!existingProfile) {
+    return {
+      error: 'Email belum terdaftar di sistem kami. Periksa kembali penulisan email Anda.',
+      fields: { email: normalizedEmail },
+    }
+  }
+
   const supabase = await createSupabaseServerClient()
 
   const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-    email: parsed.data.email,
+    email: existingProfile.email || normalizedEmail,
     password: parsed.data.password,
   })
 
   if (authError || !authData.user) {
     return {
-      error: 'Email atau password salah',
-      fields: { email },
+      error: 'Password yang Anda masukkan salah.',
+      fields: { email: normalizedEmail },
     }
   }
 
-  // Fetch role
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', authData.user.id)
-    .single()
-
-  const targetRole = (profile?.role as Role) || 'admin'
+  const targetRole = (existingProfile.role as Role) || 'admin'
   redirect(roleHome[targetRole])
 }
 
 export async function signUpAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
-  const companyName = formData.get('companyName') as string
-  const name = formData.get('name') as string
-  const email = formData.get('email') as string
+  const companyName = ((formData.get('companyName') as string) || '').trim()
+  const name = ((formData.get('name') as string) || '').trim()
+  const email = ((formData.get('email') as string) || '').trim().toLowerCase()
   const password = formData.get('password') as string
 
   const parsed = signUpSchema.safeParse({ companyName, name, email, password })
@@ -136,6 +151,17 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
     return {
       error: parsed.error.issues[0]?.message || 'Input tidak valid',
       fields: { companyName, name, email },
+    }
+  }
+
+  const normalizedEmail = parsed.data.email.toLowerCase().trim()
+
+  // 0. Check if email is already registered in database before creating anything
+  const existingProfile = await findRegisteredProfileByEmail(normalizedEmail)
+  if (existingProfile) {
+    return {
+      error: 'Email sudah terdaftar di sistem kami. Silakan masuk atau gunakan email lain.',
+      fields: { companyName, name, email: normalizedEmail },
     }
   }
 
@@ -154,16 +180,16 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
   if (orgError || !org) {
     return {
       error: 'Gagal membuat organisasi. Silakan coba lagi.',
-      fields: { companyName, name, email },
+      fields: { companyName, name, email: normalizedEmail },
     }
   }
 
   // 2. Create Auth User
   const { data: userData, error: userError } = await admin.auth.admin.createUser({
-    email: parsed.data.email,
+    email: normalizedEmail,
     password: parsed.data.password,
     email_confirm: true,
-    user_metadata: { name: parsed.data.name },
+    user_metadata: { name: parsed.data.name.trim() },
   })
 
   if (userError || !userData.user) {
@@ -171,7 +197,7 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
     await admin.from('organizations').delete().eq('id', org.id)
     return {
       error: userError?.message || 'Gagal mendaftarkan akun pengguna.',
-      fields: { companyName, name, email },
+      fields: { companyName, name, email: normalizedEmail },
     }
   }
 
@@ -182,7 +208,7 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
       id: userData.user.id,
       org_id: org.id,
       name: parsed.data.name.trim(),
-      email: parsed.data.email.toLowerCase().trim(),
+      email: normalizedEmail,
       role: 'admin',
     })
 
@@ -191,14 +217,14 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
     await admin.from('organizations').delete().eq('id', org.id)
     return {
       error: 'Gagal membuat profil admin: ' + profileError.message,
-      fields: { companyName, name, email },
+      fields: { companyName, name, email: normalizedEmail },
     }
   }
 
   // 4. Sign in session cookies on client side
   const supabase = await createSupabaseServerClient()
   await supabase.auth.signInWithPassword({
-    email: parsed.data.email,
+    email: normalizedEmail,
     password: parsed.data.password,
   })
 
@@ -207,7 +233,7 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
 
 export async function acceptInviteAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
   const token = formData.get('token') as string
-  const name = formData.get('name') as string
+  const name = ((formData.get('name') as string) || '').trim()
   const password = formData.get('password') as string
 
   const parsed = acceptInviteSchema.safeParse({ token, name, password })
@@ -240,12 +266,21 @@ export async function acceptInviteAction(prevState: ActionState, formData: FormD
     return { error: 'Undangan sudah kadaluwarsa (berlaku 24 jam).' }
   }
 
+  const normalizedInviteEmail = invite.email.toLowerCase().trim()
+  const existingProfile = await findRegisteredProfileByEmail(normalizedInviteEmail)
+  if (existingProfile) {
+    return {
+      error: 'Email pada undangan ini sudah terdaftar sebagai akun aktif. Silakan langsung masuk.',
+      fields: { name },
+    }
+  }
+
   // 2. Create Auth User
   const { data: userData, error: userError } = await admin.auth.admin.createUser({
-    email: invite.email,
+    email: normalizedInviteEmail,
     password: parsed.data.password,
     email_confirm: true,
-    user_metadata: { name: parsed.data.name },
+    user_metadata: { name: parsed.data.name.trim() },
   })
 
   if (userError || !userData.user) {
@@ -259,7 +294,7 @@ export async function acceptInviteAction(prevState: ActionState, formData: FormD
       id: userData.user.id,
       org_id: invite.org_id,
       name: parsed.data.name.trim(),
-      email: invite.email,
+      email: normalizedInviteEmail,
       role: invite.role,
     })
 
@@ -277,7 +312,7 @@ export async function acceptInviteAction(prevState: ActionState, formData: FormD
   // 5. Establish session
   const supabase = await createSupabaseServerClient()
   await supabase.auth.signInWithPassword({
-    email: invite.email,
+    email: normalizedInviteEmail,
     password: parsed.data.password,
   })
 
@@ -292,16 +327,11 @@ export async function signOutAction() {
 
 async function dispatchAuthOtpEmail(
   normalizedEmail: string,
+  userName: string | undefined,
   type: 'reset' | 'register' | 'login'
-): Promise<void> {
+): Promise<boolean> {
   const admin = getSupabaseAdmin()
   const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('name')
-    .eq('email', normalizedEmail)
-    .maybeSingle()
 
   if (type === 'reset') {
     const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
@@ -312,27 +342,29 @@ async function dispatchAuthOtpEmail(
       },
     })
 
-    if (!linkError && linkData?.properties) {
-      const hashedToken = linkData.properties.hashed_token
-      const otpCode = linkData.properties.email_otp
-      const callbackLink = hashedToken
-        ? `${origin}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=recovery&next=/reset-password`
-        : linkData.properties.action_link
-
-      const html = generateResetPasswordEmailHtml({
-        userName: profile?.name,
-        resetLink: callbackLink,
-        otpCode,
-        expiresInMinutes: 60,
-      })
-
-      await sendTransactionalEmail({
-        to: normalizedEmail,
-        subject: 'Kode OTP & Tautan Reset Password - Opilines',
-        html,
-      })
+    if (linkError || !linkData?.properties) {
+      return false
     }
-    return
+
+    const hashedToken = linkData.properties.hashed_token
+    const otpCode = linkData.properties.email_otp
+    const callbackLink = hashedToken
+      ? `${origin}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=recovery&next=/reset-password`
+      : linkData.properties.action_link
+
+    const html = generateResetPasswordEmailHtml({
+      userName,
+      resetLink: callbackLink,
+      otpCode,
+      expiresInMinutes: 60,
+    })
+
+    const result = await sendTransactionalEmail({
+      to: normalizedEmail,
+      subject: 'Kode OTP & Tautan Reset Password - Opilines',
+      html,
+    })
+    return result.success
   }
 
   // For register / login OTP verification
@@ -344,26 +376,29 @@ async function dispatchAuthOtpEmail(
     },
   })
 
-  if (!linkError && linkData?.properties?.email_otp) {
-    const hashedToken = linkData.properties.hashed_token
-    const nextPath = type === 'register' ? '/verify-email?status=success' : '/admin'
-    const verifyLink = hashedToken
-      ? `${origin}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=magiclink&next=${encodeURIComponent(nextPath)}`
-      : linkData.properties.action_link
-
-    const html = generateVerifyOtpEmailHtml({
-      userName: profile?.name,
-      otpCode: linkData.properties.email_otp,
-      verifyLink,
-      expiresInMinutes: 60,
-    })
-
-    await sendTransactionalEmail({
-      to: normalizedEmail,
-      subject: 'Kode Verifikasi OTP - Opilines',
-      html,
-    })
+  if (linkError || !linkData?.properties?.email_otp) {
+    return false
   }
+
+  const hashedToken = linkData.properties.hashed_token
+  const nextPath = type === 'register' ? '/verify-email?status=success' : '/admin'
+  const verifyLink = hashedToken
+    ? `${origin}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=magiclink&next=${encodeURIComponent(nextPath)}`
+    : linkData.properties.action_link
+
+  const html = generateVerifyOtpEmailHtml({
+    userName,
+    otpCode: linkData.properties.email_otp,
+    verifyLink,
+    expiresInMinutes: 60,
+  })
+
+  const result = await sendTransactionalEmail({
+    to: normalizedEmail,
+    subject: 'Kode Verifikasi OTP - Opilines',
+    html,
+  })
+  return result.success
 }
 
 export async function requestPasswordResetAction(
@@ -378,14 +413,37 @@ export async function requestPasswordResetAction(
 
   const normalizedEmail = parsed.data.email.toLowerCase()
 
-  if (!isSendRateLimited(normalizedEmail)) {
-    await dispatchAuthOtpEmail(normalizedEmail, 'reset')
+  // Verify email exists in our database to prevent typos/wrong input
+  const existingProfile = await findRegisteredProfileByEmail(normalizedEmail)
+  if (!existingProfile) {
+    return {
+      error: 'Email tidak terdaftar di sistem kami. Periksa kembali penulisan email Anda.',
+      fields: { email: normalizedEmail },
+    }
+  }
+
+  if (isSendRateLimited(normalizedEmail)) {
+    return {
+      success: true,
+      message: 'Kode verifikasi sudah dikirim baru-baru ini. Silakan cek kotak masuk Anda.',
+      fields: { email: existingProfile.email || normalizedEmail },
+    }
+  }
+
+  const targetEmail = existingProfile.email || normalizedEmail
+  const sent = await dispatchAuthOtpEmail(targetEmail, existingProfile.name, 'reset')
+  if (!sent) {
+    otpSendTimestamps.delete(normalizedEmail)
+    return {
+      error: 'Gagal mengirim kode verifikasi. Silakan coba beberapa saat lagi.',
+      fields: { email: normalizedEmail },
+    }
   }
 
   return {
     success: true,
     message: 'Kode verifikasi dan tautan pemulihan telah dikirim.',
-    fields: { email: normalizedEmail },
+    fields: { email: targetEmail },
   }
 }
 
@@ -405,18 +463,28 @@ export async function verifyOtpAction(
     }
   }
 
-  if (checkVerifyRateLimit(parsed.data.email)) {
+  const existingProfile = await findRegisteredProfileByEmail(parsed.data.email)
+  if (!existingProfile) {
+    return {
+      error: 'Email tidak terdaftar di sistem kami. Periksa kembali email Anda.',
+      fields: { email: parsed.data.email, code: '', type },
+    }
+  }
+
+  const targetEmail = existingProfile.email || parsed.data.email
+
+  if (checkVerifyRateLimit(targetEmail)) {
     return {
       error: 'Terlalu banyak percobaan gagal. Tunggu 5 menit atau kirim ulang kode baru.',
-      fields: { email: parsed.data.email, code: '', type },
+      fields: { email: targetEmail, code: '', type },
     }
   }
 
   const supabase = await createSupabaseServerClient()
   const primaryOtpType = type === 'reset' ? 'recovery' : type === 'register' ? 'signup' : 'email'
 
-  let { data: authData, error } = await supabase.auth.verifyOtp({
-    email: parsed.data.email,
+  let { error } = await supabase.auth.verifyOtp({
+    email: targetEmail,
     token: parsed.data.code,
     type: primaryOtpType,
   })
@@ -424,25 +492,24 @@ export async function verifyOtpAction(
   // Fallback for magiclink / email OTP when resending verification for an existing auth user
   if (error && type !== 'reset') {
     const fallbackResult = await supabase.auth.verifyOtp({
-      email: parsed.data.email,
+      email: targetEmail,
       token: parsed.data.code,
       type: 'magiclink',
     })
-    authData = fallbackResult.data
     error = fallbackResult.error
   }
 
   if (error) {
     return {
       error: 'Kode OTP salah atau sudah kedaluwarsa',
-      fields: { email: parsed.data.email, code: '', type },
+      fields: { email: targetEmail, code: '', type },
     }
   }
 
-  clearVerifyRateLimit(parsed.data.email)
+  clearVerifyRateLimit(targetEmail)
 
   if (type === 'reset') {
-    redirect(`/reset-password?email=${encodeURIComponent(parsed.data.email)}`)
+    redirect(`/reset-password?email=${encodeURIComponent(targetEmail)}`)
   }
 
   if (type === 'register') {
@@ -450,33 +517,37 @@ export async function verifyOtpAction(
     redirect('/login?verified=success')
   }
 
-  if (authData?.user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', authData.user.id)
-      .maybeSingle()
-
-    const targetRole = (profile?.role as Role) || 'admin'
-    redirect(roleHome[targetRole])
-  }
-
-  redirect('/admin')
+  const targetRole = (existingProfile.role as Role) || 'admin'
+  redirect(roleHome[targetRole])
 }
 
 export async function resendOtpAction(email: string, type: 'reset' | 'register' | 'login' = 'reset') {
   const parsed = requestResetSchema.safeParse({ email: email?.trim() })
   if (!parsed.success) {
-    return { success: false, error: 'Email tidak valid' }
+    return { success: false, error: 'Format email tidak valid.' }
   }
 
   const normalizedEmail = parsed.data.email.toLowerCase()
+  const existingProfile = await findRegisteredProfileByEmail(normalizedEmail)
+  if (!existingProfile) {
+    return {
+      success: false,
+      error: 'Email tidak terdaftar di sistem kami. Periksa kembali penulisan email Anda.',
+    }
+  }
+
   if (isSendRateLimited(normalizedEmail)) {
     return { success: false, error: 'Tunggu beberapa saat sebelum meminta kode baru.' }
   }
 
-  await dispatchAuthOtpEmail(normalizedEmail, type)
-  clearVerifyRateLimit(normalizedEmail)
+  const targetEmail = existingProfile.email || normalizedEmail
+  const sent = await dispatchAuthOtpEmail(targetEmail, existingProfile.name, type)
+  if (!sent) {
+    otpSendTimestamps.delete(normalizedEmail)
+    return { success: false, error: 'Gagal mengirim ulang kode OTP. Silakan coba lagi.' }
+  }
+
+  clearVerifyRateLimit(targetEmail)
   return { success: true }
 }
 
