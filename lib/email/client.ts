@@ -16,9 +16,17 @@ interface SendEmailResult {
   error?: string
 }
 
+const DEFAULT_FROM_EMAIL = 'Opilines <noreply@auth.opilines.com>'
+
+function sanitizeEnvValue(raw: string | undefined): string {
+  if (!raw) return ''
+  return raw.trim().replace(/^["']+|["']+$/g, '').trim()
+}
+
 function getResendClient(): { resend: Resend | null; fromEmail: string } {
-  const apiKey = process.env.RESEND_API_KEY
-  const fromEmail = process.env.EMAIL_FROM || 'Opilines <noreply@auth.opilines.com>'
+  const apiKey = sanitizeEnvValue(process.env.RESEND_API_KEY)
+  const rawFrom = sanitizeEnvValue(process.env.EMAIL_FROM)
+  const fromEmail = rawFrom || DEFAULT_FROM_EMAIL
 
   if (!apiKey || apiKey === 're_your_api_key_here') {
     return { resend: null, fromEmail }
@@ -32,7 +40,7 @@ function getResendClient(): { resend: Resend | null; fromEmail: string } {
 
 /**
  * Sends a transactional email using Resend SDK.
- * If RESEND_API_KEY is not configured, logs the email to console for developer preview (Dev Sandbox mode).
+ * If RESEND_API_KEY is not configured in development, logs the email to console (Dev Sandbox mode).
  */
 export async function sendTransactionalEmail({
   to,
@@ -46,6 +54,17 @@ export async function sendTransactionalEmail({
 
   // Fallback / Sandbox Mode if API Key is not set yet
   if (!resend) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error(
+        '[Email Service Error] RESEND_API_KEY is missing in production environment. Email was not sent.'
+      )
+      return {
+        success: false,
+        simulated: true,
+        error: 'Konfigurasi RESEND_API_KEY belum terpasang di server hosting.',
+      }
+    }
+
     console.log('\n=================== 📨 [DEV SIMULATION] EMAIL OUTBOX ===================')
     console.log(`From:    ${fromEmail}`)
     console.log(`To:      ${recipients.join(', ')}`)
@@ -71,7 +90,7 @@ export async function sendTransactionalEmail({
         .replace(/\s+/g, ' ')
         .trim()
 
-    const { data, error } = await resend.emails.send({
+    let { data, error } = await resend.emails.send({
       from: fromEmail,
       to: recipients,
       subject,
@@ -79,6 +98,23 @@ export async function sendTransactionalEmail({
       text: plainText,
       replyTo,
     })
+
+    // Retry with verified default sender if custom EMAIL_FROM fails due to unverified domain or invalid format
+    if (error && fromEmail !== DEFAULT_FROM_EMAIL) {
+      console.warn(
+        `[Email Service Retry] Sender "${fromEmail}" failed (${error.message}). Retrying with default verified sender "${DEFAULT_FROM_EMAIL}"...`
+      )
+      const retryResult = await resend.emails.send({
+        from: DEFAULT_FROM_EMAIL,
+        to: recipients,
+        subject,
+        html,
+        text: plainText,
+        replyTo,
+      })
+      data = retryResult.data
+      error = retryResult.error
+    }
 
     if (error) {
       console.error('[Email Service Error]', error)

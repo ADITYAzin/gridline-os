@@ -1,8 +1,10 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { headers, cookies } from 'next/headers'
 import crypto from 'crypto'
 import { z } from 'zod'
+import { type EmailOtpType } from '@supabase/supabase-js'
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
@@ -14,6 +16,8 @@ import { generateVerifyOtpEmailHtml } from '@/lib/email/templates/verify-otp-ema
 const OTP_SEND_COOLDOWN_MS = 55_000
 const OTP_VERIFY_WINDOW_MS = 5 * 60_000
 const OTP_MAX_VERIFY_ATTEMPTS = 5
+const OTP_EXPIRY_MS = 60 * 60_000
+const RECOVERY_COOKIE_NAME = 'gl_recovery_ctx'
 
 const otpSendTimestamps = new Map<string, number>()
 const otpVerifyAttempts = new Map<string, { count: number; resetAt: number }>()
@@ -24,8 +28,11 @@ function isSendRateLimited(email: string): boolean {
   if (lastSent && now - lastSent < OTP_SEND_COOLDOWN_MS) {
     return true
   }
-  otpSendTimestamps.set(email, now)
   return false
+}
+
+function markOtpSent(email: string): void {
+  otpSendTimestamps.set(email, Date.now())
 }
 
 function checkVerifyRateLimit(email: string): boolean {
@@ -41,6 +48,80 @@ function checkVerifyRateLimit(email: string): boolean {
 
 function clearVerifyRateLimit(email: string): void {
   otpVerifyAttempts.delete(email)
+}
+
+function toSixDigitOtp(rawOtp?: string | null): string {
+  const digits = (rawOtp || '').replace(/\D/g, '')
+  if (digits.length >= 6) {
+    return digits.slice(0, 6)
+  }
+  return crypto.randomInt(100000, 1000000).toString()
+}
+
+function hashOtpCode(email: string, code: string, type: string): string {
+  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || 'opilines-otp-secret'
+  return crypto
+    .createHmac('sha256', secret)
+    .update(`${email.toLowerCase().trim()}:${type}:${code.trim()}`)
+    .digest('hex')
+}
+
+function createSignedRecoveryToken(userId: string): string {
+  const expiresAt = Date.now() + 15 * 60_000
+  const payload = `${userId}.${expiresAt}`
+  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || 'opilines-recovery-secret'
+  const sig = crypto.createHmac('sha256', secret).update(payload).digest('hex')
+  return `${payload}.${sig}`
+}
+
+function verifySignedRecoveryToken(token: string | undefined): string | null {
+  if (!token) return null
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  const [userId, expiresStr, sig] = parts
+  const expiresAt = Number(expiresStr)
+  if (!userId || !Number.isFinite(expiresAt) || Date.now() > expiresAt) {
+    return null
+  }
+  const payload = `${userId}.${expiresStr}`
+  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || 'opilines-recovery-secret'
+  const expectedSig = crypto.createHmac('sha256', secret).update(payload).digest('hex')
+  if (sig.length !== expectedSig.length) return null
+  const valid = crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))
+  return valid ? userId : null
+}
+
+async function getAppOrigin(): Promise<string> {
+  const envUrl = (process.env.NEXT_PUBLIC_APP_URL || '')
+    .trim()
+    .replace(/^["']+|["']+$/g, '')
+    .replace(/\/+$/, '')
+
+  try {
+    const reqHeaders = await headers()
+    const host = (reqHeaders.get('x-forwarded-host') || reqHeaders.get('host') || '').trim()
+    const proto = (reqHeaders.get('x-forwarded-proto') || '').split(',')[0]?.trim()
+
+    if (host && !host.startsWith('localhost') && !host.startsWith('127.0.0.1')) {
+      if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+        return envUrl
+      }
+      return `${proto || 'https'}://${host}`
+    }
+  } catch {
+    // Ignore headers() errors outside request context
+  }
+
+  if (envUrl && !envUrl.includes('localhost')) {
+    return envUrl
+  }
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
+  return envUrl || 'http://localhost:3000'
 }
 
 const signInSchema = z.object({
@@ -140,10 +221,16 @@ export async function signInAction(prevState: ActionState, formData: FormData): 
   // Ensure newly registered accounts have completed email OTP verification before entering dashboard
   if (authData.user.user_metadata?.otp_verified === false) {
     await supabase.auth.signOut()
+    let sent = true
     if (!isSendRateLimited(normalizedEmail)) {
-      await dispatchAuthOtpEmail(targetEmail, existingProfile.name, 'register')
+      sent = await dispatchAuthOtpEmail(targetEmail, existingProfile.name, 'register')
+      if (sent) {
+        markOtpSent(normalizedEmail)
+      }
     }
-    redirect(`/verify-otp?type=register&email=${encodeURIComponent(targetEmail)}`)
+    redirect(
+      `/verify-otp?type=register&email=${encodeURIComponent(targetEmail)}${sent ? '' : '&sent=0'}`
+    )
   }
 
   const targetRole = (existingProfile.role as Role) || 'admin'
@@ -191,11 +278,17 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
         .update({ name: parsed.data.companyName.trim() })
         .eq('id', existingProfile.org_id)
 
+      let sent = true
       if (!isSendRateLimited(normalizedEmail)) {
-        await dispatchAuthOtpEmail(normalizedEmail, parsed.data.name.trim(), 'register')
+        sent = await dispatchAuthOtpEmail(normalizedEmail, parsed.data.name.trim(), 'register')
+        if (sent) {
+          markOtpSent(normalizedEmail)
+        }
       }
 
-      redirect(`/verify-otp?type=register&email=${encodeURIComponent(normalizedEmail)}`)
+      redirect(
+        `/verify-otp?type=register&email=${encodeURIComponent(normalizedEmail)}${sent ? '' : '&sent=0'}`
+      )
     }
 
     return {
@@ -222,7 +315,7 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
   }
 
   // 2. Create Auth User & Generate Signup OTP Token
-  const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const origin = await getAppOrigin()
   const { data: linkData, error: userError } = await admin.auth.admin.generateLink({
     type: 'signup',
     email: normalizedEmail,
@@ -265,34 +358,46 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
     }
   }
 
-  // 4. Send 6-digit OTP verification email via Resend
+  // 4. Normalize 6-digit OTP, persist verification metadata, and send OTP email via Resend
   const hashedToken = linkData.properties?.hashed_token
-  const otpCode = linkData.properties?.email_otp
+  const otpCode = toSixDigitOtp(linkData.properties?.email_otp)
   const verifyLink = hashedToken
     ? `${origin}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=signup&next=${encodeURIComponent('/verify-email?status=success')}`
     : linkData.properties?.action_link
 
-  if (otpCode) {
-    const html = generateVerifyOtpEmailHtml({
-      userName: parsed.data.name.trim(),
-      otpCode,
-      verifyLink,
-      expiresInMinutes: 60,
-    })
+  await admin.auth.admin.updateUserById(linkData.user.id, {
+    user_metadata: {
+      ...linkData.user.user_metadata,
+      name: parsed.data.name.trim(),
+      otp_verified: false,
+      otp_code_hash: hashOtpCode(normalizedEmail, otpCode, 'register'),
+      otp_token_hash: hashedToken || null,
+      otp_token_type: 'signup',
+      otp_expires_at: Date.now() + OTP_EXPIRY_MS,
+    },
+  })
 
-    await sendTransactionalEmail({
-      to: normalizedEmail,
-      subject: 'Kode Verifikasi OTP Pendaftaran - Opilines',
-      html,
-    })
-    otpSendTimestamps.set(normalizedEmail, Date.now())
-  } else {
-    await dispatchAuthOtpEmail(normalizedEmail, parsed.data.name.trim(), 'register')
-    otpSendTimestamps.set(normalizedEmail, Date.now())
+  const html = generateVerifyOtpEmailHtml({
+    userName: parsed.data.name.trim(),
+    otpCode,
+    verifyLink,
+    expiresInMinutes: 60,
+  })
+
+  const emailResult = await sendTransactionalEmail({
+    to: normalizedEmail,
+    subject: 'Kode Verifikasi OTP Pendaftaran - Opilines',
+    html,
+  })
+
+  if (emailResult.success) {
+    markOtpSent(normalizedEmail)
   }
 
   // 5. Redirect to OTP verification page to confirm email ownership
-  redirect(`/verify-otp?type=register&email=${encodeURIComponent(normalizedEmail)}`)
+  redirect(
+    `/verify-otp?type=register&email=${encodeURIComponent(normalizedEmail)}${emailResult.success ? '' : '&sent=0'}`
+  )
 }
 
 export async function acceptInviteAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
@@ -395,7 +500,7 @@ async function dispatchAuthOtpEmail(
   type: 'reset' | 'register' | 'login'
 ): Promise<boolean> {
   const admin = getSupabaseAdmin()
-  const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const origin = await getAppOrigin()
 
   if (type === 'reset') {
     const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
@@ -411,10 +516,22 @@ async function dispatchAuthOtpEmail(
     }
 
     const hashedToken = linkData.properties.hashed_token
-    const otpCode = linkData.properties.email_otp
+    const otpCode = toSixDigitOtp(linkData.properties.email_otp)
     const callbackLink = hashedToken
       ? `${origin}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=recovery&next=/reset-password`
       : linkData.properties.action_link
+
+    if (linkData.user?.id) {
+      await admin.auth.admin.updateUserById(linkData.user.id, {
+        user_metadata: {
+          ...linkData.user.user_metadata,
+          otp_code_hash: hashOtpCode(normalizedEmail, otpCode, 'reset'),
+          otp_token_hash: hashedToken || null,
+          otp_token_type: 'recovery',
+          otp_expires_at: Date.now() + OTP_EXPIRY_MS,
+        },
+      })
+    }
 
     const html = generateResetPasswordEmailHtml({
       userName,
@@ -440,19 +557,32 @@ async function dispatchAuthOtpEmail(
     },
   })
 
-  if (linkError || !linkData?.properties?.email_otp) {
+  if (linkError || !linkData?.properties) {
     return false
   }
 
   const hashedToken = linkData.properties.hashed_token
+  const otpCode = toSixDigitOtp(linkData.properties.email_otp)
   const nextPath = type === 'register' ? '/verify-email?status=success' : '/admin'
   const verifyLink = hashedToken
     ? `${origin}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=magiclink&next=${encodeURIComponent(nextPath)}`
     : linkData.properties.action_link
 
+  if (linkData.user?.id) {
+    await admin.auth.admin.updateUserById(linkData.user.id, {
+      user_metadata: {
+        ...linkData.user.user_metadata,
+        otp_code_hash: hashOtpCode(normalizedEmail, otpCode, type),
+        otp_token_hash: hashedToken || null,
+        otp_token_type: 'magiclink',
+        otp_expires_at: Date.now() + OTP_EXPIRY_MS,
+      },
+    })
+  }
+
   const html = generateVerifyOtpEmailHtml({
     userName,
-    otpCode: linkData.properties.email_otp,
+    otpCode,
     verifyLink,
     expiresInMinutes: 60,
   })
@@ -504,6 +634,7 @@ export async function requestPasswordResetAction(
     }
   }
 
+  markOtpSent(normalizedEmail)
   return {
     success: true,
     message: 'Kode verifikasi dan tautan pemulihan telah dikirim.',
@@ -545,25 +676,60 @@ export async function verifyOtpAction(
   }
 
   const supabase = await createSupabaseServerClient()
-  const primaryOtpType = type === 'reset' ? 'recovery' : type === 'register' ? 'signup' : 'email'
+  const admin = getSupabaseAdmin()
+  const primaryOtpType: EmailOtpType =
+    type === 'reset' ? 'recovery' : type === 'register' ? 'signup' : 'email'
 
-  let { error } = await supabase.auth.verifyOtp({
-    email: targetEmail,
-    token: parsed.data.code,
-    type: primaryOtpType,
-  })
+  // 1. Check 6-digit normalized OTP stored in user_metadata (bridges Supabase 8-digit OTPs to 6-digit UI)
+  const { data: existingAuth } = await admin.auth.admin.getUserById(existingProfile.id)
+  const userMeta = existingAuth?.user?.user_metadata || {}
+  const expectedHash = hashOtpCode(targetEmail, parsed.data.code, type)
+  const fallbackHash = hashOtpCode(parsed.data.email, parsed.data.code, type)
+  const storedHash = typeof userMeta.otp_code_hash === 'string' ? userMeta.otp_code_hash : ''
+  const storedExpiresAt = Number(userMeta.otp_expires_at || 0)
+  const storedTokenHash =
+    typeof userMeta.otp_token_hash === 'string' ? userMeta.otp_token_hash : ''
+  const storedTokenType = (userMeta.otp_token_type as EmailOtpType) || primaryOtpType
 
-  // Fallback for magiclink / email OTP when resending verification for an existing auth user
-  if (error && type !== 'reset') {
-    const fallbackResult = await supabase.auth.verifyOtp({
-      email: targetEmail,
-      token: parsed.data.code,
-      type: 'magiclink',
-    })
-    error = fallbackResult.error
+  let verified = false
+
+  if (
+    storedHash &&
+    (storedHash === expectedHash || storedHash === fallbackHash) &&
+    storedExpiresAt > Date.now()
+  ) {
+    verified = true
+    if (storedTokenHash) {
+      await supabase.auth.verifyOtp({
+        type: storedTokenType,
+        token_hash: storedTokenHash,
+      })
+    }
   }
 
-  if (error) {
+  // 2. Fallback to direct Supabase 6-digit verifyOtp if not already verified via metadata bridge
+  if (!verified) {
+    let { error } = await supabase.auth.verifyOtp({
+      email: targetEmail,
+      token: parsed.data.code,
+      type: primaryOtpType,
+    })
+
+    if (error && type !== 'reset') {
+      const fallbackResult = await supabase.auth.verifyOtp({
+        email: targetEmail,
+        token: parsed.data.code,
+        type: 'magiclink',
+      })
+      error = fallbackResult.error
+    }
+
+    if (!error) {
+      verified = true
+    }
+  }
+
+  if (!verified) {
     return {
       error: 'Kode OTP salah atau sudah kedaluwarsa',
       fields: { email: targetEmail, code: '', type },
@@ -572,16 +738,28 @@ export async function verifyOtpAction(
 
   clearVerifyRateLimit(targetEmail)
 
-  const admin = getSupabaseAdmin()
   await admin.auth.admin.updateUserById(existingProfile.id, {
     email_confirm: true,
     user_metadata: {
+      ...userMeta,
       name: existingProfile.name,
       otp_verified: true,
+      otp_code_hash: null,
+      otp_token_hash: null,
+      otp_token_type: null,
+      otp_expires_at: null,
     },
   })
 
   if (type === 'reset') {
+    const cookieStore = await cookies()
+    cookieStore.set(RECOVERY_COOKIE_NAME, createSignedRecoveryToken(existingProfile.id), {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 15 * 60,
+    })
     redirect(`/reset-password?email=${encodeURIComponent(targetEmail)}`)
   }
 
@@ -620,6 +798,7 @@ export async function resendOtpAction(email: string, type: 'reset' | 'register' 
     return { success: false, error: 'Gagal mengirim ulang kode OTP. Silakan coba lagi.' }
   }
 
+  markOtpSent(normalizedEmail)
   clearVerifyRateLimit(targetEmail)
   return { success: true }
 }
@@ -637,14 +816,30 @@ export async function updatePasswordAction(
   }
 
   const supabase = await createSupabaseServerClient()
+  const cookieStore = await cookies()
+  const recoveryToken = cookieStore.get(RECOVERY_COOKIE_NAME)?.value
+  const recoveryUserId = verifySignedRecoveryToken(recoveryToken)
+
   const { error } = await supabase.auth.updateUser({
     password: parsed.data.password,
   })
 
   if (error) {
-    return { error: 'Sesi pemulihan tidak ditemukan atau sudah kedaluwarsa' }
+    if (recoveryUserId) {
+      const admin = getSupabaseAdmin()
+      const { error: adminError } = await admin.auth.admin.updateUserById(recoveryUserId, {
+        password: parsed.data.password,
+        email_confirm: true,
+      })
+      if (adminError) {
+        return { error: 'Sesi pemulihan tidak ditemukan atau sudah kedaluwarsa' }
+      }
+    } else {
+      return { error: 'Sesi pemulihan tidak ditemukan atau sudah kedaluwarsa' }
+    }
   }
 
+  cookieStore.delete(RECOVERY_COOKIE_NAME)
   // Sign out recovery session so user authenticates cleanly with new credentials
   await supabase.auth.signOut()
 

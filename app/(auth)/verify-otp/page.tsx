@@ -12,13 +12,15 @@ interface VerifyOtpPageProps {
   searchParams: Promise<{
     email?: string
     type?: 'reset' | 'register' | 'login'
+    sent?: string
   }>
 }
 
 export default async function VerifyOtpPage({ searchParams }: VerifyOtpPageProps) {
-  const { email = '', type = 'reset' } = await searchParams
+  const { email = '', type = 'reset', sent } = await searchParams
   const validType = ['reset', 'register', 'login'].includes(type) ? type : 'reset'
   const normalizedEmail = email.trim().toLowerCase()
+  const initialSent = sent !== '0'
 
   if (!normalizedEmail) {
     redirect(validType === 'reset' ? '/forgot-password' : '/login')
@@ -36,5 +38,11 @@ export default async function VerifyOtpPage({ searchParams }: VerifyOtpPageProps
     redirect(validType === 'reset' ? '/forgot-password' : '/login')
   }
 
-  return <VerifyOtpForm email={profile.email || normalizedEmail} type={validType} />
+  return (
+    <VerifyOtpForm
+      email={profile.email || normalizedEmail}
+      type={validType}
+      initialSent={initialSent}
+    />
+  )
 }

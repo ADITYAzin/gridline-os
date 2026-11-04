@@ -11,15 +11,20 @@ const initialState: ActionState = {}
 interface VerifyOtpFormProps {
   email: string
   type: 'reset' | 'register' | 'login'
+  initialSent?: boolean
 }
 
-export function VerifyOtpForm({ email, type }: VerifyOtpFormProps) {
+export function VerifyOtpForm({ email, type, initialSent = true }: VerifyOtpFormProps) {
   const [state, formAction, isPending] = useActionState(verifyOtpAction, initialState)
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''))
-  const [cooldown, setCooldown] = useState(59)
+  const [cooldown, setCooldown] = useState(initialSent ? 59 : 0)
   const [isResending, setIsResending] = useState(false)
   const [resentSuccess, setResentSuccess] = useState(false)
-  const [resendError, setResendError] = useState('')
+  const [resendError, setResendError] = useState(
+    initialSent
+      ? ''
+      : 'Gagal mengirim kode OTP otomatis ke email Anda. Pastikan konfigurasi email aktif atau klik Kirim ulang.'
+  )
   const inputRefs = useRef<Array<HTMLInputElement | null>>([])
 
   const codeValue = digits.join('')
