@@ -26,7 +26,11 @@ function sanitizeEnvValue(raw: string | undefined): string {
 function getResendClient(): { resend: Resend | null; fromEmail: string } {
   const apiKey = sanitizeEnvValue(process.env.RESEND_API_KEY)
   const rawFrom = sanitizeEnvValue(process.env.EMAIL_FROM)
-  const fromEmail = rawFrom || DEFAULT_FROM_EMAIL
+  const fromEmail = rawFrom
+    ? rawFrom.includes('<')
+      ? rawFrom
+      : `Opilines <${rawFrom}>`
+    : DEFAULT_FROM_EMAIL
 
   if (!apiKey || apiKey === 're_your_api_key_here') {
     return { resend: null, fromEmail }
