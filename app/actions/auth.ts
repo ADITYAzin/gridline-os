@@ -223,7 +223,8 @@ export async function signInAction(prevState: ActionState, formData: FormData): 
     await supabase.auth.signOut()
     let sent = true
     if (!isSendRateLimited(normalizedEmail)) {
-      sent = await dispatchAuthOtpEmail(targetEmail, existingProfile.name, 'register')
+      const dispatchRes = await dispatchAuthOtpEmail(targetEmail, existingProfile.name, 'register')
+      sent = dispatchRes.success
       if (sent) {
         markOtpSent(normalizedEmail)
       }
@@ -280,7 +281,8 @@ export async function signUpAction(prevState: ActionState, formData: FormData): 
 
       let sent = true
       if (!isSendRateLimited(normalizedEmail)) {
-        sent = await dispatchAuthOtpEmail(normalizedEmail, parsed.data.name.trim(), 'register')
+        const dispatchRes = await dispatchAuthOtpEmail(normalizedEmail, parsed.data.name.trim(), 'register')
+        sent = dispatchRes.success
         if (sent) {
           markOtpSent(normalizedEmail)
         }
@@ -498,7 +500,7 @@ async function dispatchAuthOtpEmail(
   normalizedEmail: string,
   userName: string | undefined,
   type: 'reset' | 'register' | 'login'
-): Promise<boolean> {
+): Promise<{ success: boolean; error?: string }> {
   const admin = getSupabaseAdmin()
   const origin = await getAppOrigin()
 
@@ -512,7 +514,7 @@ async function dispatchAuthOtpEmail(
     })
 
     if (linkError || !linkData?.properties) {
-      return false
+      return { success: false, error: linkError?.message || 'Gagal membuat token pemulihan' }
     }
 
     const hashedToken = linkData.properties.hashed_token
@@ -545,7 +547,7 @@ async function dispatchAuthOtpEmail(
       subject: 'Kode OTP & Tautan Reset Password - Opilines',
       html,
     })
-    return result.success
+    return { success: result.success, error: result.error }
   }
 
   // For register / login OTP verification
@@ -558,7 +560,7 @@ async function dispatchAuthOtpEmail(
   })
 
   if (linkError || !linkData?.properties) {
-    return false
+    return { success: false, error: linkError?.message || 'Gagal membuat token verifikasi' }
   }
 
   const hashedToken = linkData.properties.hashed_token
@@ -592,7 +594,7 @@ async function dispatchAuthOtpEmail(
     subject: 'Kode Verifikasi OTP - Opilines',
     html,
   })
-  return result.success
+  return { success: result.success, error: result.error }
 }
 
 export async function requestPasswordResetAction(
@@ -625,11 +627,13 @@ export async function requestPasswordResetAction(
   }
 
   const targetEmail = existingProfile.email || normalizedEmail
-  const sent = await dispatchAuthOtpEmail(targetEmail, existingProfile.name, 'reset')
-  if (!sent) {
+  const dispatchRes = await dispatchAuthOtpEmail(targetEmail, existingProfile.name, 'reset')
+  if (!dispatchRes.success) {
     otpSendTimestamps.delete(normalizedEmail)
     return {
-      error: 'Gagal mengirim kode verifikasi. Silakan coba beberapa saat lagi.',
+      error: dispatchRes.error
+        ? `Gagal mengirim kode verifikasi: ${dispatchRes.error}`
+        : 'Gagal mengirim kode verifikasi. Silakan coba beberapa saat lagi.',
       fields: { email: normalizedEmail },
     }
   }
@@ -792,10 +796,15 @@ export async function resendOtpAction(email: string, type: 'reset' | 'register' 
   }
 
   const targetEmail = existingProfile.email || normalizedEmail
-  const sent = await dispatchAuthOtpEmail(targetEmail, existingProfile.name, type)
-  if (!sent) {
+  const dispatchRes = await dispatchAuthOtpEmail(targetEmail, existingProfile.name, type)
+  if (!dispatchRes.success) {
     otpSendTimestamps.delete(normalizedEmail)
-    return { success: false, error: 'Gagal mengirim ulang kode OTP. Silakan coba lagi.' }
+    return {
+      success: false,
+      error: dispatchRes.error
+        ? `Gagal mengirim ulang kode OTP: ${dispatchRes.error}`
+        : 'Gagal mengirim ulang kode OTP. Silakan coba lagi.',
+    }
   }
 
   markOtpSent(normalizedEmail)
